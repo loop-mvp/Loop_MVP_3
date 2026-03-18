@@ -1,0 +1,193 @@
+<svg width="1600" height="1180" viewBox="0 0 1600 1180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1180" fill="#F6F4FF"/>
+  <text x="800" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#2A246B">Loop MVP Wireframe</text>
+  <text x="800" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6B63B5">3-workspace layout: Product Truth, Narrative, and GTM</text>
+
+  <defs>
+    <style>
+      .frame { fill: #FFFFFF; stroke: #CFC9F6; stroke-width: 2; }
+      .panel { fill: #FAF9FF; stroke: #DCD7FA; stroke-width: 1.5; }
+      .soft { fill: #F1EEFF; stroke: #D6D3F7; stroke-width: 1.5; }
+      .cta { fill: #534AB7; }
+      .cta2 { fill: #EEEDFE; stroke: #AFA9EC; stroke-width: 1.5; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #6B63B5; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+      .title { font-family: Arial, sans-serif; font-size: 20px; fill: #26215C; font-weight: 700; }
+      .text { font-family: Arial, sans-serif; font-size: 13px; fill: #26215C; }
+      .muted { font-family: Arial, sans-serif; font-size: 12px; fill: #7D75B8; }
+      .btn { font-family: Arial, sans-serif; font-size: 12px; fill: #FFFFFF; font-weight: 700; }
+      .btn2 { font-family: Arial, sans-serif; font-size: 12px; fill: #534AB7; font-weight: 700; }
+    </style>
+  </defs>
+
+  <!-- Product Truth -->
+  <g transform="translate(35 110)">
+    <rect class="frame" x="0" y="0" rx="24" ry="24" width="490" height="1000"/>
+    <text class="label" x="28" y="36">Workspace 1</text>
+    <text class="title" x="28" y="66">Product Truth</text>
+    <text class="muted" x="28" y="88">Capture the factual foundation before narrative work begins.</text>
+
+    <rect class="soft" x="28" y="112" rx="14" ry="14" width="434" height="74"/>
+    <text class="label" x="46" y="136">Header</text>
+    <text class="text" x="46" y="160">Product Name | Category | Owner | Launch Date | Progress</text>
+
+    <rect class="panel" x="28" y="208" rx="16" ry="16" width="210" height="150"/>
+    <text class="label" x="46" y="232">Section</text>
+    <text class="text" x="46" y="256">Product Overview</text>
+    <text class="muted" x="46" y="280">One-line summary, product category,</text>
+    <text class="muted" x="46" y="298">core promise, launch context</text>
+
+    <rect class="panel" x="252" y="208" rx="16" ry="16" width="210" height="150"/>
+    <text class="label" x="270" y="232">Section</text>
+    <text class="text" x="270" y="256">Customer Problem + ICP</text>
+    <text class="muted" x="270" y="280">Pain points, buyer, team, trigger,</text>
+    <text class="muted" x="270" y="298">ideal use case</text>
+
+    <rect class="panel" x="28" y="376" rx="16" ry="16" width="210" height="170"/>
+    <text class="label" x="46" y="400">Section</text>
+    <text class="text" x="46" y="424">Solution + Outcomes</text>
+    <text class="muted" x="46" y="448">What the product does and</text>
+    <text class="muted" x="46" y="466">the outcome it creates</text>
+
+    <rect class="panel" x="252" y="376" rx="16" ry="16" width="210" height="170"/>
+    <text class="label" x="270" y="400">Section</text>
+    <text class="text" x="270" y="424">Key Capabilities</text>
+    <text class="muted" x="270" y="448">Top 3-5 capabilities with</text>
+    <text class="muted" x="270" y="466">feature to benefit mapping</text>
+
+    <rect class="panel" x="28" y="564" rx="16" ry="16" width="210" height="160"/>
+    <text class="label" x="46" y="588">Section</text>
+    <text class="text" x="46" y="612">Differentiation</text>
+    <text class="muted" x="46" y="636">Why you win, what makes</text>
+    <text class="muted" x="46" y="654">the product different</text>
+
+    <rect class="panel" x="252" y="564" rx="16" ry="16" width="210" height="160"/>
+    <text class="label" x="270" y="588">Section</text>
+    <text class="text" x="270" y="612">Proof Points</text>
+    <text class="muted" x="270" y="636">Credibility, customer proof,</text>
+    <text class="muted" x="270" y="654">traction, evidence</text>
+
+    <rect class="soft" x="28" y="744" rx="16" ry="16" width="434" height="130"/>
+    <text class="label" x="46" y="768">AI Rail</text>
+    <text class="text" x="46" y="792">Summary, gap scan, readiness status</text>
+    <text class="muted" x="46" y="816">Highlights missing proof, weak differentiation, unclear ICP</text>
+
+    <rect class="cta2" x="28" y="896" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="94" y="922" text-anchor="middle">Save Draft</text>
+    <rect class="cta2" x="172" y="896" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="238" y="922" text-anchor="middle">Find Gaps</text>
+    <rect class="cta" x="316" y="896" rx="12" ry="12" width="146" height="42"/>
+    <text class="btn" x="389" y="922" text-anchor="middle">Ready for Narrative</text>
+  </g>
+
+  <!-- Narrative -->
+  <g transform="translate(555 110)">
+    <rect class="frame" x="0" y="0" rx="24" ry="24" width="490" height="1000"/>
+    <text class="label" x="28" y="36">Workspace 2</text>
+    <text class="title" x="28" y="66">Narrative</text>
+    <text class="muted" x="28" y="88">Turn product truth into approved messaging and a single narrative.</text>
+
+    <rect class="soft" x="28" y="112" rx="14" ry="14" width="434" height="74"/>
+    <text class="label" x="46" y="136">Header</text>
+    <text class="text" x="46" y="160">Stage: Draft / In Review / Approved | Reviewer | Version</text>
+
+    <rect class="panel" x="28" y="208" rx="16" ry="16" width="210" height="165"/>
+    <text class="label" x="46" y="232">Section</text>
+    <text class="text" x="46" y="256">Positioning Statement</text>
+    <text class="muted" x="46" y="280">For who, what category, what value,</text>
+    <text class="muted" x="46" y="298">why it matters, why different</text>
+
+    <rect class="panel" x="252" y="208" rx="16" ry="16" width="210" height="165"/>
+    <text class="label" x="270" y="232">Section</text>
+    <text class="text" x="270" y="256">Value Proposition</text>
+    <text class="muted" x="270" y="280">Primary value articulation</text>
+    <text class="muted" x="270" y="298">for the ICP</text>
+
+    <rect class="panel" x="28" y="391" rx="16" ry="16" width="210" height="190"/>
+    <text class="label" x="46" y="415">Section</text>
+    <text class="text" x="46" y="439">Messaging Pillars</text>
+    <text class="muted" x="46" y="463">3-4 repeatable themes with</text>
+    <text class="muted" x="46" y="481">supporting bullets</text>
+
+    <rect class="panel" x="252" y="391" rx="16" ry="16" width="210" height="190"/>
+    <text class="label" x="270" y="415">Section</text>
+    <text class="text" x="270" y="439">Headline + Elevator Pitch</text>
+    <text class="muted" x="270" y="463">Fast articulation plus longer</text>
+    <text class="muted" x="270" y="481">story for sales / PMM use</text>
+
+    <rect class="panel" x="28" y="599" rx="16" ry="16" width="434" height="146"/>
+    <text class="label" x="46" y="623">Section</text>
+    <text class="text" x="46" y="647">Narrative Review</text>
+    <text class="muted" x="46" y="671">AI-detected gaps, unsupported claims, weak differentiation, inconsistency</text>
+    <text class="muted" x="46" y="693">Issue list with approve / request changes / mark reviewed</text>
+
+    <rect class="soft" x="28" y="765" rx="16" ry="16" width="434" height="145"/>
+    <text class="label" x="46" y="789">Approved Narrative</text>
+    <text class="text" x="46" y="813">Single canonical narrative card</text>
+    <text class="muted" x="46" y="837">Positioning + value prop + pillars + approved claims + version snapshot</text>
+
+    <rect class="cta2" x="28" y="932" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="94" y="958" text-anchor="middle">Generate Draft</text>
+    <rect class="cta2" x="172" y="932" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="238" y="958" text-anchor="middle">Run Review</text>
+    <rect class="cta2" x="316" y="932" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="382" y="958" text-anchor="middle">Submit Approval</text>
+    <rect class="cta" x="316" y="880" rx="12" ry="12" width="132" height="40"/>
+    <text class="btn" x="382" y="905" text-anchor="middle">Publish Version</text>
+  </g>
+
+  <!-- GTM -->
+  <g transform="translate(1075 110)">
+    <rect class="frame" x="0" y="0" rx="24" ry="24" width="490" height="1000"/>
+    <text class="label" x="28" y="36">Workspace 3</text>
+    <text class="title" x="28" y="66">GTM</text>
+    <text class="muted" x="28" y="88">Translate the approved narrative into launch-ready execution.</text>
+
+    <rect class="soft" x="28" y="112" rx="14" ry="14" width="434" height="74"/>
+    <text class="label" x="46" y="136">Header</text>
+    <text class="text" x="46" y="160">Launch Goal | Target Segment | Status | Narrative Version in Use</text>
+
+    <rect class="panel" x="28" y="208" rx="16" ry="16" width="210" height="150"/>
+    <text class="label" x="46" y="232">Section</text>
+    <text class="text" x="46" y="256">Launch Goal + Audience</text>
+    <text class="muted" x="46" y="280">What this GTM motion is trying</text>
+    <text class="muted" x="46" y="298">to achieve and for whom</text>
+
+    <rect class="panel" x="252" y="208" rx="16" ry="16" width="210" height="150"/>
+    <text class="label" x="270" y="232">Section</text>
+    <text class="text" x="270" y="256">Channel Messaging</text>
+    <text class="muted" x="270" y="280">Website, sales, email, launch</text>
+    <text class="muted" x="270" y="298">copy by channel</text>
+
+    <rect class="panel" x="28" y="376" rx="16" ry="16" width="210" height="170"/>
+    <text class="label" x="46" y="400">Section</text>
+    <text class="text" x="46" y="424">Sales + Website Copy</text>
+    <text class="muted" x="46" y="448">Pasted or generated snippets</text>
+    <text class="muted" x="46" y="466">to align against narrative</text>
+
+    <rect class="panel" x="252" y="376" rx="16" ry="16" width="210" height="170"/>
+    <text class="label" x="270" y="400">Section</text>
+    <text class="text" x="270" y="424">Asset Checklist</text>
+    <text class="muted" x="270" y="448">Email, landing page, sales deck,</text>
+    <text class="muted" x="270" y="466">one-pager, announcement</text>
+
+    <rect class="panel" x="28" y="564" rx="16" ry="16" width="434" height="180"/>
+    <text class="label" x="46" y="588">Section</text>
+    <text class="text" x="46" y="612">Alignment Check</text>
+    <text class="muted" x="46" y="636">Paste copy or upload asset to compare against approved narrative</text>
+    <text class="muted" x="46" y="658">Flags drift, missing proof, inconsistent claims, weak channel adaptation</text>
+
+    <rect class="soft" x="28" y="764" rx="16" ry="16" width="434" height="128"/>
+    <text class="label" x="46" y="788">Launch Readiness</text>
+    <text class="text" x="46" y="812">Open risks, missing assets, unresolved review items</text>
+    <text class="muted" x="46" y="836">Simple go / not-ready signal for launch preparation</text>
+
+    <rect class="cta2" x="28" y="914" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="94" y="940" text-anchor="middle">Generate Copy</text>
+    <rect class="cta2" x="172" y="914" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="238" y="940" text-anchor="middle">Upload Asset</text>
+    <rect class="cta2" x="316" y="914" rx="12" ry="12" width="132" height="42"/>
+    <text class="btn2" x="382" y="940" text-anchor="middle">Check Alignment</text>
+    <rect class="cta" x="316" y="862" rx="12" ry="12" width="132" height="40"/>
+    <text class="btn" x="382" y="887" text-anchor="middle">Mark Launch Ready</text>
+  </g>
+</svg>

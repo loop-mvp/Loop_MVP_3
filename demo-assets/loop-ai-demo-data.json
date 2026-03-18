@@ -1,0 +1,59 @@
+{
+  "product": {
+    "name": "SignalDesk",
+    "description": "An AI copilot that turns customer calls, Slack threads, and CRM notes into launch-ready market intelligence.",
+    "launchDate": "2026-04-22",
+    "version": "v1.0",
+    "status": "Planned"
+  },
+  "productTruth": {
+    "whatProductDoes": "SignalDesk captures scattered customer and revenue signals and turns them into a shared source of truth for PMM, product, and sales teams.",
+    "whoItIsFor": "Series A-B B2B SaaS teams with one PMM or founder running launches across product, sales, and marketing.",
+    "coreProblem": "Teams launch with stale assumptions because customer insights, objections, and competitive signals are fragmented across tools and conversations.",
+    "impact": "That fragmentation causes weak positioning, slower review cycles, inconsistent assets, and lower confidence at launch.",
+    "solutionSummary": "SignalDesk centralizes customer evidence, competitive movement, and field feedback into one launch intelligence layer.",
+    "howItSolves": "It ingests notes from calls and workflows, clusters patterns, drafts market insights, and gives PMMs a launch-ready brief in one place.",
+    "buyer": "Founder, VP Marketing, or first PMM who owns the launch narrative.",
+    "user": "PMMs, product marketers, and GTM leads who need to synthesize market inputs quickly.",
+    "coreFeatures": "Signal clustering, narrative drafting, objection tracking, launch brief generation, and alignment-ready summaries.",
+    "topDifferentiators": "It is purpose-built for launch workflows, combines market inputs with narrative outputs, and keeps review plus feedback in one operating system."
+  },
+  "coreNarrative": {
+    "positioningStatement": "For B2B SaaS teams that need a clearer way to turn market evidence into launch direction, SignalDesk is the launch intelligence workspace that converts customer signals into approved narrative and GTM outputs. Unlike scattered docs, CRM exports, and generic AI tools, SignalDesk keeps product truth, story, and post-launch learning connected in one system.",
+    "valueProposition": "SignalDesk helps teams launch faster with clearer proof, stronger alignment, and fewer review loops because the narrative starts from real customer evidence.",
+    "topMessaging": "Launch from evidence, not guesswork. Make product truth visible to every GTM stakeholder. Turn customer signals into approved launch story faster.",
+    "taglines": "Launch from real signals. Customer truth into market story. One place for launch intelligence.",
+    "topValue": "Faster launch readiness, sharper positioning, and stronger trust across product, sales, and marketing.",
+    "elevatorPitch": "SignalDesk helps SaaS teams pull product, customer, and sales signals into one workspace so they can build a stronger launch story, align faster, and improve every version with real feedback."
+  },
+  "competition": {
+    "mainCompetitors": "Notion-based launch ops, Gong exports plus spreadsheets, generic AI copilots, and PMM decks in Google Slides.",
+    "alternativeOptions": "Do nothing, keep insights in meetings and Slack, or manually compile evidence before each launch.",
+    "featureComparison": "SignalDesk combines evidence capture, market synthesis, narrative drafting, and launch review in one workflow rather than piecing them together across multiple tools.",
+    "whyWeWin": "We win by turning messy evidence into a repeatable launch workflow with review and feedback built in.",
+    "battlecard": "Against docs and decks, SignalDesk offers structure and reusable launch intelligence. Against generic AI tools, it offers workflow, context, and PMM-specific outputs. Against CRM exports, it offers interpretation, not just data.",
+    "objectionHandling": "If a buyer says they already have notes and decks, the response is that SignalDesk is not another note repository; it turns all of those signals into approved launch decisions and assets."
+  },
+  "gtm": {
+    "launchGoal": "Win 10 design partners and establish SignalDesk as the easiest way for PMMs to launch from real customer evidence.",
+    "targetSegment": "Series A-B SaaS teams with one PMM or founder-led GTM motion.",
+    "websiteMessaging": "Lead with evidence-driven launches, show how signals become narrative, and position SignalDesk as the shared workspace for PMM alignment.",
+    "salesMessaging": "Emphasize fewer review loops, stronger positioning, and faster launch briefs built from real customer input.",
+    "launchChecklist": "Finalize positioning, publish homepage hero, prepare launch email, enable battlecard, collect pilot feedback, and review narrative health after launch.",
+    "risks": "Buyers may see it as another AI summarizer unless the workflow and launch outcomes are made explicit."
+  },
+  "assets": {
+    "homepageHero": "Turn customer signals into launch-ready narrative, review decisions, and GTM assets in one workflow.",
+    "launchEmail": "SignalDesk helps PMMs launch from real customer evidence instead of disconnected notes, decks, and prompts.",
+    "salesOnePager": "SignalDesk is the launch intelligence workspace for SaaS teams that want clearer positioning, faster asset generation, and a tighter feedback loop after launch.",
+    "battlecard": "SignalDesk vs. docs and generic AI: more structure, more context, fewer review loops, and stronger launch alignment.",
+    "faq": "Who is it for? PMMs and founder-led GTM teams. What does it replace? Fragmented launch planning across docs, calls, and ad hoc prompts. What is the core outcome? A clearer launch story built from real market evidence.",
+    "demoTalkTrack": "Start with the messy reality of launch inputs, show how SignalDesk organizes evidence, then walk through how it generates positioning, GTM outputs, and post-launch feedback intelligence."
+  },
+  "reports": {
+    "alignmentReport": "Alignment is strongest around the product problem and launch value, but the proof layer still needs reinforcement in both sales and website messaging. Product and PMM views are aligned; sales needs sharper differentiation language for competitive calls.",
+    "narrativeHealth": "The narrative is clear and ownable, with a strong market story around evidence-driven launches. The biggest health risk is that proof and competitive framing must stay just as strong as the headline message.",
+    "feedbackSummary": "Early reactions suggest the workflow resonates quickly with PMMs, while founders respond most to the promise of faster decision-making. The top friction is proving ROI beyond summarization and showing how SignalDesk changes launch behavior.",
+    "nextVersionRecommendations": "Add stronger customer proof, simplify the homepage subhead, sharpen the competitive win story, and create a role-specific asset for founder-led GTM teams."
+  }
+}

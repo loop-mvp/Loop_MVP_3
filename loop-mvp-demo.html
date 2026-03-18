@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loop MVP Demo Mockup</title>
+  <style>
+    :root {
+      --bg: #f4f1ff;
+      --panel: #ffffff;
+      --panel-soft: #f8f6ff;
+      --line: #d8d0f9;
+      --line-strong: #c8bef6;
+      --text: #2f2a53;
+      --muted: #726b9a;
+      --primary: #6157e7;
+      --primary-soft: #ece8ff;
+      --success: #dff6ea;
+      --success-text: #16794f;
+      --warn: #fff4df;
+      --warn-text: #b86b00;
+      --shadow: 0 24px 60px rgba(79, 64, 170, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background:
+        radial-gradient(circle at top left, #ffffff 0, #f7f3ff 35%, #f1ecff 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .shell {
+      width: min(1440px, 100%);
+      min-height: 880px;
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(200,190,246,0.8);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      backdrop-filter: blur(14px);
+    }
+
+    .chrome {
+      height: 34px;
+      background: linear-gradient(180deg, #faf8ff 0%, #f2eeff 100%);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #ddd3ff;
+    }
+
+    .topnav {
+      height: 76px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.86);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 24px;
+    }
+
+    .page-tabs {
+      display: inline-flex;
+      gap: 8px;
+      padding: 7px;
+      border-radius: 18px;
+      background: #ebe6ff;
+      border: 1px solid var(--line-strong);
+    }
+
+    .page-tab {
+      padding: 11px 18px;
+      border-radius: 13px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .page-tab.active {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 88px 1fr 88px;
+      min-height: 770px;
+    }
+
+    .rail {
+      background: linear-gradient(180deg, #f0ecff 0%, #faf9ff 100%);
+      border-right: 1px solid var(--line);
+      position: relative;
+    }
+
+    .rail.right {
+      border-right: none;
+      border-left: 1px solid var(--line);
+      display: flex;
+      justify-content: center;
+      padding-top: 156px;
+    }
+
+    .rail-card {
+      width: 56px;
+      min-height: 152px;
+      border-radius: 18px;
+      border: 2px solid #745ff0;
+      background: #fff;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      gap: 14px;
+      padding: 14px 0 12px;
+    }
+
+    .rail-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel-soft);
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .rail-label {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #2c2870;
+    }
+
+    .rail-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--warn);
+      color: var(--warn-text);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .center {
+      display: grid;
+      grid-template-rows: 112px 52px 1fr;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-header {
+      background: rgba(255,255,255,0.94);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 26px 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .product-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .product-name {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .product-mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    .meta {
+      display: flex;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+
+    .workspace-tabs {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255,255,255,0.92);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .workspace-pill {
+      display: inline-flex;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 15px;
+      background: #ece7ff;
+      border: 1px solid var(--line-strong);
+    }
+
+    .workspace-pill span {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .workspace-pill span.active {
+      background: white;
+      color: var(--primary);
+    }
+
+    .stage {
+      padding: 22px 24px 24px;
+      position: relative;
+    }
+
+    .scene {
+      position: absolute;
+      inset: 22px 24px 24px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .6s ease, transform .6s ease;
+      pointer-events: none;
+      display: grid;
+      gap: 18px;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    .scene.active {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+
+    .headline {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+    }
+
+    .headline h1 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+    }
+
+    .headline p {
+      margin: 8px 0 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .status-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-chip.success {
+      background: var(--success);
+      color: var(--success-text);
+    }
+
+    .status-chip.warn {
+      background: var(--warn);
+      color: var(--warn-text);
+    }
+
+    .main-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 12px 30px rgba(83, 74, 183, 0.06);
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .tile {
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      min-height: 124px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .tile h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #4c4699;
+    }
+
+    .tile p,
+    .tile li {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+    }
+
+    .check {
+      display: flex;
+      gap: 10px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .check strong {
+      color: var(--text);
+    }
+
+    .mark {
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex: none;
+    }
+
+    .progress-wrap {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .progress-track {
+      height: 10px;
+      border-radius: 999px;
+      background: #e7e2fb;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #6d5ef3 0%, #9c91ff 100%);
+      transition: width .5s ease;
+    }
+
+    .step-labels {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .caption {
+      position: absolute;
+      right: 26px;
+      top: 28px;
+      width: 252px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 16px 38px rgba(83, 74, 183, 0.08);
+    }
+
+    .caption h4 {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+
+    .caption p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .footer {
+      position: absolute;
+      top: 18px;
+      right: 24px;
+      display: flex;
+      gap: 10px;
+      z-index: 3;
+    }
+
+    .control {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    body.export-mode .footer,
+    body.export-mode .progress-wrap {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="chrome">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    <div class="topnav">
+      <div class="page-tabs">
+        <div class="page-tab active">Loop</div>
+        <div class="page-tab">Narrative Intelligence</div>
+        <div class="page-tab">Brand Guideline</div>
+        <div class="page-tab">Community</div>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <aside class="rail">
+        <div style="padding:18px 10px 14px; display:grid; justify-items:center; gap:14px;">
+          <div style="font-size:28px; font-weight:800; color:#433b9b;">L</div>
+          <div class="rail-icon" title="Product Truth">◌</div>
+          <div class="rail-icon" title="Core Narrative">✶</div>
+          <div class="rail-icon" title="GTM">▶</div>
+          <div class="rail-icon" title="Assets">▣</div>
+          <div class="rail-icon" title="Feedback">◎</div>
+        </div>
+      </aside>
+
+      <main class="center">
+        <div class="product-header">
+          <div class="product-row">
+            <div class="product-name">
+              <div class="product-mark">∞</div>
+              <div>Loop for B2B SaaS Founders</div>
+            </div>
+            <div style="font-size:16px; font-weight:700; color:#6c6870;">From first story to launch readiness</div>
+          </div>
+          <div class="meta">
+            <span>Owner: Growth Team</span>
+            <span>Launch Date: April 28</span>
+            <span>Version: v1.0</span>
+            <span>Status: In Progress</span>
+          </div>
+        </div>
+
+        <div class="workspace-tabs">
+          <div class="workspace-pill">
+            <span class="active">Product Truth</span>
+            <span>Core Narrative</span>
+            <span>GTM</span>
+            <span>Assets</span>
+            <span>Feedback</span>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="footer">
+            <button class="control" id="prevBtn">Prev</button>
+            <button class="control" id="playBtn">Pause</button>
+            <button class="control" id="nextBtn">Next</button>
+          </div>
+
+          <section class="scene active" data-title="Signup and onboarding">
+            <div class="eyebrow">Scene 1</div>
+            <div class="headline">
+              <div>
+                <h1>Customer signs up and chooses a guided onboarding path</h1>
+                <p>Loop starts by asking what the customer is launching, who it is for, and whether they want to build from scratch or import existing materials.</p>
+              </div>
+              <div class="status-chip success">Guided Start</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-5">
+                  <h3>Signup Flow</h3>
+                  <div class="checklist">
+                    <div class="check"><div class="mark">1</div><div><strong>Create account</strong><br>Founder or PMM joins Loop and creates a workspace.</div></div>
+                    <div class="check"><div class="mark">2</div><div><strong>Select workflow</strong><br>New product launch, messaging refresh, or repositioning.</div></div>
+                    <div class="check"><div class="mark">3</div><div><strong>Invite team</strong><br>Add co-founder, PMM, marketer, or sales lead.</div></div>
+                  </div>
+                </div>
+                <div class="tile span-7">
+                  <h3>Onboarding Prompts</h3>
+                  <ul style="padding-left:18px; margin:0; display:grid; gap:8px;">
+                    <li>What product are you launching?</li>
+                    <li>Who is the primary customer?</li>
+                    <li>What problem does this product solve?</li>
+                    <li>Do you already have messaging, docs, or a pitch deck to import?</li>
+                    <li>What is your target launch date?</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>What Loop does here</h4>
+              <p>It reduces blank-page anxiety with a guided setup instead of dropping the user into a huge strategy canvas immediately.</p>
+            </aside>
+          </section>
+
+          <section class="scene" data-title="Product truth capture">
+            <div class="eyebrow">Scene 2</div>
+            <div class="headline">
+              <div>
+                <h1>They build product truth one section at a time</h1>
+                <p>The customer fills out problem, solution, audience, capabilities, competitors, and differentiation using guided prompts and smaller canvases.</p>
+              </div>
+              <div class="status-chip success">Product Truth</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-4">
+                  <h3>Problem Statement</h3>
+                  <p>Core problem, stakes, and why current alternatives fall short.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Solution</h3>
+                  <p>What the product does, how it solves the problem, and why now.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Audience</h3>
+                  <p>Primary buyer, influencer, pains, jobs to be done, and buying triggers.</p>
+                </div>
+                <div class="tile span-6">
+                  <h3>Capabilities</h3>
+                  <p>Feature-to-benefit mapping helps founders turn product details into customer value language.</p>
+                </div>
+                <div class="tile span-6">
+                  <h3>Competition</h3>
+                  <p>Loop captures alternatives, win/loss context, and differentiators to sharpen downstream messaging.</p>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>Best workflow</h4>
+              <p>Start with Product Truth because it gives every AI suggestion, narrative draft, and launch asset a stronger factual base.</p>
+            </aside>
+          </section>
+
+          <section class="scene" data-title="Core narrative creation">
+            <div class="eyebrow">Scene 3</div>
+            <div class="headline">
+              <div>
+                <h1>Loop turns raw product truth into an approved narrative</h1>
+                <p>Once the product inputs are clear, the customer moves into Core Narrative to define positioning, value proposition, messaging pillars, headline, and pitch.</p>
+              </div>
+              <div class="status-chip success">Core Narrative</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-4">
+                  <h3>Positioning Statement</h3>
+                  <p>Loop guides founders into a sharper market-facing statement, not just a feature list.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Value Proposition</h3>
+                  <p>The core promise gets distilled into business value and customer outcomes.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Messaging Pillars</h3>
+                  <p>Three to four repeatable messages become the narrative spine for launch and sales.</p>
+                </div>
+                <div class="tile span-12">
+                  <h3>AI Assistant Support</h3>
+                  <p>Loop suggests stronger messaging, flags generic phrasing, and recommends additions like objection handling, proof points, and launch messaging packs.</p>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>How the AI helps</h4>
+              <p>Not as a generic chatbot first, but as a section-aware assistant that improves clarity, differentiation, and consistency.</p>
+            </aside>
+          </section>
+
+          <section class="scene" data-title="GTM planning and assets">
+            <div class="eyebrow">Scene 4</div>
+            <div class="headline">
+              <div>
+                <h1>They move into GTM and create launch-ready assets</h1>
+                <p>With the narrative approved, Loop helps the team operationalize it across channels, launch plans, and asset generation.</p>
+              </div>
+              <div class="status-chip success">GTM + Assets</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-5">
+                  <h3>GTM</h3>
+                  <p>Define launch goal, segment focus, channels, milestones, and what sales and marketing need to say.</p>
+                </div>
+                <div class="tile span-7">
+                  <h3>Assets Generated</h3>
+                  <ul style="padding-left:18px; margin:0; display:grid; gap:8px;">
+                    <li>Website headline and hero copy</li>
+                    <li>Launch email draft</li>
+                    <li>Sales one-pager</li>
+                    <li>Battlecard</li>
+                    <li>Product summary sheet</li>
+                  </ul>
+                </div>
+                <div class="tile span-12">
+                  <h3>Why this matters</h3>
+                  <p>Loop is no longer just a strategy workspace. It becomes a bridge from product truth to launch execution.</p>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>Monetizable moment</h4>
+              <p>This is where the product starts feeling sellable: teams use one approved narrative to produce real launch outputs faster.</p>
+            </aside>
+          </section>
+
+          <section class="scene" data-title="Review and feedback">
+            <div class="eyebrow">Scene 5</div>
+            <div class="headline">
+              <div>
+                <h1>Loop gives review feedback before launch goes live</h1>
+                <p>The assistant flags gaps in proof, weak differentiation, and inconsistent claims. Teams review and resolve these before publishing.</p>
+              </div>
+              <div class="status-chip warn">Review Cycle</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-4">
+                  <h3>Flag</h3>
+                  <p>Positioning is too generic for the category.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Flag</h3>
+                  <p>Messaging claims lack proof points or metrics.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Flag</h3>
+                  <p>Sales and website copy drift from the approved narrative.</p>
+                </div>
+                <div class="tile span-12">
+                  <h3>Review Workflow</h3>
+                  <p>Owners resolve items, approvers sign off, and Loop stores what changed before the team publishes a new narrative version.</p>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>Why people keep using it</h4>
+              <p>Because Loop helps catch narrative drift and launch risk before assets go live, not after.</p>
+            </aside>
+          </section>
+
+          <section class="scene" data-title="Launch live">
+            <div class="eyebrow">Scene 6</div>
+            <div class="headline">
+              <div>
+                <h1>The team launches with one aligned story</h1>
+                <p>Once the review items are closed and the narrative is approved, the launch goes live with assets, sales messaging, and positioning aligned.</p>
+              </div>
+              <div class="status-chip success">Launch Live</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-6">
+                  <h3>Published Outputs</h3>
+                  <p>Approved launch narrative, live website copy, GTM brief, outbound messaging, and internal enablement docs.</p>
+                </div>
+                <div class="tile span-6">
+                  <h3>Team Outcome</h3>
+                  <p>Founders, PMM, marketing, and sales all work from the same source of truth instead of fragmented docs and prompts.</p>
+                </div>
+                <div class="tile span-12">
+                  <h3>Loop's role</h3>
+                  <p>It acts as the narrative operating system from input through execution, not just a place to write.</p>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>Value to the customer</h4>
+              <p>Fewer review loops, faster launch readiness, and stronger cross-functional alignment.</p>
+            </aside>
+          </section>
+
+          <section class="scene" data-title="Feedback and analytics">
+            <div class="eyebrow">Scene 7</div>
+            <div class="headline">
+              <div>
+                <h1>Loop tracks feedback, analytics, and narrative health after launch</h1>
+                <p>The customer sees how the message is landing and where the story may need refinement for the next iteration.</p>
+              </div>
+              <div class="status-chip success">Feedback + Analytics</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-4">
+                  <h3>Signals</h3>
+                  <p>Website engagement, win/loss notes, sales objections, customer feedback.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Narrative Health</h3>
+                  <p>Loop scores clarity, consistency, proof, and launch readiness across versions.</p>
+                </div>
+                <div class="tile span-4">
+                  <h3>Recommendations</h3>
+                  <p>Update positioning, tighten messaging pillar two, add stronger proof for competitive claims.</p>
+                </div>
+                <div class="tile span-12">
+                  <h3>Feedback loop</h3>
+                  <p>Launch does not end the workflow. Loop feeds real-world learning back into Product Truth and Narrative for the next cycle.</p>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>Retention engine</h4>
+              <p>Analytics and feedback are what keep Loop useful after the initial launch project is over.</p>
+            </aside>
+          </section>
+
+          <section class="scene" data-title="Live launch summary">
+            <div class="eyebrow">Scene 8</div>
+            <div class="headline">
+              <div>
+                <h1>From signup to live launch, Loop becomes the system of record for product narrative</h1>
+                <p>This is the end-state workflow for the MVP: onboarding, product truth, narrative creation, GTM execution, review, launch, and feedback.</p>
+              </div>
+              <div class="status-chip success">End-to-End Loop</div>
+            </div>
+            <div class="main-card">
+              <div class="grid">
+                <div class="tile span-12">
+                  <h3>Best MVP Journey</h3>
+                  <div class="checklist">
+                    <div class="check"><div class="mark">1</div><div><strong>Sign up</strong> and choose the launch workflow.</div></div>
+                    <div class="check"><div class="mark">2</div><div><strong>Build Product Truth</strong> section by section.</div></div>
+                    <div class="check"><div class="mark">3</div><div><strong>Create Core Narrative</strong> with AI-assisted refinement.</div></div>
+                    <div class="check"><div class="mark">4</div><div><strong>Plan GTM and generate assets</strong> from the approved story.</div></div>
+                    <div class="check"><div class="mark">5</div><div><strong>Use feedback and analytics</strong> to improve the next version.</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <aside class="caption">
+              <h4>What this demo is for</h4>
+              <p>A visual pitch artifact for communicating how a real customer moves through the Loop MVP from onboarding to measurable launch execution.</p>
+            </aside>
+          </section>
+
+          <div class="progress-wrap">
+            <div class="step-labels" id="stepLabels"></div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="rail right">
+        <div class="rail-card">
+          <div class="rail-icon">✦</div>
+          <div class="rail-label">AI Assistant</div>
+          <div class="rail-badge">3</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const scenes = Array.from(document.querySelectorAll(".scene"));
+    const progressFill = document.getElementById("progressFill");
+    const stepLabels = document.getElementById("stepLabels");
+    const playBtn = document.getElementById("playBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const params = new URLSearchParams(window.location.search);
+    const exportScene = params.has("scene") ? Number(params.get("scene")) : null;
+
+    const labels = scenes.map((scene, index) => `${index + 1}. ${scene.dataset.title}`);
+    stepLabels.innerHTML = labels.map(label => `<span>${label}</span>`).join("");
+
+    let activeIndex = 0;
+    let playing = true;
+    let timer = null;
+
+    function renderScene(index) {
+      scenes.forEach((scene, sceneIndex) => {
+        scene.classList.toggle("active", sceneIndex === index);
+      });
+      if (progressFill) {
+        progressFill.style.width = `${((index + 1) / scenes.length) * 100}%`;
+      }
+    }
+
+    function nextScene() {
+      activeIndex = (activeIndex + 1) % scenes.length;
+      renderScene(activeIndex);
+    }
+
+    function prevScene() {
+      activeIndex = (activeIndex - 1 + scenes.length) % scenes.length;
+      renderScene(activeIndex);
+    }
+
+    function startPlayback() {
+      clearInterval(timer);
+      timer = setInterval(nextScene, 3400);
+    }
+
+    playBtn.addEventListener("click", () => {
+      playing = !playing;
+      playBtn.textContent = playing ? "Pause" : "Play";
+      if (playing) startPlayback();
+      else clearInterval(timer);
+    });
+
+    nextBtn.addEventListener("click", () => {
+      nextScene();
+      if (playing) startPlayback();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      prevScene();
+      if (playing) startPlayback();
+    });
+
+    if (Number.isInteger(exportScene) && exportScene >= 0 && exportScene < scenes.length) {
+      document.body.classList.add("export-mode");
+      activeIndex = exportScene;
+      renderScene(activeIndex);
+    } else {
+      renderScene(activeIndex);
+      startPlayback();
+    }
+  </script>
+</body>
+</html>

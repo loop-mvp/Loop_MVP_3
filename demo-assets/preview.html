@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loop MVP Preview</title>
+  <style>
+    body { margin: 0; font-family: Inter, Arial, sans-serif; background: radial-gradient(circle at top left, #ffffff 0, #f7f3ff 35%, #f1ecff 100%); color: #2f2a53; }
+    .wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .shell { width: min(1480px, 100%); background: rgba(255,255,255,0.66); border: 1px solid #d8d0f9; border-radius: 28px; box-shadow: 0 24px 60px rgba(79, 64, 170, 0.12); padding: 20px; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 30px; }
+    .caption { color: #675f93; font-size: 16px; }
+    .viewer { background: #fff; border: 1px solid #ddd5fb; border-radius: 22px; overflow: hidden; }
+    .viewer img { display: block; width: 100%; height: auto; }
+    .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+    button { border: 1px solid #d8d0f9; background: #f5f1ff; color: #6157e7; border-radius: 999px; padding: 10px 16px; font: 700 14px Inter, Arial, sans-serif; cursor: pointer; }
+    .label { color: #5f5887; font-size: 14px; }
+    .progress { margin-top: 14px; height: 8px; background: #ece7ff; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; width: 12.5%; background: linear-gradient(90deg, #6157e7 0%, #8d7dff 100%); transition: width .25s ease; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <div class="top">
+        <div>
+          <h1>Loop MVP Preview</h1>
+          <div class="caption">Autoplay storyboard preview you can open directly in the browser.</div>
+        </div>
+        <div class="label" id="sceneLabel"></div>
+      </div>
+      <div class="viewer">
+        <img id="frame" src="./scene-01.svg" alt="Loop MVP scene">
+      </div>
+      <div class="controls">
+        <button id="prevBtn">Prev</button>
+        <button id="playBtn">Pause</button>
+        <button id="nextBtn">Next</button>
+      </div>
+      <div class="progress"><div class="fill" id="fill"></div></div>
+    </div>
+  </div>
+  <script>
+    const frames = ["./scene-01.svg","./scene-02.svg","./scene-03.svg","./scene-04.svg","./scene-05.svg","./scene-06.svg","./scene-07.svg","./scene-08.svg"];
+    const labels = ["Customer signs up and chooses a guided onboarding path","They build Product Truth one section at a time","Loop turns raw Product Truth into an approved narrative","They move into GTM and create launch-ready assets","Loop gives review feedback before launch goes live","The team launches with one aligned story","Loop tracks feedback, analytics, and narrative health after launch","From signup to live launch, Loop becomes the system of record for product narrative"];
+    const frame = document.getElementById("frame");
+    const fill = document.getElementById("fill");
+    const label = document.getElementById("sceneLabel");
+    const playBtn = document.getElementById("playBtn");
+    let index = 0;
+    let playing = true;
+    let timer = null;
+
+    function render() {
+      frame.src = frames[index];
+      label.textContent = labels[index];
+      fill.style.width = ((index + 1) / frames.length) * 100 + "%";
+    }
+
+    function next() {
+      index = (index + 1) % frames.length;
+      render();
+    }
+
+    function prev() {
+      index = (index - 1 + frames.length) % frames.length;
+      render();
+    }
+
+    function start() {
+      clearInterval(timer);
+      timer = setInterval(next, 2600);
+    }
+
+    document.getElementById("nextBtn").addEventListener("click", () => { next(); if (playing) start(); });
+    document.getElementById("prevBtn").addEventListener("click", () => { prev(); if (playing) start(); });
+    playBtn.addEventListener("click", () => {
+      playing = !playing;
+      playBtn.textContent = playing ? "Pause" : "Play";
+      if (playing) start();
+      else clearInterval(timer);
+    });
+
+    render();
+    start();
+  </script>
+</body>
+</html>

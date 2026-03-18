@@ -1,0 +1,70 @@
+<svg width="1440" height="900" viewBox="0 0 1440 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="900" fill="#F7F5FF"/>
+  <rect x="0" y="0" width="1440" height="46" fill="#F3F1FA"/>
+  <rect x="0" y="46" width="1440" height="854" fill="#FAF9FF"/>
+
+  <rect x="0" y="96" width="230" height="804" fill="#EEEAFE"/>
+  <line x1="230.5" y1="96" x2="230.5" y2="900" stroke="#D8D0F9"/>
+  <text x="12" y="148" font-family="Arial, sans-serif" font-size="36" font-weight="800" fill="#433B9B">LOOP</text>
+
+  <rect x="454" y="62" width="526" height="54" rx="16" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="465" y="70" width="76" height="38" rx="12" fill="white"/>
+  <text x="503" y="94" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#5D58D6">Loop</text>
+  <text x="638" y="94" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6F6AA8">Narrative Intelligence</text>
+  <text x="787" y="94" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6F6AA8">Brand Guideline</text>
+  <text x="919" y="94" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6F6AA8">Community</text>
+
+  <rect x="230" y="96" width="1210" height="96" fill="white"/>
+  <line x1="230" y1="192.5" x2="1440" y2="192.5" stroke="#D8D0F9"/>
+  <circle cx="266" cy="128" r="12" fill="#ECE7FF"/>
+  <text x="266" y="133" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#675DDF">∞</text>
+  <text x="290" y="133" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#6C6870">Product Name</text>
+
+  <rect x="530" y="208" width="334" height="40" rx="12" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="540" y="214" width="102" height="28" rx="9" fill="white"/>
+  <text x="591" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#5D58D6">Product Truth</text>
+  <text x="704" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6F6AA8">Core Narrative</text>
+  <text x="780" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6F6AA8">GTM</text>
+  <text x="842" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6F6AA8">Assets</text>
+  <text x="909" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6F6AA8">Feedback</text>
+
+  <rect x="258" y="314" width="760" height="520" rx="18" fill="white" stroke="#DDD5FB"/>
+  <rect x="278" y="356" width="720" height="120" rx="18" fill="#F8F7FF" stroke="#DDD5FB"/>
+  <text x="300" y="382" font-family="Arial, sans-serif" font-size="11" font-weight="800" fill="#4A449A">PRODUCT TRUTH</text>
+  <text x="300" y="420" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#302A88">Build your product truth one section at a time</text>
+
+  <line x1="1028.5" y1="246" x2="1028.5" y2="834" stroke="#D8D0F9"/>
+
+  <rect x="1048" y="250" width="176" height="584" rx="20" fill="white" stroke="#DDD5FB"/>
+  <rect x="1062" y="266" width="148" height="74" rx="16" fill="#FCFBFF" stroke="#E3DDFC"/>
+  <text x="1080" y="294" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#2F2A88">AI Assistant</text>
+  <text x="1080" y="316" font-family="Arial, sans-serif" font-size="12" fill="#7A75A7">Flags, updates, suggested actions</text>
+  <circle cx="1188" cy="295" r="16" fill="#FFF7E8"/>
+  <text x="1188" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="800" fill="#D97706">3</text>
+  <rect x="1062" y="360" width="148" height="110" rx="16" fill="#FFF9EF" stroke="#F3D48C"/>
+  <text x="1078" y="388" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#2F2A88">Review needed</text>
+  <text x="1078" y="411" font-family="Arial, sans-serif" font-size="12" fill="#6E6889">Positioning needs sharper differentiation.</text>
+  <rect x="1078" y="428" width="72" height="18" rx="9" fill="#F59E0B"/>
+  <text x="1114" y="441" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="white">Open</text>
+  <rect x="1062" y="484" width="148" height="110" rx="16" fill="#F8FBFF" stroke="#C9DFFD"/>
+  <text x="1078" y="512" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#2F2A88">Asset suggestion</text>
+  <text x="1078" y="535" font-family="Arial, sans-serif" font-size="12" fill="#6E6889">Generate a launch summary sheet for sales.</text>
+  <rect x="1078" y="552" width="92" height="18" rx="9" fill="#2563EB"/>
+  <text x="1124" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="white">Draft asset</text>
+
+  <rect x="1240" y="250" width="176" height="584" rx="20" fill="white" stroke="#DDD5FB"/>
+  <rect x="1254" y="266" width="148" height="74" rx="16" fill="#FCFBFF" stroke="#E3DDFC"/>
+  <text x="1272" y="294" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#2F2A88">Ask AI</text>
+  <text x="1272" y="316" font-family="Arial, sans-serif" font-size="12" fill="#7A75A7">Freeform prompt and answers</text>
+  <rect x="1254" y="360" width="148" height="124" rx="16" fill="#F8F7FF" stroke="#DDD5FB"/>
+  <text x="1270" y="388" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#2F2A88">Prompt</text>
+  <text x="1270" y="411" font-family="Arial, sans-serif" font-size="12" fill="#6E6889">How can I make this differentiation clearer for B2B SaaS founders?</text>
+  <rect x="1268" y="448" width="120" height="22" rx="11" fill="#6D5EF3"/>
+  <text x="1328" y="463" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="white">Ask AI</text>
+  <rect x="1254" y="500" width="148" height="168" rx="16" fill="white" stroke="#DDD5FB"/>
+  <text x="1270" y="528" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#2F2A88">Answer</text>
+  <text x="1270" y="551" font-family="Arial, sans-serif" font-size="12" fill="#6E6889">Lead with the customer pain, then connect the product value to a measurable outcome and a clear alternative gap.</text>
+
+  <text x="24" y="866" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#5D58D6">Expanded</text>
+  <text x="126" y="866" font-family="Arial, sans-serif" font-size="16" fill="#746FA8">Two separate right panels expanded side by side</text>
+</svg>

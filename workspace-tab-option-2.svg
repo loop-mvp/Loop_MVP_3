@@ -1,0 +1,38 @@
+<svg width="1400" height="520" viewBox="0 0 1400 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1400" height="520" fill="#F7F5FF"/>
+  <rect x="0" y="0" width="1400" height="86" fill="#FFFDFE"/>
+  <line x1="0" y1="86.5" x2="1400" y2="86.5" stroke="#DDD5FB"/>
+  <rect x="485" y="12" width="430" height="56" rx="18" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="497" y="20" width="92" height="40" rx="14" fill="white"/>
+  <text x="543" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#5D58D6">Loop</text>
+  <text x="677" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#6F6AA8">Narrative Intelligence</text>
+  <text x="820" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#6F6AA8">Brand Guideline</text>
+  <text x="953" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#6F6AA8">Community</text>
+
+  <rect x="0" y="86" width="312" height="434" fill="#EEEAFE" stroke="#D9D1FB"/>
+  <text x="22" y="136" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#453C99">LOOP</text>
+  <text x="20" y="232" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#746FA8">WORKSPACE</text>
+  <rect x="0" y="254" width="312" height="38" fill="#DDD6FA"/>
+  <text x="24" y="279" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#544BC7">Product Truth</text>
+
+  <rect x="312" y="86" width="1088" height="138" fill="white" stroke="#DDD5FB"/>
+  <circle cx="365" cy="126" r="16" fill="#E9E4FF"/>
+  <text x="365" y="131" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#695FE2">∞</text>
+  <text x="400" y="128" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#6C676F">Product Name</text>
+  <text x="1250" y="128" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#6C676F">Add one-line description</text>
+
+  <rect x="360" y="154" width="560" height="52" rx="16" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="370" y="160" width="116" height="40" rx="12" fill="white"/>
+  <text x="428" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#5D58D6">Product Truth</text>
+  <text x="561" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#6F6AA8">Core Narrative</text>
+  <text x="676" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#6F6AA8">GTM</text>
+  <text x="761" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#6F6AA8">Assets</text>
+  <text x="850" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#6F6AA8">Feedback</text>
+
+  <rect x="312" y="224" width="835" height="296" fill="#F7F5FF" stroke="#DDD5FB"/>
+  <rect x="1147" y="224" width="253" height="296" fill="white" stroke="#DDD5FB"/>
+  <text x="1170" y="266" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#302A88">AI Assistant</text>
+
+  <text x="40" y="492" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#5D58D6">Option 2</text>
+  <text x="128" y="492" font-family="Arial, sans-serif" font-size="16" fill="#6F6AA8">Workspace tabs inside the product header area</text>
+</svg>

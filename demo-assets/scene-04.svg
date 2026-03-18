@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <linearGradient id="bg-04" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="48%" stop-color="#f6f2ff"/>
+      <stop offset="100%" stop-color="#efeaff"/>
+    </linearGradient>
+    <linearGradient id="side-04" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f1edff"/>
+      <stop offset="100%" stop-color="#faf9ff"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .eyebrow { fill: #5d7bf2; font: 700 18px Inter, Arial, sans-serif; letter-spacing: 0.14em; }
+    .title { fill: #2f2a53; font: 800 40px Inter, Arial, sans-serif; }
+    .subtitle { fill: #675f93; font: 500 20px Inter, Arial, sans-serif; }
+    .card-title { fill: #2f2a53; font: 800 24px Inter, Arial, sans-serif; }
+    .card-body { fill: #6d6697; font: 500 17px Inter, Arial, sans-serif; }
+    .small-label { fill: #7a739f; font: 700 13px Inter, Arial, sans-serif; letter-spacing: 0.12em; }
+    .note-title { fill: #6157e7; font: 800 18px Inter, Arial, sans-serif; }
+    .note-copy { fill: #5f5887; font: 500 18px Inter, Arial, sans-serif; }
+    .tab { fill: #726b9a; font: 700 14px Inter, Arial, sans-serif; }
+    .tab-active { fill: #6157e7; font: 800 14px Inter, Arial, sans-serif; }
+    .meta { fill: #7a739f; font: 600 12px Inter, Arial, sans-serif; }
+  </style>
+
+  <rect width="1440" height="900" fill="url(#bg-04)"/>
+  <rect x="18" y="18" width="1404" height="864" rx="30" fill="#ffffff" opacity="0.72" stroke="#d8d0f9"/>
+
+  <rect x="18" y="18" width="1404" height="34" rx="16" fill="#f7f3ff" opacity="0.96"/>
+  <circle cx="48" cy="35" r="5" fill="#ddd3ff"/>
+  <circle cx="66" cy="35" r="5" fill="#ddd3ff"/>
+  <circle cx="84" cy="35" r="5" fill="#ddd3ff"/>
+
+  <rect x="450" y="74" width="540" height="48" rx="18" fill="#ece7ff" stroke="#d8d0f9"/>
+  <rect x="458" y="82" width="94" height="32" rx="12" fill="#ffffff"/>
+  <text x="482" y="102" class="tab-active">Loop</text>
+  <text x="580" y="102" class="tab">Narrative Intelligence</text>
+  <text x="792" y="102" class="tab">Brand Guideline</text>
+  <text x="962" y="102" class="tab">Community</text>
+
+  <rect x="18" y="140" width="220" height="742" fill="url(#side-04)" stroke="#d8d0f9"/>
+  <text x="46" y="190" class="title" style="font-size: 24px;">LOOP</text>
+  <text x="46" y="248" class="small-label">WORKSPACE</text>
+  <rect x="36" y="276" width="184" height="34" rx="12" fill="#e6e0ff"/>
+  <text x="58" y="298" class="tab-active">Product Truth</text>
+  <text x="58" y="336" class="meta">• Product Overview</text>
+  <text x="58" y="364" class="meta">• Problem Statement</text>
+  <text x="58" y="392" class="meta">• Solution</text>
+  <text x="58" y="420" class="meta">• Audience</text>
+  <text x="58" y="448" class="meta">• Differentiation</text>
+  <text x="58" y="476" class="meta">• Capabilities</text>
+  <text x="58" y="504" class="meta">• Competitors</text>
+
+  <rect x="238" y="140" width="1184" height="118" fill="#ffffff" opacity="0.96" stroke="#d8d0f9"/>
+  <circle cx="290" cy="188" r="18" fill="#ece8ff"/>
+  <text x="282" y="195" class="tab-active">∞</text>
+  <text x="322" y="194" class="card-title" style="font-size: 20px;">Product Name</text>
+  <text x="322" y="228" class="meta">Owner: Mayank Trivedi   ·   Launch Date   ·   Version v1.0   ·   Status Planned</text>
+  <text x="1180" y="194" class="tab">Add one-line description</text>
+
+  <rect x="612" y="272" width="438" height="40" rx="16" fill="#ece7ff" stroke="#d8d0f9"/>
+  <rect x="620" y="278" width="104" height="28" rx="10" fill="#ffffff"/>
+  <text x="640" y="297" class="tab-active">Product Truth</text>
+  <text x="748" y="297" class="tab">Core Narrative</text>
+  <text x="870" y="297" class="tab">GTM</text>
+  <text x="930" y="297" class="tab">Assets</text>
+  <text x="998" y="297" class="tab">Feedback</text>
+
+  <text x="300" y="348" class="eyebrow">SCENE 4</text>
+  <text x="300" y="390" class="title"><tspan x="300" dy="0">They move into GTM and create launch-ready assets</tspan></text>
+  <text x="300" y="500" class="subtitle"><tspan x="300" dy="0">With the narrative approved, Loop helps the team operationalize it across channels,</tspan><tspan x="300" dy="28">launch plans, and asset generation.</tspan></text>
+
+  <rect x="1184" y="348" width="162" height="40" rx="20" fill="#5d7bf2" opacity="0.16"/>
+  <text x="1212" y="374" class="eyebrow" style="letter-spacing: 0.04em;">GTM + ASSETS</text>
+
+  
+        <rect x="72" y="320" width="372" height="148" rx="26" fill="#ffffff" stroke="#d8d0f9" />
+        <text x="98" y="362" class="card-title"><tspan x="98" dy="0">GTM Plan</tspan></text>
+        <text x="98" y="398" class="card-body"><tspan x="98" dy="0">Define launch goal, segment focus,</tspan><tspan x="98" dy="18">channels, and milestones.</tspan></text>
+      
+        <rect x="468" y="320" width="372" height="148" rx="26" fill="#ffffff" stroke="#d8d0f9" />
+        <text x="494" y="362" class="card-title"><tspan x="494" dy="0">Asset Suggestions</tspan></text>
+        <text x="494" y="398" class="card-body"><tspan x="494" dy="0">Website hero, launch email, sales brief,</tspan><tspan x="494" dy="18">and enablement snippets.</tspan></text>
+      
+        <rect x="864" y="320" width="372" height="148" rx="26" fill="#ffffff" stroke="#d8d0f9" />
+        <text x="890" y="362" class="card-title"><tspan x="890" dy="0">Alignment</tspan></text>
+        <text x="890" y="398" class="card-body"><tspan x="890" dy="0">Keep generated assets tied to the</tspan><tspan x="890" dy="18">approved narrative.</tspan></text>
+      
+
+  <rect x="1126" y="596" width="246" height="160" rx="26" fill="#ffffff" stroke="#d8d0f9"/>
+  <text x="1152" y="632" class="note-title">Why this matters</text>
+  <text x="1152" y="666" class="note-copy"><tspan x="1152" dy="0">This is where Loop starts feeling sellable: one approved story turns</tspan><tspan x="1152" dy="24">into real launch outputs faster.</tspan></text>
+
+  <rect x="1318" y="320" width="64" height="180" rx="22" fill="#ffffff" stroke="#7a65f2" stroke-width="2"/>
+  <circle cx="1350" cy="354" r="19" fill="#f4f1ff" stroke="#d8d0f9"/>
+  <text x="1343" y="360" class="tab-active">✦</text>
+  <text x="1356" y="470" class="eyebrow" style="writing-mode: vertical-rl; glyph-orientation-vertical: 0; letter-spacing: 0.08em;">AI ASSISTANT</text>
+
+  <rect x="1240" y="804" width="120" height="46" rx="18" fill="#6157e7"/>
+  <text x="1270" y="833" style="fill:#ffffff;font:700 18px Inter, Arial, sans-serif;">Ask AI</text>
+
+  <text x="72" y="844" class="meta">Loop MVP demo storyboard · frame 4 of 8</text>
+</svg>

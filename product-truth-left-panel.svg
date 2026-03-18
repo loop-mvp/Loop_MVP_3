@@ -1,0 +1,62 @@
+<svg width="520" height="760" viewBox="0 0 520 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="520" height="760" fill="#F5F3FF"/>
+
+  <defs>
+    <style>
+      .panel { fill: #ECE9FE; }
+      .panel-2 { fill: #D9D4FA; }
+      .row { fill: #F5F3FF; }
+      .active { fill: #CFC8F7; }
+      .text { font-family: Arial, sans-serif; fill: #332E86; }
+      .muted { font-family: Arial, sans-serif; fill: #7068BA; }
+      .label { font-family: Arial, sans-serif; fill: #5E57B0; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; }
+      .title { font-family: Arial, sans-serif; fill: #332E86; font-size: 20px; font-weight: 700; }
+      .item { font-family: Arial, sans-serif; fill: #332E86; font-size: 18px; font-weight: 700; }
+      .subitem { font-family: Arial, sans-serif; fill: #7068BA; font-size: 16px; }
+      .active-subitem { font-family: Arial, sans-serif; fill: #332E86; font-size: 16px; font-weight: 700; }
+      .small { font-family: Arial, sans-serif; fill: #7068BA; font-size: 12px; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="520" height="760" class="panel"/>
+  <rect x="0" y="0" width="520" height="94" class="row"/>
+  <text x="28" y="56" class="title">Loop MVP</text>
+
+  <text x="28" y="126" class="label">WORKSPACE</text>
+
+  <rect x="0" y="158" width="520" height="70" class="active"/>
+  <circle cx="28" cy="193" r="6" stroke="#5E57B0" stroke-width="2" fill="none"/>
+  <text x="52" y="200" class="item">Product Truth</text>
+  <text x="482" y="200" class="subitem">▾</text>
+
+  <rect x="0" y="228" width="520" height="360" class="row"/>
+
+  <circle cx="42" cy="272" r="5" stroke="#7068BA" stroke-width="2" fill="none"/>
+  <text x="68" y="278" class="active-subitem">Product Overview</text>
+  <text x="68" y="298" class="small">Summary, category, product promise</text>
+
+  <circle cx="42" cy="334" r="5" stroke="#7068BA" stroke-width="2" fill="none"/>
+  <text x="68" y="340" class="subitem">Customer Problem + ICP</text>
+  <text x="68" y="360" class="small">Pain points, audience, buying trigger</text>
+
+  <circle cx="42" cy="396" r="5" stroke="#7068BA" stroke-width="2" fill="none"/>
+  <text x="68" y="402" class="subitem">Solution + Outcomes</text>
+  <text x="68" y="422" class="small">Product value and customer result</text>
+
+  <circle cx="42" cy="458" r="5" stroke="#7068BA" stroke-width="2" fill="none"/>
+  <text x="68" y="464" class="subitem">Capabilities + Benefits</text>
+  <text x="68" y="484" class="small">Top capabilities mapped to benefits</text>
+
+  <circle cx="42" cy="520" r="5" stroke="#7068BA" stroke-width="2" fill="none"/>
+  <text x="68" y="526" class="subitem">Competitive Alternatives</text>
+  <text x="68" y="546" class="small">What buyers compare you against</text>
+
+  <circle cx="42" cy="582" r="5" stroke="#7068BA" stroke-width="2" fill="none"/>
+  <text x="68" y="588" class="subitem">Differentiation + Proof Points</text>
+  <text x="68" y="608" class="small">Why you win and evidence to support it</text>
+
+  <rect x="20" y="632" width="480" height="100" rx="18" class="panel-2"/>
+  <text x="38" y="662" class="label">CANVAS MODEL</text>
+  <text x="38" y="690" class="subitem">All Product, Capabilities, and Competitive Intelligence</text>
+  <text x="38" y="712" class="subitem">sections live inside one Product Truth workspace canvas.</text>
+</svg>

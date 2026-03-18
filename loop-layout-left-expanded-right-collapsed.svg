@@ -1,0 +1,34 @@
+<svg width="1500" height="900" viewBox="0 0 1500 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="900" fill="#F7F5FF"/>
+  <rect x="0" y="0" width="1500" height="92" fill="#FFFDFE"/>
+  <line x1="0" y1="92.5" x2="1500" y2="92.5" stroke="#D8D0F9"/>
+  <rect x="470" y="18" width="560" height="54" rx="16" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="482" y="26" width="80" height="38" rx="12" fill="white"/>
+  <text x="522" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#5D58D6">Loop</text>
+
+  <rect x="0" y="92" width="240" height="808" fill="#EEEAFE"/>
+  <line x1="240.5" y1="92" x2="240.5" y2="900" stroke="#D8D0F9"/>
+  <text x="16" y="146" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#443B9B">LOOP</text>
+  <text x="18" y="204" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#7A75A7">WORKSPACE</text>
+  <rect x="0" y="226" width="240" height="34" fill="#DED8FA"/>
+  <text x="18" y="248" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#544BC7">◌ Product Truth</text>
+  <text x="28" y="282" font-family="Arial, sans-serif" font-size="13" fill="#7A75A7">- Product Overview</text>
+  <text x="28" y="312" font-family="Arial, sans-serif" font-size="13" fill="#7A75A7">- Problem Statement</text>
+  <text x="28" y="342" font-family="Arial, sans-serif" font-size="13" fill="#7A75A7">- Solution</text>
+  <text x="28" y="372" font-family="Arial, sans-serif" font-size="13" fill="#7A75A7">- Audience</text>
+
+  <rect x="240" y="92" width="1188" height="110" fill="white"/>
+  <line x1="240" y1="202.5" x2="1428" y2="202.5" stroke="#D8D0F9"/>
+  <rect x="612" y="218" width="360" height="40" rx="12" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="622" y="224" width="108" height="28" rx="9" fill="white"/>
+  <text x="676" y="242" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#5D58D6">Product Truth</text>
+
+  <rect x="270" y="286" width="1070" height="540" rx="20" fill="white" stroke="#DDD5FB"/>
+  <rect x="1360" y="286" width="68" height="244" rx="16" fill="white" stroke="#6D5EF3" stroke-width="2"/>
+  <rect x="1371" y="304" width="46" height="46" rx="14" fill="#F6F3FF" stroke="#D6CDFC"/>
+  <text x="1394" y="333" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#111">✦</text>
+  <text x="1396" y="450" text-anchor="middle" transform="rotate(-90 1396 450)" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#302A88">AI ASSISTANT</text>
+
+  <circle cx="1390" cy="758" r="34" fill="#6D5EF3"/>
+  <path d="M1380 758H1400M1390 748V768" stroke="white" stroke-width="3" stroke-linecap="round"/>
+</svg>

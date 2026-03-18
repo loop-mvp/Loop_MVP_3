@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loop MVP Workflow</title>
+  <style>
+    :root { --bg:#f5f1ff; --panel:#fff; --line:#ddd4fb; --text:#2d2953; --muted:#6f679a; --primary:#6157e7; --soft:#ece7ff; --success:#e5f8ee; --warn:#fff1dd; --shadow:0 24px 60px rgba(84,67,179,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,sans-serif; color:var(--text); background:radial-gradient(circle at top left,#fff 0,#f8f4ff 32%,#f1ebff 100%); }
+    .wrap { width:min(1320px,calc(100% - 36px)); margin:24px auto 56px; }
+    .hero,.screen,.details { background:rgba(255,255,255,.84); border:1px solid var(--line); border-radius:28px; box-shadow:var(--shadow); }
+    .hero { padding:28px; margin-bottom:24px; }
+    .eyebrow { color:var(--primary); font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    h1 { margin:8px 0 10px; font-size:40px; line-height:1.08; }
+    .hero p,.details p,.item span { color:var(--muted); line-height:1.6; }
+    .timeline { display:grid; grid-template-columns:repeat(10,1fr); gap:10px; margin-top:20px; }
+    .pill { background:var(--soft); border:1px solid var(--line); border-radius:16px; padding:10px 8px; text-align:center; color:var(--muted); font-size:12px; font-weight:700; }
+    .row { display:grid; grid-template-columns:minmax(520px,760px) minmax(280px,1fr); gap:18px; margin-bottom:18px; align-items:start; }
+    .screen { overflow:hidden; }
+    .chrome { height:28px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#faf7ff 0,#f2eeff 100%); display:flex; align-items:center; gap:8px; padding:0 14px; }
+    .dot { width:10px; height:10px; border-radius:999px; background:#ddd3ff; }
+    .frame { display:grid; grid-template-columns:72px 1fr 66px; min-height:390px; background:var(--bg); }
+    .side { background:linear-gradient(180deg,#f1edff 0,#faf9ff 100%); border-right:1px solid var(--line); }
+    .side.right { border-right:none; border-left:1px solid var(--line); display:grid; justify-items:center; align-content:start; padding-top:18px; }
+    .ai { width:44px; height:122px; border-radius:18px; background:#fff; border:1px solid var(--line); display:grid; justify-items:center; align-content:start; gap:10px; padding-top:10px; }
+    .icon { width:28px; height:28px; border-radius:10px; background:#f7f4ff; border:1px solid var(--line); display:grid; place-items:center; color:var(--primary); font-weight:800; }
+    .ai small { writing-mode:vertical-rl; transform:rotate(180deg); color:#2d2965; font-size:11px; font-weight:800; letter-spacing:.12em; }
+    .center { display:grid; grid-template-rows:64px 50px 1fr; }
+    .bar { background:rgba(255,255,255,.94); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .title { font-size:17px; font-weight:800; }
+    .meta { color:var(--muted); font-size:11px; font-weight:600; margin-top:6px; }
+    .cta { display:inline-flex; align-items:center; background:var(--primary); color:#fff; border-radius:999px; padding:10px 14px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+    .tabbar { display:flex; justify-content:center; align-items:center; background:rgba(255,255,255,.9); border-bottom:1px solid var(--line); }
+    .tabs { display:inline-flex; gap:8px; padding:6px; border-radius:16px; background:var(--soft); border:1px solid var(--line); }
+    .tabs span { padding:8px 12px; border-radius:10px; color:var(--muted); font-size:12px; font-weight:700; }
+    .tabs .active { background:#fff; color:var(--primary); }
+    .canvas { padding:16px; display:grid; grid-template-columns:repeat(12,1fr); gap:12px; align-content:start; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:14px; min-height:92px; }
+    .card h4 { margin:0 0 6px; font-size:14px; }
+    .card p { margin:0; color:var(--muted); font-size:12px; line-height:1.5; }
+    .s12 { grid-column:span 12; } .s6 { grid-column:span 6; } .s4 { grid-column:span 4; }
+    .details { padding:22px; display:grid; gap:14px; }
+    .badge { display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:8px 12px; background:var(--soft); color:var(--primary); font-size:12px; font-weight:800; }
+    .badge.success { background:var(--success); color:#177a51; }
+    .badge.warn { background:var(--warn); color:#b56b00; }
+    .details h2 { margin:0; font-size:28px; line-height:1.2; }
+    .list { display:grid; gap:10px; }
+    .item { background:#f8f5ff; border:1px solid var(--line); border-radius:18px; padding:12px 14px; }
+    .item strong { display:block; margin-bottom:5px; font-size:13px; }
+    .foot { color:var(--muted); font-size:13px; }
+    @media (max-width:1120px){ .row{grid-template-columns:1fr;} .timeline{grid-template-columns:repeat(5,1fr);} }
+    @media (max-width:740px){ .timeline{grid-template-columns:repeat(2,1fr);} .frame{grid-template-columns:56px 1fr 56px;} .canvas{grid-template-columns:1fr;} .s12,.s6,.s4{grid-column:span 1;} h1{font-size:30px;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Visual Workflow</div>
+      <h1>Loop MVP from user login to launch and feedback.</h1>
+      <p>This page shows each major screen, what the user does there, what Loop creates, and the CTA that should move the workflow forward.</p>
+      <div class="timeline">
+        <div class="pill">1. Login</div><div class="pill">2. Onboarding</div><div class="pill">3. Product Truth</div><div class="pill">4. Section Editing</div><div class="pill">5. Narrative</div><div class="pill">6. GTM</div><div class="pill">7. Assets</div><div class="pill">8. Review</div><div class="pill">9. Launch</div><div class="pill">10. Feedback</div>
+      </div>
+    </section>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Welcome to Loop</div><div class="meta">Narrative operating system for launches</div></div><div class="cta">Log In</div></div>
+            <div class="tabbar"></div>
+            <div class="canvas"><div class="card s6"><h4>Sign in</h4><p>Email, Google, or invite link.</p></div><div class="card s6"><h4>Role</h4><p>Founder, PMM, marketing lead, or agency.</p></div><div class="card s12"><h4>Promise</h4><p>Turn product truth into an aligned launch narrative with AI.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge">Screen 1 · Login</div>
+        <h2>User enters Loop.</h2>
+        <p>Keep the first screen simple and low-friction. The user should know immediately what Loop helps them do.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Log in or create an account.</span></div>
+          <div class="item"><strong>What Loop captures</strong><span>Name, company, role, and launch intent.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Log In</code> or <code>Create Workspace</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Set up your launch workspace</div><div class="meta">Product · launch date · team · source materials</div></div><div class="cta">Start Workspace</div></div>
+            <div class="tabbar"></div>
+            <div class="canvas"><div class="card s6"><h4>What are you launching?</h4><p>New product, feature, repositioning, or refresh.</p></div><div class="card s6"><h4>Import docs?</h4><p>Deck, website copy, brief, notes, or start fresh.</p></div><div class="card s6"><h4>Who is involved?</h4><p>Founder, PMM, product, sales, marketing.</p></div><div class="card s6"><h4>When do you launch?</h4><p>Anchor the workspace to a real date.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge">Screen 2 · Onboarding</div>
+        <h2>Loop scaffolds the workspace.</h2>
+        <p>Instead of a blank canvas, the user gets a guided launch setup and a ready-to-use structure.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Define the launch type, collaborators, and deadline.</span></div>
+          <div class="item"><strong>What Loop builds</strong><span>Product Truth, Core Narrative, GTM, Assets, and Feedback workspaces.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Start Workspace</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Acme Launch</div><div class="meta">Owner · Launch date · Version · Status</div></div><div class="badge">Product Truth</div></div>
+            <div class="tabbar"><div class="tabs"><span class="active">Product Truth</span><span>Core Narrative</span><span>GTM</span><span>Assets</span><span>Feedback</span></div></div>
+            <div class="canvas"><div class="card s12"><h4>Build product truth one section at a time</h4><p>Product Overview, Problem Statement, Solution, Audience, Differentiation, Capabilities, and Competitors.</p></div><div class="card s4"><h4>Problem Statement</h4><p>Core problem and stakes.</p></div><div class="card s4"><h4>Solution</h4><p>What the product does.</p></div><div class="card s4"><h4>Audience</h4><p>Who it is for.</p></div><div class="card s6"><h4>Capabilities</h4><p>Feature-to-benefit mapping.</p></div><div class="card s6"><h4>Competitors</h4><p>Alternatives and gaps.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge">Screen 3 · Product Truth</div>
+        <h2>User builds the factual foundation.</h2>
+        <p>This is where founders and small teams capture the truth that powers all later AI, narrative, and launch work.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Move section by section through Product Truth.</span></div>
+          <div class="item"><strong>What Loop helps with</strong><span>Guided prompts, AI suggestions, and gap identification.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Mark Ready for Narrative</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Problem Statement</div><div class="meta">Focused canvas · guided prompts</div></div><div class="cta">Generate Draft</div></div>
+            <div class="tabbar"><div class="tabs"><span class="active">Product Truth</span><span>Core Narrative</span><span>GTM</span><span>Assets</span><span>Feedback</span></div></div>
+            <div class="canvas"><div class="card s12"><h4>Core Problem</h4><p>Describe the core problem your product solves.</p></div><div class="card s6"><h4>Impact / Stakes</h4><p>What happens if this problem is not solved?</p></div><div class="card s6"><h4>Current Solutions & Their Gaps</h4><p>How do people solve this today, and why is that insufficient?</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge">Screen 4 · Section Editing</div>
+        <h2>Each subsection becomes its own focused screen.</h2>
+        <p>This is clearer than one giant canvas. Each section answers one job and gives the user the right prompt structure.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Edit one section deeply.</span></div>
+          <div class="item"><strong>What Loop adds</strong><span>Guiding questions and section-specific AI assistance.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Generate Draft</code>, <code>Save Draft</code>, or <code>Star Section</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Core Narrative</div><div class="meta">Positioning · value proposition · messaging pillars</div></div><div class="cta">Run Narrative Review</div></div>
+            <div class="tabbar"><div class="tabs"><span>Product Truth</span><span class="active">Core Narrative</span><span>GTM</span><span>Assets</span><span>Feedback</span></div></div>
+            <div class="canvas"><div class="card s6"><h4>Positioning Statement</h4><p>Sharper market-facing framing.</p></div><div class="card s6"><h4>Value Proposition</h4><p>Business value and customer outcome.</p></div><div class="card s4"><h4>Headline</h4><p>Short articulation.</p></div><div class="card s4"><h4>Messaging Pillars</h4><p>3 to 4 repeatable messages.</p></div><div class="card s4"><h4>Elevator Pitch</h4><p>Launch-ready story.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge">Screen 5 · Core Narrative</div>
+        <h2>Loop converts product truth into a clear narrative.</h2>
+        <p>This is the core value: turn raw product inputs into one approved story the team can use everywhere.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Create positioning, value proposition, and messaging pillars.</span></div>
+          <div class="item"><strong>What Loop generates</strong><span>Section-aware rewrites and narrative improvements.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Run Narrative Review</code> and later <code>Submit for Approval</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">GTM Workspace</div><div class="meta">Launch plan · channel messaging · segment focus</div></div><div class="cta">Generate Launch Messaging</div></div>
+            <div class="tabbar"><div class="tabs"><span>Product Truth</span><span>Core Narrative</span><span class="active">GTM</span><span>Assets</span><span>Feedback</span></div></div>
+            <div class="canvas"><div class="card s6"><h4>Launch Goal</h4><p>Define the outcome of this launch.</p></div><div class="card s6"><h4>Audience Focus</h4><p>Choose segment and buyer context.</p></div><div class="card s4"><h4>Website</h4><p>Main message by channel.</p></div><div class="card s4"><h4>Email</h4><p>Outbound and launch message.</p></div><div class="card s4"><h4>Sales</h4><p>Enablement and objection handling.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge">Screen 6 · GTM</div>
+        <h2>User operationalizes the story.</h2>
+        <p>This is where Loop becomes a launch workflow product instead of a documentation workspace.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Translate the narrative into channel-specific messaging.</span></div>
+          <div class="item"><strong>What Loop creates</strong><span>Launch-ready GTM content structure and guidance.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Generate Launch Messaging</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Assets</div><div class="meta">Website · email · sales brief · battlecard</div></div><div class="cta">Check Alignment</div></div>
+            <div class="tabbar"><div class="tabs"><span>Product Truth</span><span>Core Narrative</span><span>GTM</span><span class="active">Assets</span><span>Feedback</span></div></div>
+            <div class="canvas"><div class="card s4"><h4>Website Hero</h4><p>Generated from approved positioning.</p></div><div class="card s4"><h4>Launch Email</h4><p>Audience-specific draft.</p></div><div class="card s4"><h4>Sales Brief</h4><p>Pillars + objections.</p></div><div class="card s12"><h4>Alignment Check</h4><p>Compare all asset copy against the approved narrative and flag drift.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge">Screen 7 · Assets</div>
+        <h2>Loop generates and checks downstream assets.</h2>
+        <p>This is one of the strongest workflows because it ties narrative directly to execution.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Generate or import website, email, and sales materials.</span></div>
+          <div class="item"><strong>What Loop checks</strong><span>Drift, unsupported claims, and inconsistency.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Check Alignment</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Review and Approvals</div><div class="meta">Flags · owners · approvers · version history</div></div><div class="cta">Publish Version</div></div>
+            <div class="tabbar"><div class="tabs"><span>Product Truth</span><span>Core Narrative</span><span>GTM</span><span>Assets</span><span class="active">Feedback</span></div></div>
+            <div class="canvas"><div class="card s4"><h4>Flag</h4><p>Positioning is too generic.</p></div><div class="card s4"><h4>Flag</h4><p>Claims need proof.</p></div><div class="card s4"><h4>Flag</h4><p>Website copy drifted.</p></div><div class="card s12"><h4>Approval Workflow</h4><p>Resolve issues, request changes, approve the narrative, and create a published version.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge warn">Screen 8 · Review</div>
+        <h2>Loop catches issues before launch.</h2>
+        <p>The workflow should make approvals meaningful, not symbolic.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Resolve flags, assign owners, request approval, and publish.</span></div>
+          <div class="item"><strong>What Loop surfaces</strong><span>Missing proof, weak messaging, unresolved items, and drift.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Publish Version</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Launch Live</div><div class="meta">Published narrative · assets live · team aligned</div></div><div class="badge success">Launch Live</div></div>
+            <div class="tabbar"><div class="tabs"><span>Product Truth</span><span>Core Narrative</span><span>GTM</span><span>Assets</span><span class="active">Feedback</span></div></div>
+            <div class="canvas"><div class="card s6"><h4>Published Outputs</h4><p>Approved narrative, website copy, GTM brief, and outbound messaging.</p></div><div class="card s6"><h4>Team Outcome</h4><p>Founders, PMM, sales, and marketing are aligned around one story.</p></div><div class="card s12"><h4>Loop's Role</h4><p>The system of record for what was approved and what went live.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge success">Screen 9 · Product Launch</div>
+        <h2>The team launches from one approved source of truth.</h2>
+        <p>This is the success state customers buy into: fewer review loops, faster launch readiness, and cleaner alignment.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Go live using the approved narrative and assets.</span></div>
+          <div class="item"><strong>What Loop preserves</strong><span>Version history, ownership, and published state.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>View Feedback</code>.</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="row">
+      <section class="screen">
+        <div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="frame">
+          <aside class="side"></aside>
+          <main class="center">
+            <div class="bar"><div><div class="title">Feedback and Narrative Health</div><div class="meta">Post-launch signals · AI insights · next iteration</div></div><div class="cta">Create Next Version</div></div>
+            <div class="tabbar"><div class="tabs"><span>Product Truth</span><span>Core Narrative</span><span>GTM</span><span>Assets</span><span class="active">Feedback</span></div></div>
+            <div class="canvas"><div class="card s4"><h4>Signals</h4><p>Engagement, win/loss notes, objections, customer feedback.</p></div><div class="card s4"><h4>Narrative Health</h4><p>Clarity, consistency, proof, and readiness score.</p></div><div class="card s4"><h4>Recommendations</h4><p>Update positioning, tighten messaging, strengthen proof.</p></div><div class="card s12"><h4>Closed Loop</h4><p>Feed real-world learning back into Product Truth and Core Narrative.</p></div></div>
+          </main>
+          <aside class="side right"><div class="ai"><div class="icon">✦</div><small>AI ASSISTANT</small></div></aside>
+        </div>
+      </section>
+      <aside class="details">
+        <div class="badge success">Screen 10 · Feedback Loop</div>
+        <h2>Loop stays useful after launch.</h2>
+        <p>This is what makes the product sticky: feedback and analytics create the next iteration cycle.</p>
+        <div class="list">
+          <div class="item"><strong>What they do</strong><span>Review post-launch signal and decide what to refine next.</span></div>
+          <div class="item"><strong>What Loop recommends</strong><span>Where to update product truth, narrative, or assets based on real-world signal.</span></div>
+          <div class="item"><strong>Main CTA</strong><span><code>Create Next Version</code> or <code>Run New Review</code>.</span></div>
+        </div>
+        <div class="foot">Best summary: login, onboard, build Product Truth, create Narrative, operationalize GTM, generate Assets, resolve Review issues, launch, then learn through Feedback.</div>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>

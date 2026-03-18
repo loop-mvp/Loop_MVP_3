@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="2360" viewBox="0 0 1400 2360" role="img" aria-label="Loop MVP workflow from login to feedback">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#f7f3ff"/>
+      <stop offset="100%" stop-color="#f0eaff"/>
+    </linearGradient>
+    <style>
+      .title { fill:#2d2953; font:800 42px Inter, Arial, sans-serif; }
+      .subtitle { fill:#6f679a; font:500 18px Inter, Arial, sans-serif; }
+      .section { fill:#6157e7; font:800 14px Inter, Arial, sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+      .step { fill:#2d2953; font:800 26px Inter, Arial, sans-serif; }
+      .copy { fill:#665f92; font:500 16px Inter, Arial, sans-serif; }
+      .label { fill:#6157e7; font:800 12px Inter, Arial, sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+      .small { fill:#71699a; font:600 13px Inter, Arial, sans-serif; }
+      .cta { fill:#ffffff; font:800 12px Inter, Arial, sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+      .rail { fill:#f3efff; stroke:#ddd4fb; }
+      .panel { fill:#ffffff; stroke:#ddd4fb; }
+      .soft { fill:#f8f5ff; stroke:#ddd4fb; }
+      .tab { fill:#726b9a; font:700 12px Inter, Arial, sans-serif; }
+      .tabActive { fill:#6157e7; font:800 12px Inter, Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="2360" fill="url(#bg)"/>
+  <rect x="24" y="24" width="1352" height="2312" rx="30" fill="#ffffff" opacity=".62" stroke="#ddd4fb"/>
+
+  <text x="60" y="92" class="section">Loop MVP Workflow</text>
+  <text x="60" y="146" class="title">From user login to launch and feedback</text>
+  <text x="60" y="182" class="subtitle">Each step shows the screen purpose, what the user does, and the CTA that should move the workflow forward.</text>
+
+  <g transform="translate(60 220)">
+    <rect x="0" y="0" width="1220" height="54" rx="18" fill="#ece7ff" stroke="#ddd4fb"/>
+    <g class="small">
+      <text x="26" y="33">1. Login</text>
+      <text x="146" y="33">2. Onboarding</text>
+      <text x="302" y="33">3. Product Truth</text>
+      <text x="486" y="33">4. Section Editing</text>
+      <text x="686" y="33">5. Core Narrative</text>
+      <text x="886" y="33">6. GTM + Assets</text>
+      <text x="1066" y="33">7. Review</text>
+    </g>
+  </g>
+
+  <!-- Row template instances -->
+  <g transform="translate(60 310)">
+    <rect x="0" y="0" width="760" height="230" rx="28" class="panel"/>
+    <rect x="0" y="0" width="64" height="230" class="rail"/>
+    <rect x="696" y="0" width="64" height="230" class="rail"/>
+    <rect x="64" y="0" width="632" height="58" fill="#ffffff" stroke="#ddd4fb"/>
+    <text x="88" y="36" class="step">1. Login</text>
+    <rect x="590" y="16" width="86" height="28" rx="14" fill="#6157e7"/>
+    <text x="610" y="34" class="cta">Log In</text>
+    <rect x="64" y="58" width="632" height="40" fill="#fbf9ff" stroke="#ddd4fb"/>
+    <rect x="258" y="66" width="246" height="24" rx="12" fill="#ece7ff" stroke="#ddd4fb"/>
+    <text x="282" y="82" class="tabActive">Loop</text>
+    <text x="338" y="82" class="tab">Narrative Intelligence</text>
+    <rect x="88" y="120" width="276" height="84" rx="20" class="soft"/>
+    <rect x="388" y="120" width="284" height="84" rx="20" class="soft"/>
+    <text x="108" y="150" class="label">Screen goal</text>
+    <text x="108" y="176" class="copy">Get the user into Loop quickly</text>
+    <text x="408" y="150" class="label">What they do</text>
+    <text x="408" y="176" class="copy">Sign in and create a workspace</text>
+    <rect x="712" y="18" width="32" height="116" rx="16" class="panel"/>
+    <text x="734" y="126" class="label" transform="rotate(-90 734 126)">AI</text>
+
+    <rect x="786" y="0" width="434" height="230" rx="28" class="panel"/>
+    <text x="814" y="38" class="label">Why it matters</text>
+    <text x="814" y="74" class="copy">This should feel low-friction and founder-friendly.</text>
+    <text x="814" y="108" class="label">Main CTA</text>
+    <text x="814" y="140" class="copy">Log In or Create Workspace</text>
+    <text x="814" y="174" class="label">Loop output</text>
+    <text x="814" y="206" class="copy">Account, role, and launch intent</text>
+  </g>
+
+  <g transform="translate(60 566)">
+    <rect x="0" y="0" width="760" height="230" rx="28" class="panel"/>
+    <rect x="0" y="0" width="64" height="230" class="rail"/>
+    <rect x="696" y="0" width="64" height="230" class="rail"/>
+    <rect x="64" y="0" width="632" height="58" fill="#ffffff" stroke="#ddd4fb"/>
+    <text x="88" y="36" class="step">2. Onboarding</text>
+    <rect x="534" y="16" width="142" height="28" rx="14" fill="#6157e7"/>
+    <text x="553" y="34" class="cta">Start Workspace</text>
+    <rect x="88" y="82" width="284" height="56" rx="18" class="soft"/>
+    <rect x="388" y="82" width="284" height="56" rx="18" class="soft"/>
+    <rect x="88" y="152" width="284" height="56" rx="18" class="soft"/>
+    <rect x="388" y="152" width="284" height="56" rx="18" class="soft"/>
+    <text x="108" y="115" class="copy">What are you launching?</text>
+    <text x="408" y="115" class="copy">Import docs or start fresh?</text>
+    <text x="108" y="185" class="copy">Who is involved?</text>
+    <text x="408" y="185" class="copy">What is the launch date?</text>
+
+    <rect x="786" y="0" width="434" height="230" rx="28" class="panel"/>
+    <text x="814" y="38" class="label">Why it matters</text>
+    <text x="814" y="74" class="copy">Loop should scaffold the journey instead of dropping the user into a blank canvas.</text>
+    <text x="814" y="124" class="label">Main CTA</text>
+    <text x="814" y="156" class="copy">Start Workspace</text>
+    <text x="814" y="190" class="label">Loop output</text>
+    <text x="814" y="222" class="copy">Launch workspace with the right tabs and structure</text>
+  </g>
+
+  <g transform="translate(60 822)">
+    <rect x="0" y="0" width="760" height="230" rx="28" class="panel"/>
+    <rect x="0" y="0" width="64" height="230" class="rail"/>
+    <rect x="696" y="0" width="64" height="230" class="rail"/>
+    <rect x="64" y="0" width="632" height="58" fill="#ffffff" stroke="#ddd4fb"/>
+    <text x="88" y="36" class="step">3. Product Truth</text>
+    <rect x="498" y="16" width="178" height="28" rx="14" fill="#6157e7"/>
+    <text x="518" y="34" class="cta">Mark Ready for Narrative</text>
+    <rect x="204" y="66" width="352" height="28" rx="14" fill="#ece7ff" stroke="#ddd4fb"/>
+    <text x="226" y="84" class="tabActive">Product Truth</text>
+    <text x="340" y="84" class="tab">Core Narrative</text>
+    <text x="450" y="84" class="tab">GTM</text>
+    <rect x="88" y="112" width="180" height="84" rx="18" class="soft"/>
+    <rect x="288" y="112" width="180" height="84" rx="18" class="soft"/>
+    <rect x="488" y="112" width="184" height="84" rx="18" class="soft"/>
+    <text x="108" y="144" class="copy">Problem Statement</text>
+    <text x="308" y="144" class="copy">Solution</text>
+    <text x="508" y="144" class="copy">Audience</text>
+    <text x="108" y="172" class="small">Guided prompts</text>
+    <text x="308" y="172" class="small">Value definition</text>
+    <text x="508" y="172" class="small">Persona context</text>
+
+    <rect x="786" y="0" width="434" height="230" rx="28" class="panel"/>
+    <text x="814" y="38" class="label">Why it matters</text>
+    <text x="814" y="74" class="copy">This creates the factual base that powers all later narrative and launch work.</text>
+    <text x="814" y="124" class="label">Main CTA</text>
+    <text x="814" y="156" class="copy">Mark Ready for Narrative</text>
+    <text x="814" y="190" class="label">Loop output</text>
+    <text x="814" y="222" class="copy">Structured product truth section by section</text>
+  </g>
+
+  <g transform="translate(60 1078)">
+    <rect x="0" y="0" width="760" height="230" rx="28" class="panel"/>
+    <rect x="0" y="0" width="64" height="230" class="rail"/>
+    <rect x="696" y="0" width="64" height="230" class="rail"/>
+    <rect x="64" y="0" width="632" height="58" fill="#ffffff" stroke="#ddd4fb"/>
+    <text x="88" y="36" class="step">4. Section Editing</text>
+    <rect x="550" y="16" width="126" height="28" rx="14" fill="#6157e7"/>
+    <text x="572" y="34" class="cta">Generate Draft</text>
+    <rect x="88" y="88" width="584" height="56" rx="18" class="soft"/>
+    <rect x="88" y="156" width="284" height="52" rx="18" class="soft"/>
+    <rect x="388" y="156" width="284" height="52" rx="18" class="soft"/>
+    <text x="108" y="120" class="copy">Core Problem: Describe the core problem your product solves.</text>
+    <text x="108" y="187" class="copy">Impact / Stakes</text>
+    <text x="408" y="187" class="copy">Current Solutions & Their Gaps</text>
+
+    <rect x="786" y="0" width="434" height="230" rx="28" class="panel"/>
+    <text x="814" y="38" class="label">Why it matters</text>
+    <text x="814" y="74" class="copy">Each subsection becomes its own focused working screen, which is much clearer for founders and small teams.</text>
+    <text x="814" y="140" class="label">Main CTA</text>
+    <text x="814" y="172" class="copy">Generate Draft, Save Draft, or Star Section</text>
+    <text x="814" y="206" class="label">Loop output</text>
+    <text x="814" y="228" class="copy">Better section quality with guided prompts</text>
+  </g>
+
+  <g transform="translate(60 1334)">
+    <rect x="0" y="0" width="760" height="230" rx="28" class="panel"/>
+    <rect x="0" y="0" width="64" height="230" class="rail"/>
+    <rect x="696" y="0" width="64" height="230" class="rail"/>
+    <rect x="64" y="0" width="632" height="58" fill="#ffffff" stroke="#ddd4fb"/>
+    <text x="88" y="36" class="step">5. Core Narrative</text>
+    <rect x="500" y="16" width="176" height="28" rx="14" fill="#6157e7"/>
+    <text x="520" y="34" class="cta">Run Narrative Review</text>
+    <rect x="204" y="66" width="352" height="28" rx="14" fill="#ece7ff" stroke="#ddd4fb"/>
+    <text x="226" y="84" class="tab">Product Truth</text>
+    <text x="348" y="84" class="tabActive">Core Narrative</text>
+    <text x="470" y="84" class="tab">GTM</text>
+    <rect x="88" y="112" width="284" height="84" rx="18" class="soft"/>
+    <rect x="388" y="112" width="284" height="84" rx="18" class="soft"/>
+    <text x="108" y="144" class="copy">Positioning Statement</text>
+    <text x="108" y="172" class="small">Sharper market framing</text>
+    <text x="408" y="144" class="copy">Value Proposition + Pillars</text>
+    <text x="408" y="172" class="small">Clear business value and repeatable messaging</text>
+
+    <rect x="786" y="0" width="434" height="230" rx="28" class="panel"/>
+    <text x="814" y="38" class="label">Why it matters</text>
+    <text x="814" y="74" class="copy">This is the core value layer: convert product truth into one approved story the team can use everywhere.</text>
+    <text x="814" y="140" class="label">Main CTA</text>
+    <text x="814" y="172" class="copy">Run Narrative Review, then Submit for Approval</text>
+    <text x="814" y="206" class="label">Loop output</text>
+    <text x="814" y="228" class="copy">Approved positioning, value proposition, and messaging</text>
+  </g>
+
+  <g transform="translate(60 1590)">
+    <rect x="0" y="0" width="760" height="230" rx="28" class="panel"/>
+    <rect x="0" y="0" width="64" height="230" class="rail"/>
+    <rect x="696" y="0" width="64" height="230" class="rail"/>
+    <rect x="64" y="0" width="632" height="58" fill="#ffffff" stroke="#ddd4fb"/>
+    <text x="88" y="36" class="step">6. GTM + Assets</text>
+    <rect x="472" y="16" width="204" height="28" rx="14" fill="#6157e7"/>
+    <text x="490" y="34" class="cta">Generate Launch Messaging</text>
+    <rect x="88" y="88" width="180" height="104" rx="18" class="soft"/>
+    <rect x="288" y="88" width="180" height="104" rx="18" class="soft"/>
+    <rect x="488" y="88" width="184" height="104" rx="18" class="soft"/>
+    <text x="108" y="122" class="copy">GTM Plan</text>
+    <text x="108" y="150" class="small">Goal, audience, channels</text>
+    <text x="308" y="122" class="copy">Assets</text>
+    <text x="308" y="150" class="small">Website, email, sales brief</text>
+    <text x="508" y="122" class="copy">Alignment Check</text>
+    <text x="508" y="150" class="small">Compare assets against approved narrative</text>
+
+    <rect x="786" y="0" width="434" height="230" rx="28" class="panel"/>
+    <text x="814" y="38" class="label">Why it matters</text>
+    <text x="814" y="74" class="copy">This is where Loop becomes a launch workflow product instead of a documentation workspace.</text>
+    <text x="814" y="140" class="label">Main CTA</text>
+    <text x="814" y="172" class="copy">Generate Launch Messaging or Check Alignment</text>
+    <text x="814" y="206" class="label">Loop output</text>
+    <text x="814" y="228" class="copy">Launch-ready channel messaging and assets</text>
+  </g>
+
+  <g transform="translate(60 1846)">
+    <rect x="0" y="0" width="760" height="230" rx="28" class="panel"/>
+    <rect x="0" y="0" width="64" height="230" class="rail"/>
+    <rect x="696" y="0" width="64" height="230" class="rail"/>
+    <rect x="64" y="0" width="632" height="58" fill="#ffffff" stroke="#ddd4fb"/>
+    <text x="88" y="36" class="step">7. Review, Launch, Feedback</text>
+    <rect x="552" y="16" width="124" height="28" rx="14" fill="#6157e7"/>
+    <text x="574" y="34" class="cta">Publish Version</text>
+    <rect x="88" y="84" width="180" height="52" rx="16" class="soft"/>
+    <rect x="288" y="84" width="180" height="52" rx="16" class="soft"/>
+    <rect x="488" y="84" width="184" height="52" rx="16" class="soft"/>
+    <text x="108" y="115" class="copy">Flag: proof missing</text>
+    <text x="308" y="115" class="copy">Flag: messaging drift</text>
+    <text x="508" y="115" class="copy">Approval workflow</text>
+    <rect x="88" y="152" width="284" height="56" rx="18" fill="#e5f8ee" stroke="#ddd4fb"/>
+    <rect x="388" y="152" width="284" height="56" rx="18" class="soft"/>
+    <text x="108" y="184" class="copy">Launch Live</text>
+    <text x="408" y="184" class="copy">Feedback + Narrative Health</text>
+
+    <rect x="786" y="0" width="434" height="230" rx="28" class="panel"/>
+    <text x="814" y="38" class="label">Why it matters</text>
+    <text x="814" y="74" class="copy">Loop stays useful after launch by catching issues before go-live and then turning feedback into the next iteration cycle.</text>
+    <text x="814" y="140" class="label">Main CTA</text>
+    <text x="814" y="172" class="copy">Publish Version, then View Feedback, then Create Next Version</text>
+    <text x="814" y="206" class="label">Loop output</text>
+    <text x="814" y="228" class="copy">Launch history, analytics, and recommendations</text>
+  </g>
+
+  <text x="60" y="2138" class="section">Best Workflow Summary</text>
+  <text x="60" y="2180" class="copy">Login → onboarding → build Product Truth → create Core Narrative → plan GTM and assets → review and approve → launch → use feedback and analytics to improve the next version.</text>
+  <text x="60" y="2230" class="copy">This is the strongest MVP story because it is understandable for founders, operational for PMM teams, and expandable over time.</text>
+</svg>

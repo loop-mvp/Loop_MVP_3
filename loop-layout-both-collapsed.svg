@@ -1,0 +1,27 @@
+<svg width="1500" height="900" viewBox="0 0 1500 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="900" fill="#F7F5FF"/>
+  <rect x="0" y="0" width="1500" height="92" fill="#FFFDFE"/>
+  <line x1="0" y1="92.5" x2="1500" y2="92.5" stroke="#D8D0F9"/>
+  <rect x="70" y="92" width="1360" height="110" fill="white"/>
+  <line x1="70" y1="202.5" x2="1430" y2="202.5" stroke="#D8D0F9"/>
+  <rect x="570" y="218" width="360" height="40" rx="12" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="580" y="224" width="108" height="28" rx="9" fill="white"/>
+  <text x="634" y="242" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#5D58D6">Product Truth</text>
+
+  <rect x="0" y="92" width="70" height="808" fill="#EEEAFE"/>
+  <line x1="70.5" y1="92" x2="70.5" y2="900" stroke="#D8D0F9"/>
+  <rect x="12" y="220" width="46" height="46" rx="14" fill="#DED8FA"/>
+  <text x="35" y="249" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#544BC7">◌</text>
+
+  <rect x="70" y="286" width="1280" height="540" rx="20" fill="white" stroke="#DDD5FB"/>
+  <rect x="96" y="328" width="1228" height="122" rx="18" fill="#F8F7FF" stroke="#DDD5FB"/>
+  <text x="124" y="398" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#302A88">Maximum workspace width with both rails collapsed</text>
+
+  <rect x="1350" y="286" width="68" height="244" rx="16" fill="white" stroke="#6D5EF3" stroke-width="2"/>
+  <rect x="1361" y="304" width="46" height="46" rx="14" fill="#F6F3FF" stroke="#D6CDFC"/>
+  <text x="1384" y="333" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#111">✦</text>
+  <text x="1386" y="450" text-anchor="middle" transform="rotate(-90 1386 450)" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#302A88">AI</text>
+
+  <circle cx="1390" cy="758" r="34" fill="#6D5EF3"/>
+  <path d="M1380 758H1400M1390 748V768" stroke="white" stroke-width="3" stroke-linecap="round"/>
+</svg>

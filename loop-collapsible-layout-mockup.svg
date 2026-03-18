@@ -1,0 +1,52 @@
+<svg width="1500" height="900" viewBox="0 0 1500 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="900" fill="#F7F5FF"/>
+  <rect x="0" y="0" width="1500" height="92" fill="#FFFDFE"/>
+  <line x1="0" y1="92.5" x2="1500" y2="92.5" stroke="#D8D0F9"/>
+  <rect x="470" y="18" width="560" height="54" rx="16" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="482" y="26" width="80" height="38" rx="12" fill="white"/>
+  <text x="522" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#5D58D6">Loop</text>
+  <text x="665" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6F6AA8">Narrative Intelligence</text>
+  <text x="826" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6F6AA8">Brand Guideline</text>
+  <text x="955" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6F6AA8">Community</text>
+
+  <rect x="0" y="92" width="84" height="808" fill="#EEEAFE"/>
+  <line x1="84.5" y1="92" x2="84.5" y2="900" stroke="#D8D0F9"/>
+  <text x="42" y="146" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="800" fill="#443B9B">L</text>
+  <rect x="18" y="210" width="48" height="48" rx="14" fill="#DED8FA"/>
+  <text x="42" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#544BC7">◌</text>
+  <rect x="18" y="276" width="48" height="48" rx="14" fill="#F7F5FF"/>
+  <text x="42" y="306" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#7A75A7">✦</text>
+  <rect x="18" y="342" width="48" height="48" rx="14" fill="#F7F5FF"/>
+  <text x="42" y="372" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#7A75A7">▶</text>
+
+  <rect x="84" y="92" width="1280" height="110" fill="white"/>
+  <line x1="84" y1="202.5" x2="1364" y2="202.5" stroke="#D8D0F9"/>
+  <circle cx="120" cy="130" r="14" fill="#ECE7FF"/>
+  <text x="120" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#675DDF">∞</text>
+  <text x="150" y="136" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#6C6870">Product Name</text>
+  <text x="1190" y="136" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#6C6870">Add one-line description</text>
+
+  <rect x="560" y="218" width="360" height="40" rx="12" fill="#ECE7FF" stroke="#D6CDFC"/>
+  <rect x="570" y="224" width="108" height="28" rx="9" fill="white"/>
+  <text x="624" y="242" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#5D58D6">Product Truth</text>
+  <text x="742" y="242" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6F6AA8">Core Narrative</text>
+  <text x="818" y="242" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6F6AA8">GTM</text>
+  <text x="882" y="242" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#6F6AA8">Assets</text>
+
+  <rect x="110" y="286" width="1100" height="540" rx="20" fill="white" stroke="#DDD5FB"/>
+  <rect x="136" y="328" width="1048" height="122" rx="18" fill="#F8F7FF" stroke="#DDD5FB"/>
+  <text x="164" y="358" font-family="Arial, sans-serif" font-size="11" font-weight="800" fill="#4A449A">PRODUCT TRUTH</text>
+  <text x="164" y="398" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#302A88">Build your product truth one section at a time</text>
+  <text x="164" y="425" font-family="Arial, sans-serif" font-size="14" fill="#7A75A7">A more spacious center canvas with collapsible navigation and assistance rails.</text>
+
+  <rect x="1234" y="286" width="82" height="244" rx="16" fill="white" stroke="#6D5EF3" stroke-width="2"/>
+  <rect x="1248" y="304" width="54" height="54" rx="16" fill="#F6F3FF" stroke="#D6CDFC"/>
+  <text x="1275" y="337" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#111">✦</text>
+  <text x="1278" y="454" text-anchor="middle" transform="rotate(-90 1278 454)" font-family="Arial, sans-serif" font-size="16" font-weight="800" fill="#302A88">AI ASSISTANT</text>
+  <circle cx="1275" cy="500" r="16" fill="#FFF7E8"/>
+  <text x="1275" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="800" fill="#D97706">2</text>
+
+  <circle cx="1390" cy="758" r="34" fill="#6D5EF3"/>
+  <path d="M1380 758H1400M1390 748V768" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <text x="1320" y="842" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#5D58D6">Floating Ask AI</text>
+</svg>
