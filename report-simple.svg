@@ -1,0 +1,34 @@
+<svg width="1440" height="1080" viewBox="0 0 1440 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="1080" fill="#F7F6FF"/>
+  <rect x="80" y="60" width="1280" height="960" rx="28" fill="white" stroke="#DDD9FF"/>
+  <text x="120" y="126" fill="#5B52C4" font-family="Arial, sans-serif" font-size="18" font-weight="700">LOOP REPORT</text>
+  <text x="120" y="182" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="42" font-weight="700">Neem Kosh Launch Report</text>
+  <text x="120" y="220" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">Simple downloadable project report</text>
+
+  <rect x="120" y="260" width="170" height="44" rx="22" fill="#F1EFFF"/>
+  <text x="145" y="289" fill="#5B52C4" font-family="Arial, sans-serif" font-size="18" font-weight="700">Version v1.0</text>
+  <rect x="306" y="260" width="170" height="44" rx="22" fill="#F1EFFF"/>
+  <text x="348" y="289" fill="#5B52C4" font-family="Arial, sans-serif" font-size="18" font-weight="700">Planned</text>
+  <rect x="492" y="260" width="220" height="44" rx="22" fill="#F1EFFF"/>
+  <text x="528" y="289" fill="#5B52C4" font-family="Arial, sans-serif" font-size="18" font-weight="700">Review: Draft</text>
+
+  <rect x="120" y="340" width="1200" height="120" rx="20" fill="#FBFAFF" stroke="#E6E2FF"/>
+  <text x="150" y="388" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="28" font-weight="700">Product Truth</text>
+  <text x="150" y="426" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">Problem: Families struggle to preserve oral stories and cultural memory in one trusted digital home.</text>
+
+  <rect x="120" y="490" width="1200" height="120" rx="20" fill="#FBFAFF" stroke="#E6E2FF"/>
+  <text x="150" y="538" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="28" font-weight="700">Core Narrative</text>
+  <text x="150" y="576" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">Positioning: Neem Kosh helps families capture, preserve, and share legacy stories in a simple private archive.</text>
+
+  <rect x="120" y="640" width="1200" height="120" rx="20" fill="#FBFAFF" stroke="#E6E2FF"/>
+  <text x="150" y="688" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="28" font-weight="700">Competition</text>
+  <text x="150" y="726" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">Alternatives: WhatsApp folders, Google Drive, scattered voice notes, family photo albums.</text>
+
+  <rect x="120" y="790" width="1200" height="170" rx="20" fill="#FBFAFF" stroke="#E6E2FF"/>
+  <text x="150" y="838" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="28" font-weight="700">Feedback Summary</text>
+  <text x="150" y="876" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">What landed: private family archive, emotional legacy angle, simple storytelling workflow.</text>
+  <text x="150" y="912" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">What needs improvement: stronger trust proof and clearer onboarding for older family members.</text>
+
+  <rect x="1080" y="988" width="240" height="20" rx="10" fill="#E6E2FF"/>
+  <rect x="1080" y="988" width="150" height="20" rx="10" fill="#5B52C4"/>
+</svg>

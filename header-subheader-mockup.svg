@@ -1,0 +1,38 @@
+<svg width="1600" height="240" viewBox="0 0 1600 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="240" fill="#F7F6FF"/>
+  <rect x="24" y="20" width="1552" height="168" rx="22" fill="white" stroke="#D9D4FF" stroke-width="2"/>
+
+  <rect x="48" y="44" width="1504" height="52" rx="16" fill="white"/>
+  <rect x="48" y="98" width="1504" height="1.5" fill="#E2DEFF"/>
+
+  <rect x="64" y="56" width="18" height="18" rx="5" stroke="#2F2A72" stroke-width="3"/>
+  <text x="96" y="74" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#221B56">Loop</text>
+  <rect x="150" y="49" width="1.5" height="42" fill="#E2DEFF"/>
+
+  <rect x="178" y="44" width="94" height="40" rx="14" fill="#F0ECFF"/>
+  <text x="208" y="69" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#4F46C9">Loop</text>
+  <text x="292" y="69" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#6E67B8">Narrative Intelligence</text>
+  <text x="516" y="69" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#6E67B8">Brand Guideline</text>
+
+  <rect x="1452" y="45" width="42" height="42" rx="14" fill="white" stroke="#D9D4FF" stroke-width="2"/>
+  <text x="1464" y="71" font-family="Arial, sans-serif" font-size="20" fill="#4F46C9">🔔</text>
+  <circle cx="1488" cy="55" r="5" fill="#EF4444"/>
+  <circle cx="1530" cy="66" r="21" fill="#4F46C9"/>
+  <text x="1514" y="73" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="white">MT</text>
+
+  <text x="64" y="136" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#221B56">Neem Kosh</text>
+  <text x="180" y="136" font-family="Arial, sans-serif" font-size="15" fill="#8B86B3">•</text>
+  <text x="200" y="136" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#807AA8">Owner: Mayank Trivedi</text>
+  <text x="392" y="136" font-family="Arial, sans-serif" font-size="15" fill="#8B86B3">•</text>
+  <text x="412" y="136" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#807AA8">Launch Date: 04/08/2026</text>
+  <text x="616" y="136" font-family="Arial, sans-serif" font-size="15" fill="#8B86B3">•</text>
+  <text x="636" y="136" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#807AA8">Version: v1.0</text>
+  <text x="780" y="136" font-family="Arial, sans-serif" font-size="15" fill="#8B86B3">•</text>
+  <text x="800" y="136" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#807AA8">Status: Planned</text>
+
+  <rect x="1322" y="114" width="132" height="36" rx="18" fill="#F1EEFF"/>
+  <text x="1350" y="137" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#2F2A72">Review: Draft</text>
+
+  <text x="64" y="172" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#6E67B8">What I understood</text>
+  <text x="64" y="194" font-family="Arial, sans-serif" font-size="13" fill="#807AA8">One shared top block: row 1 = product navigation, row 2 = compact product info strip. No separate floating product header below.</text>
+</svg>

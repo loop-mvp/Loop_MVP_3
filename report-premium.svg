@@ -1,0 +1,53 @@
+<svg width="1440" height="1080" viewBox="0 0 1440 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1440" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8F6FF"/>
+      <stop offset="1" stop-color="#EEF3FF"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="140" y1="90" x2="1300" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#221B56"/>
+      <stop offset="1" stop-color="#5B52C4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="1080" fill="url(#bg)"/>
+  <rect x="70" y="50" width="1300" height="980" rx="30" fill="white" stroke="#DDD9FF"/>
+
+  <rect x="110" y="90" width="1220" height="240" rx="28" fill="url(#hero)"/>
+  <text x="150" y="140" fill="#CFC9FF" font-family="Arial, sans-serif" font-size="18" font-weight="700">BOARD REPORT</text>
+  <text x="150" y="205" fill="white" font-family="Arial, sans-serif" font-size="46" font-weight="700">Neem Kosh Narrative Health and Launch Readiness</text>
+  <text x="150" y="248" fill="#E7E4FF" font-family="Arial, sans-serif" font-size="24">Premium executive-style report for founders, PMMs, and leadership review</text>
+
+  <rect x="150" y="390" width="250" height="120" rx="22" fill="#F7F5FF" stroke="#E0DBFF"/>
+  <text x="180" y="432" fill="#6C63D9" font-family="Arial, sans-serif" font-size="18" font-weight="700">Narrative Health</text>
+  <text x="180" y="484" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="44" font-weight="700">8.6/10</text>
+
+  <rect x="430" y="390" width="250" height="120" rx="22" fill="#F7F5FF" stroke="#E0DBFF"/>
+  <text x="460" y="432" fill="#6C63D9" font-family="Arial, sans-serif" font-size="18" font-weight="700">Alignment Score</text>
+  <text x="460" y="484" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="44" font-weight="700">84/100</text>
+
+  <rect x="710" y="390" width="250" height="120" rx="22" fill="#F7F5FF" stroke="#E0DBFF"/>
+  <text x="740" y="432" fill="#6C63D9" font-family="Arial, sans-serif" font-size="18" font-weight="700">Review Status</text>
+  <text x="740" y="484" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="36" font-weight="700">Draft</text>
+
+  <rect x="990" y="390" width="300" height="120" rx="22" fill="#F7F5FF" stroke="#E0DBFF"/>
+  <text x="1020" y="432" fill="#6C63D9" font-family="Arial, sans-serif" font-size="18" font-weight="700">Recommendation</text>
+  <text x="1020" y="484" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="24" font-weight="700">Ready for review</text>
+
+  <rect x="110" y="550" width="590" height="200" rx="24" fill="#FCFBFF" stroke="#E6E2FF"/>
+  <text x="145" y="596" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="30" font-weight="700">Executive Summary</text>
+  <text x="145" y="640" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">Neem Kosh is shaping a strong emotional narrative around legacy preservation.</text>
+  <text x="145" y="676" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">The story is differentiated from generic file storage, but trust proof should be stronger.</text>
+  <text x="145" y="712" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">The product can progress as the next version inside the same project; drift is still low.</text>
+
+  <rect x="730" y="550" width="600" height="200" rx="24" fill="#FCFBFF" stroke="#E6E2FF"/>
+  <text x="765" y="596" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="30" font-weight="700">Critical Signals</text>
+  <text x="765" y="640" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">What landed: family archive, private storytelling, cultural continuity.</text>
+  <text x="765" y="676" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">Risk: narrative trust proof is weaker than emotional resonance.</text>
+  <text x="765" y="712" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">Action: strengthen credibility and onboarding clarity before launch.</text>
+
+  <rect x="110" y="790" width="1220" height="190" rx="24" fill="#FCFBFF" stroke="#E6E2FF"/>
+  <text x="145" y="836" fill="#1F1B5B" font-family="Arial, sans-serif" font-size="30" font-weight="700">Version and Drift Decision</text>
+  <rect x="145" y="872" width="220" height="44" rx="22" fill="#EAF8F0"/>
+  <text x="178" y="900" fill="#177A51" font-family="Arial, sans-serif" font-size="18" font-weight="700">Safe as New Version</text>
+  <text x="145" y="948" fill="#6E68A6" font-family="Arial, sans-serif" font-size="22">AI assessment: the core audience, promise, and product identity are consistent enough to remain in the current project. No new project is needed yet.</text>
+</svg>

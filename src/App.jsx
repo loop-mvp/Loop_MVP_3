@@ -9,6 +9,7 @@ import ConfidenceScoreCard from "./feedback/ConfidenceScoreCard";
 import NarrativeIntelligence from "./feedback/NarrativeIntelligence";
 import AIInsights from "./feedback/AIInsights";
 import { generateOpenAiText } from "./openaiClient";
+import { deleteLoopProject as deleteRemoteLoopProject, isSupabaseConfigured, listLoopProjects, saveLoopProject } from "./projectStore";
 
 const LOOP_STORAGE_KEY = "loop-mvp-local-state-v1";
 
@@ -192,6 +193,10 @@ function average(values) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
+function countFilledTextFields(values) {
+  return (values || []).reduce((count, value) => count + (String(value || "").trim() ? 1 : 0), 0);
+}
+
 function addDays(dateString, days) {
   const date = new Date(dateString);
   date.setDate(date.getDate() + days);
@@ -204,6 +209,788 @@ function nextVersionLabel(version) {
   const major = Number(match[1] || 1);
   const minor = Number(match[2] || 0);
   return `v${major}.${minor + 1}`;
+}
+
+function mergeProjectsById(currentProjects, incomingProjects) {
+  const projectMap = new Map(currentProjects.map(project => [project.id, project]));
+  incomingProjects.forEach(project => {
+    const existing = projectMap.get(project.id);
+    if (!existing) {
+      projectMap.set(project.id, project);
+      return;
+    }
+
+    const existingSnapshot = existing.snapshot || {};
+    const incomingSnapshot = project.snapshot || {};
+    const existingScore = countProjectSnapshotContent(existingSnapshot);
+    const incomingScore = countProjectSnapshotContent(incomingSnapshot);
+    const snapshot = mergeSnapshotPreservingContent(existingSnapshot, incomingSnapshot);
+
+    projectMap.set(project.id, {
+      ...existing,
+      ...project,
+      name: (project.name || "").trim() ? project.name : existing.name,
+      description: (project.description || "").trim() ? project.description : existing.description,
+      status: incomingScore >= existingScore ? project.status : existing.status,
+      snapshot,
+    });
+  });
+  return Array.from(projectMap.values()).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+}
+
+function countProjectSnapshotContent(snapshot = {}) {
+  return countFilledTextFields([
+    snapshot.pd?.whatItDoes,
+    snapshot.pd?.problem,
+    snapshot.pd?.problemStatement,
+    snapshot.pd?.solution,
+    snapshot.pd?.audience,
+    snapshot.pd?.diff,
+    snapshot.pos?.statement,
+    snapshot.pos?.valueProp,
+    snapshot.msg?.pillars,
+    snapshot.msg?.headline,
+    snapshot.msg?.elevator,
+    snapshot.strat?.goal,
+    snapshot.strat?.channels,
+    snapshot.strat?.hooks,
+    snapshot.aiDraft?.productTruth?.problem,
+    snapshot.aiDraft?.productTruth?.solution,
+    snapshot.aiDraft?.productTruth?.icp,
+    snapshot.aiDraft?.narrative?.positioning,
+    snapshot.aiDraft?.narrative?.valueProposition,
+    snapshot.aiDraft?.narrative?.messaging,
+    normalizeDraftText(snapshot.aiDraft?.narrative?.topMessages),
+    snapshot.aiDraft?.gtm?.strategy,
+    snapshot.aiDraft?.gtm?.channels,
+    snapshot.aiDraft?.gtm?.launchApproach,
+    snapshot.aiDraft?.assets?.headline,
+    snapshot.aiDraft?.assets?.elevatorPitch,
+    snapshot.aiDraft?.assets?.emailPitch,
+    snapshot.aiDraft?.assets?.messagingAsset,
+    snapshot.assets?.notes,
+  ]);
+}
+
+function preferNonEmpty(currentValue, existingValue) {
+  return String(currentValue || "").trim() ? currentValue : existingValue;
+}
+
+function mergeSnapshotPreservingContent(existingSnapshot = {}, incomingSnapshot = {}) {
+  const hydratedExisting = hydrateDraftSnapshot(existingSnapshot);
+  const hydratedIncoming = hydrateDraftSnapshot(incomingSnapshot);
+
+  if (countProjectSnapshotContent(hydratedIncoming) >= countProjectSnapshotContent(hydratedExisting)) {
+    return hydratedIncoming;
+  }
+
+  return {
+    ...hydratedIncoming,
+    pd: {
+      ...hydratedExisting.pd,
+      ...hydratedIncoming.pd,
+      name: preferNonEmpty(hydratedIncoming.pd?.name, hydratedExisting.pd?.name),
+      description: preferNonEmpty(hydratedIncoming.pd?.description, hydratedExisting.pd?.description),
+      whatItDoes: preferNonEmpty(hydratedIncoming.pd?.whatItDoes, hydratedExisting.pd?.whatItDoes),
+      builtFor: preferNonEmpty(hydratedIncoming.pd?.builtFor, hydratedExisting.pd?.builtFor),
+      problem: preferNonEmpty(hydratedIncoming.pd?.problem, hydratedExisting.pd?.problem),
+      problemStatement: preferNonEmpty(hydratedIncoming.pd?.problemStatement, hydratedExisting.pd?.problemStatement),
+      problemImpact: preferNonEmpty(hydratedIncoming.pd?.problemImpact, hydratedExisting.pd?.problemImpact),
+      currentSolutionGaps: preferNonEmpty(hydratedIncoming.pd?.currentSolutionGaps, hydratedExisting.pd?.currentSolutionGaps),
+      solution: preferNonEmpty(hydratedIncoming.pd?.solution, hydratedExisting.pd?.solution),
+      solutionMechanism: preferNonEmpty(hydratedIncoming.pd?.solutionMechanism, hydratedExisting.pd?.solutionMechanism),
+      whyNow: preferNonEmpty(hydratedIncoming.pd?.whyNow, hydratedExisting.pd?.whyNow),
+      audience: preferNonEmpty(hydratedIncoming.pd?.audience, hydratedExisting.pd?.audience),
+      diff: preferNonEmpty(hydratedIncoming.pd?.diff, hydratedExisting.pd?.diff),
+    },
+    comp: {
+      ...hydratedExisting.comp,
+      ...hydratedIncoming.comp,
+      differentiators: preferNonEmpty(hydratedIncoming.comp?.differentiators, hydratedExisting.comp?.differentiators),
+      alternativeGaps: preferNonEmpty(hydratedIncoming.comp?.alternativeGaps, hydratedExisting.comp?.alternativeGaps),
+      proofPoints: preferNonEmpty(hydratedIncoming.comp?.proofPoints, hydratedExisting.comp?.proofPoints),
+    },
+    pos: {
+      ...hydratedExisting.pos,
+      ...hydratedIncoming.pos,
+      statement: preferNonEmpty(hydratedIncoming.pos?.statement, hydratedExisting.pos?.statement),
+      valueProp: preferNonEmpty(hydratedIncoming.pos?.valueProp, hydratedExisting.pos?.valueProp),
+    },
+    msg: {
+      ...hydratedExisting.msg,
+      ...hydratedIncoming.msg,
+      pillars: preferNonEmpty(hydratedIncoming.msg?.pillars, hydratedExisting.msg?.pillars),
+      headline: preferNonEmpty(hydratedIncoming.msg?.headline, hydratedExisting.msg?.headline),
+      elevator: preferNonEmpty(hydratedIncoming.msg?.elevator, hydratedExisting.msg?.elevator),
+    },
+    strat: {
+      ...hydratedExisting.strat,
+      ...hydratedIncoming.strat,
+      icp: preferNonEmpty(hydratedIncoming.strat?.icp, hydratedExisting.strat?.icp),
+      goal: preferNonEmpty(hydratedIncoming.strat?.goal, hydratedExisting.strat?.goal),
+      channels: preferNonEmpty(hydratedIncoming.strat?.channels, hydratedExisting.strat?.channels),
+      hooks: preferNonEmpty(hydratedIncoming.strat?.hooks, hydratedExisting.strat?.hooks),
+    },
+    assets: {
+      ...hydratedExisting.assets,
+      ...hydratedIncoming.assets,
+      notes: preferNonEmpty(hydratedIncoming.assets?.notes, hydratedExisting.assets?.notes),
+    },
+    aiDraft: {
+      ...hydratedExisting.aiDraft,
+      ...hydratedIncoming.aiDraft,
+      context: {
+        ...hydratedExisting.aiDraft?.context,
+        ...hydratedIncoming.aiDraft?.context,
+      },
+      productTruth: {
+        ...hydratedExisting.aiDraft?.productTruth,
+        ...hydratedIncoming.aiDraft?.productTruth,
+        problem: preferNonEmpty(hydratedIncoming.aiDraft?.productTruth?.problem, hydratedExisting.aiDraft?.productTruth?.problem),
+        icp: preferNonEmpty(hydratedIncoming.aiDraft?.productTruth?.icp, hydratedExisting.aiDraft?.productTruth?.icp),
+        value: preferNonEmpty(hydratedIncoming.aiDraft?.productTruth?.value, hydratedExisting.aiDraft?.productTruth?.value),
+        solution: preferNonEmpty(hydratedIncoming.aiDraft?.productTruth?.solution, hydratedExisting.aiDraft?.productTruth?.solution),
+        differentiation: preferNonEmpty(hydratedIncoming.aiDraft?.productTruth?.differentiation, hydratedExisting.aiDraft?.productTruth?.differentiation),
+      },
+      narrative: {
+        ...hydratedExisting.aiDraft?.narrative,
+        ...hydratedIncoming.aiDraft?.narrative,
+        positioning: preferNonEmpty(hydratedIncoming.aiDraft?.narrative?.positioning, hydratedExisting.aiDraft?.narrative?.positioning),
+        messaging: preferNonEmpty(hydratedIncoming.aiDraft?.narrative?.messaging, hydratedExisting.aiDraft?.narrative?.messaging),
+        valueProposition: preferNonEmpty(hydratedIncoming.aiDraft?.narrative?.valueProposition, hydratedExisting.aiDraft?.narrative?.valueProposition),
+        topMessages: (hydratedIncoming.aiDraft?.narrative?.topMessages || []).length ? hydratedIncoming.aiDraft.narrative.topMessages : (hydratedExisting.aiDraft?.narrative?.topMessages || []),
+      },
+      gtm: {
+        ...hydratedExisting.aiDraft?.gtm,
+        ...hydratedIncoming.aiDraft?.gtm,
+        channels: preferNonEmpty(hydratedIncoming.aiDraft?.gtm?.channels, hydratedExisting.aiDraft?.gtm?.channels),
+        hooks: preferNonEmpty(hydratedIncoming.aiDraft?.gtm?.hooks, hydratedExisting.aiDraft?.gtm?.hooks),
+        strategy: preferNonEmpty(hydratedIncoming.aiDraft?.gtm?.strategy, hydratedExisting.aiDraft?.gtm?.strategy),
+        launchApproach: preferNonEmpty(hydratedIncoming.aiDraft?.gtm?.launchApproach, hydratedExisting.aiDraft?.gtm?.launchApproach),
+      },
+      assets: {
+        ...hydratedExisting.aiDraft?.assets,
+        ...hydratedIncoming.aiDraft?.assets,
+        headline: preferNonEmpty(hydratedIncoming.aiDraft?.assets?.headline, hydratedExisting.aiDraft?.assets?.headline),
+        elevatorPitch: preferNonEmpty(hydratedIncoming.aiDraft?.assets?.elevatorPitch, hydratedExisting.aiDraft?.assets?.elevatorPitch),
+        emailPitch: preferNonEmpty(hydratedIncoming.aiDraft?.assets?.emailPitch, hydratedExisting.aiDraft?.assets?.emailPitch),
+        messagingAsset: preferNonEmpty(hydratedIncoming.aiDraft?.assets?.messagingAsset, hydratedExisting.aiDraft?.assets?.messagingAsset),
+      },
+      sourceSummary: preferNonEmpty(hydratedIncoming.aiDraft?.sourceSummary, hydratedExisting.aiDraft?.sourceSummary),
+    },
+    workflowStage: hydratedIncoming.workflowStage || hydratedExisting.workflowStage,
+    active: hydratedIncoming.active || hydratedExisting.active,
+    feedbackCaptured: hydratedIncoming.feedbackCaptured || hydratedExisting.feedbackCaptured,
+    launchComplete: hydratedIncoming.launchComplete || hydratedExisting.launchComplete,
+  };
+}
+
+function sanitizeProjects(projects) {
+  return (projects || []).filter(Boolean);
+}
+
+function getProjectLifecycle(project = {}) {
+  const snapshot = project.snapshot || project || {};
+  const stage = snapshot.workflowStage || "";
+  const pdStatus = snapshot.pd?.status || project.status || "";
+  const isClosed = !!snapshot.feedbackCaptured || stage === "complete";
+  const isLive = !isClosed && (
+    !!snapshot.launchComplete ||
+    stage === "feedback" ||
+    pdStatus === "live" ||
+    String(pdStatus).toLowerCase() === "live"
+  );
+
+  if (isClosed) {
+    return { key: "closed", label: "Closed" };
+  }
+  if (isLive) {
+    return { key: "live", label: "Live" };
+  }
+  return { key: "progress", label: "In Progress" };
+}
+
+function makeEmptyAiDraft() {
+  return {
+    context: {
+      productCategory: "",
+      targetAudience: "",
+      coreUseCase: "",
+      marketType: "",
+      assumptions: [],
+    },
+    productTruth: { problem: "", icp: "", value: "", solution: "", differentiation: "" },
+    narrative: { positioning: "", messaging: "", valueProposition: "", topMessages: [] },
+    gtm: { channels: "", hooks: "", strategy: "", launchApproach: "" },
+    assets: { headline: "", elevatorPitch: "", emailPitch: "", messagingAsset: "" },
+    sourceSummary: "",
+  };
+}
+
+function normalizeDraftText(value) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join("\n");
+  }
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function buildProductInput(inputOrName, description = "") {
+  if (typeof inputOrName === "object" && inputOrName !== null) {
+    return {
+      name: (inputOrName.name || "").trim(),
+      description: (inputOrName.description || "").trim(),
+      audience: (inputOrName.audience || "").trim(),
+      category: (inputOrName.category || "").trim(),
+      wowFactor: (inputOrName.wowFactor || "").trim(),
+    };
+  }
+
+  return {
+    name: (inputOrName || "").trim(),
+    description: (description || "").trim(),
+    audience: "",
+    category: "",
+    wowFactor: "",
+  };
+}
+
+function buildGroundingBrief(productInput) {
+  return [
+    `Product name: ${productInput.name || "Not provided"}`,
+    `Product description: ${productInput.description || "Not provided"}`,
+    `Audience: ${productInput.audience || "Not provided"}`,
+    `Category: ${productInput.category || "Not provided"}`,
+    `Wow factor: ${productInput.wowFactor || "Not provided"}`,
+  ].join("\n");
+}
+
+function buildLegacyCanvasValues(productInput, draft) {
+  const context = draft?.context || {};
+  const productTruth = draft?.productTruth || {};
+  const narrative = draft?.narrative || {};
+  const gtm = draft?.gtm || {};
+  const assets = draft?.assets || {};
+  const joinedMessages = normalizeDraftText(narrative.topMessages);
+
+  return {
+    whatItDoes: productInput.description || context.coreUseCase || "",
+    builtFor: productInput.audience || context.targetAudience || productTruth.icp || "",
+    problem: productTruth.problem || "",
+    problemStatement: productTruth.problem || "",
+    problemImpact: productTruth.value
+      ? `If this problem stays unresolved, teams continue losing clarity, speed, and alignment. ${productTruth.value}`
+      : "",
+    currentSolutionGaps: productTruth.differentiation
+      ? `Current approaches feel fragmented or generic. ${productTruth.differentiation}`
+      : "",
+    solution: productTruth.solution || "",
+    solutionMechanism: narrative.positioning || context.coreUseCase || "",
+    whyNow: gtm.launchApproach || productInput.wowFactor || "",
+    audience: productTruth.icp || context.targetAudience || productInput.audience || "",
+    diff: productTruth.differentiation || productTruth.value || productInput.wowFactor || "",
+    differentiators: joinedMessages || productTruth.differentiation || "",
+    alternativeGaps: productTruth.differentiation || productTruth.problem || "",
+    proofPoints: assets.messagingAsset || productTruth.value || "",
+  };
+}
+
+function hydrateDraftSnapshot(snapshot = {}) {
+  const draft = snapshot.aiDraft || makeEmptyAiDraft();
+  const productInput = buildProductInput(snapshot.pd || {});
+  const legacy = buildLegacyCanvasValues(productInput, draft);
+
+  return {
+    ...snapshot,
+    pd: {
+      ...snapshot.pd,
+      category: snapshot.pd?.category || draft.context?.productCategory || "",
+      whatItDoes: snapshot.pd?.whatItDoes || legacy.whatItDoes,
+      builtFor: snapshot.pd?.builtFor || legacy.builtFor,
+      problem: snapshot.pd?.problem || legacy.problem,
+      problemStatement: snapshot.pd?.problemStatement || legacy.problemStatement,
+      problemImpact: snapshot.pd?.problemImpact || legacy.problemImpact,
+      currentSolutionGaps: snapshot.pd?.currentSolutionGaps || legacy.currentSolutionGaps,
+      solution: snapshot.pd?.solution || legacy.solution,
+      solutionMechanism: snapshot.pd?.solutionMechanism || legacy.solutionMechanism,
+      whyNow: snapshot.pd?.whyNow || legacy.whyNow,
+      audience: snapshot.pd?.audience || legacy.audience,
+      diff: snapshot.pd?.diff || legacy.diff,
+    },
+    comp: {
+      ...snapshot.comp,
+      differentiators: snapshot.comp?.differentiators || legacy.differentiators,
+      alternativeGaps: snapshot.comp?.alternativeGaps || legacy.alternativeGaps,
+      proofPoints: snapshot.comp?.proofPoints || legacy.proofPoints,
+    },
+    pos: {
+      ...snapshot.pos,
+      valueProp: snapshot.pos?.valueProp || draft.narrative?.valueProposition || draft.productTruth?.value || "",
+    },
+    msg: {
+      ...snapshot.msg,
+      pillars: snapshot.msg?.pillars || draft.narrative?.messaging || normalizeDraftText(draft.narrative?.topMessages),
+      headline: snapshot.msg?.headline || draft.assets?.headline || "",
+      elevator: snapshot.msg?.elevator || draft.assets?.elevatorPitch || "",
+    },
+    strat: {
+      ...snapshot.strat,
+      icp: snapshot.strat?.icp || draft.productTruth?.icp || "",
+      goal: snapshot.strat?.goal || draft.gtm?.strategy || "",
+      channels: snapshot.strat?.channels || draft.gtm?.channels || "",
+      hooks: snapshot.strat?.hooks || draft.gtm?.hooks || "",
+    },
+    assets: {
+      ...snapshot.assets,
+      notes: snapshot.assets?.notes || [
+        draft.assets?.headline ? `Homepage headline: ${draft.assets.headline}` : "",
+        draft.assets?.elevatorPitch ? `Elevator pitch: ${draft.assets.elevatorPitch}` : "",
+        draft.assets?.emailPitch ? `Email pitch: ${draft.assets.emailPitch}` : "",
+        draft.assets?.messagingAsset ? `Messaging asset: ${draft.assets.messagingAsset}` : "",
+      ].filter(Boolean).join("\n\n"),
+    },
+  };
+}
+
+function parseJsonResponse(text, fallback = {}) {
+  if (!text) return fallback;
+  try {
+    const fenced = String(text).match(/```json\s*([\s\S]*?)```/i);
+    return JSON.parse(fenced ? fenced[1] : text);
+  } catch {
+    return fallback;
+  }
+}
+
+function buildLocalNarrativeDraft(inputOrName, productDescription = "") {
+  const productInput = buildProductInput(inputOrName, productDescription);
+  const trimmedName = productInput.name || "Your product";
+  const trimmedDescription = productInput.description || "A product that helps teams work more clearly.";
+  const trimmedAudience = productInput.audience || "PMM teams, founders, and lean go-to-market operators";
+  const trimmedCategory = productInput.category || "Narrative intelligence workflow";
+  const wowFactor = productInput.wowFactor || `${trimmedName} keeps product truth, messaging, and launch execution aligned in one system.`;
+
+  return {
+    context: {
+      productCategory: trimmedCategory,
+      targetAudience: trimmedAudience,
+      coreUseCase: trimmedDescription,
+      marketType: "Emerging product marketing workflow software",
+      assumptions: [
+        `Assumption: ${trimmedName} is used in a B2B workflow where message clarity and launch readiness matter.`,
+        `Assumption: the strongest hook is ${wowFactor.toLowerCase()}`,
+      ],
+    },
+    productTruth: {
+      problem: `${trimmedName} solves a messy, fragmented workflow where teams struggle to explain the product clearly and move launches forward with confidence.`,
+      icp: trimmedAudience,
+      value: `${trimmedName} gives teams a clearer narrative foundation, faster launch readiness, and more consistent messaging from strategy to execution.`,
+      solution: `${trimmedName} gives one place to structure product truth, shape narrative, and generate launch-ready outputs without scattered docs and prompts.`,
+      differentiation: wowFactor,
+    },
+    narrative: {
+      positioning: `For lean go-to-market teams that need a sharper launch story, ${trimmedName} is the workflow that turns product inputs into clear, launch-ready narrative.`,
+      messaging: `Clear product truth\nFaster narrative refinement\nLaunch-ready outputs from one shared source`,
+      valueProposition: `${trimmedName} helps teams move from rough product context to a clearer launch story with less narrative drift and faster execution.`,
+      topMessages: [
+        "Turn fragmented product thinking into a clear launch story.",
+        "Keep product, marketing, and sales aligned around one narrative.",
+        "Generate outputs faster without losing strategic clarity.",
+      ],
+    },
+    gtm: {
+      channels: "Founder-led selling, launch email, website hero copy, and customer-facing product marketing channels.",
+      hooks: `Lead with the pain of scattered launch storytelling, show how ${trimmedName} creates clarity, then connect that clarity to faster execution.`,
+      strategy: "Use a clarity-first launch motion focused on fast internal alignment, customer-facing messaging, and feedback capture.",
+      launchApproach: "Start with a focused launch story, pressure-test it in early customer and sales conversations, then expand into assets and post-launch signal.",
+    },
+    assets: {
+      headline: `${trimmedName} turns product truth into launch-ready narrative.`,
+      elevatorPitch: `${trimmedName} helps teams align product truth, messaging, and launch execution in one workflow so they can ship clearer launches faster.`,
+      emailPitch: `Teams lose momentum when product story lives across docs and prompts. ${trimmedName} helps you turn product truth into a sharper narrative and faster launch execution.`,
+      messagingAsset: "Core message: one approved narrative from product truth to launch and feedback.",
+    },
+    sourceSummary: trimmedDescription,
+  };
+}
+
+async function generateContext(productInput) {
+  const fallback = buildLocalNarrativeDraft(productInput).context;
+  try {
+    const prompt = `You are a product marketing strategist building high-context product understanding.
+Return ONLY valid JSON with this exact shape:
+{
+  "productCategory": "string",
+  "targetAudience": "string",
+  "coreUseCase": "string",
+  "marketType": "string",
+  "assumptions": ["string"]
+}
+
+Use this product brief as the primary source of truth:
+${buildGroundingBrief(productInput)}
+
+Rules:
+- Avoid generic SaaS language
+- Be specific and realistic
+- Clearly distinguish direct facts from inferred assumptions
+- Every assumption must begin with "Assumption:"
+- Reuse the product description's concrete nouns and verbs whenever possible
+- If audience or category is missing, infer it from the product description instead of guessing a generic PMM/B2B answer
+- coreUseCase should describe what the product actually helps someone do in plain language`;
+    const text = await generateOpenAiText(prompt);
+    const parsed = parseJsonResponse(text, fallback);
+    return {
+      ...fallback,
+      ...parsed,
+      assumptions: Array.isArray(parsed?.assumptions) ? parsed.assumptions : fallback.assumptions,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+async function generateProductTruth(context, productInput) {
+  const fallback = buildLocalNarrativeDraft(productInput).productTruth;
+  try {
+    const prompt = `You are generating Product Truth for a product marketing workflow.
+Return ONLY valid JSON with this exact shape:
+{
+  "problem": "string",
+  "icp": "string",
+  "value": "string",
+  "solution": "string",
+  "differentiation": "string"
+}
+
+Product input:
+${JSON.stringify(productInput, null, 2)}
+
+Context:
+${JSON.stringify(context, null, 2)}
+
+Rules:
+- be specific and concrete
+- describe the product the user actually entered, not Loop or a generic SaaS company
+- use the product description, audience, category, and wow factor directly
+- keep differentiation grounded in the wow factor and actual use case
+- do not use phrases like "clearer narrative foundation", "aligned execution", or "launch-ready" unless the product is actually about those things
+- problem should describe the end-user pain
+- solution should explain how the product solves that pain in plain English
+- value should describe the outcome the buyer gets, not internal team process benefits`;
+    const text = await generateOpenAiText(prompt);
+    return { ...fallback, ...parseJsonResponse(text, fallback) };
+  } catch {
+    return fallback;
+  }
+}
+
+async function generateNarrative(productTruth, context, productInput) {
+  const fallback = buildLocalNarrativeDraft(productInput).narrative;
+  try {
+    const prompt = `You are generating a concise core narrative.
+Return ONLY valid JSON with this exact shape:
+{
+  "positioning": "string",
+  "messaging": "string",
+  "valueProposition": "string",
+  "topMessages": ["string", "string", "string"]
+}
+
+Product Truth:
+${JSON.stringify(productTruth, null, 2)}
+
+Context:
+${JSON.stringify(context, null, 2)}
+
+Rules:
+- positioning should follow Geoffrey Moore style where possible
+- topMessages must be concise and differentiated
+- avoid bland category language
+- keep the wording specific to this product's audience and use case
+- do not repeat the same message in every field
+- valueProposition should sound like the buyer outcome, not internal marketing jargon
+- topMessages should each focus on a distinct angle: problem, outcome, and differentiation`;
+    const text = await generateOpenAiText(prompt);
+    const parsed = parseJsonResponse(text, fallback);
+    return {
+      ...fallback,
+      ...parsed,
+      topMessages: Array.isArray(parsed?.topMessages) ? parsed.topMessages : fallback.topMessages,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+async function generateGtm(narrative, productTruth, context, productInput) {
+  const fallback = buildLocalNarrativeDraft(productInput).gtm;
+  try {
+    const prompt = `You are generating a lightweight GTM plan.
+Return ONLY valid JSON with this exact shape:
+{
+  "channels": "string",
+  "hooks": "string",
+  "strategy": "string",
+  "launchApproach": "string"
+}
+
+Narrative:
+${JSON.stringify(narrative, null, 2)}
+
+Product Truth:
+${JSON.stringify(productTruth, null, 2)}
+
+Context:
+${JSON.stringify(context, null, 2)}
+
+Rules:
+- keep it launch-ready and practical
+- choose realistic channels
+- connect hooks directly to the problem and wow factor
+- channels must fit the actual audience and product category
+- strategy should be 2-4 sentences and reflect how this product would realistically be introduced to the market
+- do not recommend channels that don't fit the described audience`;
+    const text = await generateOpenAiText(prompt);
+    return { ...fallback, ...parseJsonResponse(text, fallback) };
+  } catch {
+    return fallback;
+  }
+}
+
+async function generateAssets(narrative, gtm, productTruth, context, productInput) {
+  const fallback = buildLocalNarrativeDraft(productInput).assets;
+  try {
+    const prompt = `You are creating starter assets for a product marketing platform.
+Return ONLY valid JSON with this exact shape:
+{
+  "headline": "string",
+  "elevatorPitch": "string",
+  "emailPitch": "string",
+  "messagingAsset": "string"
+}
+
+Narrative:
+${JSON.stringify(narrative, null, 2)}
+
+GTM:
+${JSON.stringify(gtm, null, 2)}
+
+Product Truth:
+${JSON.stringify(productTruth, null, 2)}
+
+Context:
+${JSON.stringify(context, null, 2)}
+
+Rules:
+- keep the headline concise
+- make the elevator pitch speak like a human
+- make the email pitch usable as a first outreach draft
+- messagingAsset should be a reusable key-message block
+- every asset must clearly reflect the product description and audience
+- avoid generic launch language unless the product itself is about launches
+- headline should sound like something a real buyer could understand in one read`;
+    const text = await generateOpenAiText(prompt);
+    return { ...fallback, ...parseJsonResponse(text, fallback) };
+  } catch {
+    return fallback;
+  }
+}
+
+function escapeReportHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildReportRow(label, value) {
+  return `
+    <tr>
+      <th>${escapeReportHtml(label)}</th>
+      <td>${escapeReportHtml(value || "-")}</td>
+    </tr>
+  `;
+}
+
+function buildProjectReportHtml(data) {
+  const {
+    pd,
+    pos,
+    msg,
+    aud,
+    comp,
+    strat,
+    story,
+    assets,
+    feedbackEntries,
+    projectReview,
+    narrativeHealthScore,
+    confidenceScore,
+    alignmentScore,
+  } = data;
+
+  const feedbackRows = (feedbackEntries || [])
+    .slice(0, 10)
+    .map(entry => `
+      <tr>
+        <td>${escapeReportHtml(entry.source || "Team")}</td>
+        <td>${escapeReportHtml(entry.note || "-")}</td>
+        <td>${escapeReportHtml(entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "-")}</td>
+      </tr>
+    `)
+    .join("");
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeReportHtml(pd.name || "Loop Project Report")}</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 32px; color: #1f1b5b; background: #faf9ff; }
+      .wrap { max-width: 980px; margin: 0 auto; }
+      .hero { background: #fff; border: 1px solid #d7d3fb; border-radius: 18px; padding: 24px; margin-bottom: 18px; }
+      .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #5b52c4; }
+      h1 { margin: 10px 0 6px; font-size: 36px; line-height: 1.05; }
+      p { line-height: 1.6; }
+      .grid { display: grid; gap: 18px; }
+      .section { background: #fff; border: 1px solid #d7d3fb; border-radius: 18px; overflow: hidden; }
+      .section h2 { margin: 0; padding: 16px 18px; font-size: 20px; border-bottom: 1px solid #ece9ff; background: #f7f5ff; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 12px 18px; border-bottom: 1px solid #ece9ff; vertical-align: top; }
+      th { width: 30%; font-size: 13px; color: #625a9b; }
+      td { font-size: 14px; color: #1f1b5b; white-space: pre-wrap; }
+      .meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+      .pill { padding: 8px 10px; border-radius: 999px; background: #f0eeff; font-size: 12px; font-weight: 700; color: #5b52c4; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <div class="eyebrow">Loop Report</div>
+        <h1>${escapeReportHtml(pd.name || "Untitled Project")}</h1>
+        <p>${escapeReportHtml(pd.description || "Loop project report generated from the current workspace state.")}</p>
+        <div class="meta">
+          <span class="pill">Version ${escapeReportHtml(pd.version || "v1.0")}</span>
+          <span class="pill">Status ${escapeReportHtml(pd.status || "Planned")}</span>
+          <span class="pill">Review ${escapeReportHtml(projectReview.status || "Draft")}</span>
+          <span class="pill">Narrative Health ${escapeReportHtml(narrativeHealthScore)}/10</span>
+          <span class="pill">Alignment ${escapeReportHtml(alignmentScore)}/100</span>
+          <span class="pill">Confidence ${escapeReportHtml(confidenceScore)}/10</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="section">
+          <h2>Product Truth</h2>
+          <table>
+            ${buildReportRow("What Product Does", pd.what || pd.description)}
+            ${buildReportRow("Who It Is For", pd.audience || aud.primary)}
+            ${buildReportRow("Core Problem", pd.problem)}
+            ${buildReportRow("Impact", pd.impact || pd.urgency)}
+            ${buildReportRow("Solution Summary", pd.solution)}
+            ${buildReportRow("How It Solves The Problem", pd.solutionMechanism)}
+          </table>
+        </section>
+
+        <section class="section">
+          <h2>Core Narrative</h2>
+          <table>
+            ${buildReportRow("Positioning Statement", pos.statement)}
+            ${buildReportRow("Value Proposition", pos.valueProp)}
+            ${buildReportRow("Top Messaging", msg.headline)}
+            ${buildReportRow("Messaging Pillars", msg.pillars)}
+            ${buildReportRow("Elevator Pitch", msg.elevator)}
+          </table>
+        </section>
+
+        <section class="section">
+          <h2>Competition</h2>
+          <table>
+            ${buildReportRow("Main Competitors", comp.competitors)}
+            ${buildReportRow("Why We Win", comp.differentiators)}
+            ${buildReportRow("Alternative Gaps", comp.alternativeGaps)}
+            ${buildReportRow("Proof Points", comp.proofPoints || comp.proofMetrics)}
+          </table>
+        </section>
+
+        <section class="section">
+          <h2>GTM and Assets</h2>
+          <table>
+            ${buildReportRow("Launch Goal", strat.goal)}
+            ${buildReportRow("Target Segment", strat.icp)}
+            ${buildReportRow("Channels", strat.channels)}
+            ${buildReportRow("Launch Story", story.origin || story.customer)}
+            ${buildReportRow("Asset Notes", assets.notes)}
+          </table>
+        </section>
+
+        <section class="section">
+          <h2>Feedback and Review</h2>
+          <table>
+            ${buildReportRow("Review Status", projectReview.status)}
+            ${buildReportRow("Review Teams", (projectReview.teams || []).join(", "))}
+            ${buildReportRow("Latest Review Action", projectReview.lastAction)}
+          </table>
+          <table>
+            <thead>
+              <tr><th>Source</th><th>Feedback</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              ${feedbackRows || `<tr><td colspan="3">No feedback captured yet.</td></tr>`}
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+function buildSectionExportHtml({ projectName, workspaceTitle, intro, rows = [] }) {
+  const tableRows = rows
+    .map(row => buildReportRow(row.label, row.value))
+    .join("");
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeReportHtml(projectName || "Loop Workspace Export")} - ${escapeReportHtml(workspaceTitle)}</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 32px; color: #1f1b5b; background: #faf9ff; }
+      .wrap { max-width: 920px; margin: 0 auto; }
+      .hero { background: #fff; border: 1px solid #d7d3fb; border-radius: 18px; padding: 24px; margin-bottom: 18px; }
+      .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #5b52c4; }
+      h1 { margin: 10px 0 6px; font-size: 34px; line-height: 1.05; }
+      p { line-height: 1.6; }
+      .section { background: #fff; border: 1px solid #d7d3fb; border-radius: 18px; overflow: hidden; }
+      .section h2 { margin: 0; padding: 16px 18px; font-size: 20px; border-bottom: 1px solid #ece9ff; background: #f7f5ff; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 12px 18px; border-bottom: 1px solid #ece9ff; vertical-align: top; }
+      th { width: 30%; font-size: 13px; color: #625a9b; }
+      td { font-size: 14px; color: #1f1b5b; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <div class="eyebrow">Loop Workspace Export</div>
+        <h1>${escapeReportHtml(workspaceTitle)}</h1>
+        <p>${escapeReportHtml(intro || "Loop exported this workspace from the current project state.")}</p>
+      </div>
+      <section class="section">
+        <h2>${escapeReportHtml(workspaceTitle)}</h2>
+        <table>
+          ${tableRows}
+        </table>
+      </section>
+    </div>
+  </body>
+</html>`;
 }
 
 function buildLocalAiResponse(prompt = "") {
@@ -1165,6 +1952,521 @@ function ProductTruthOverviewPanel({ pd, cap, comp }) {
   );
 }
 
+function SmartInput({
+  label,
+  fieldKey,
+  aiValue,
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+  helper,
+}) {
+  const hasAi = !!String(aiValue || "").trim();
+  const hasUserValue = !!String(value || "").trim();
+  const displayValue = hasUserValue ? value : (aiValue || value || "");
+  const isAiStyled = hasAi && !hasUserValue && displayValue === aiValue;
+  const sharedStyle = {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "13px 14px",
+    borderRadius: 14,
+    border: `1px solid ${isAiStyled ? P[200] : S.border}`,
+    background: isAiStyled ? "linear-gradient(180deg, rgba(248,247,255,0.95) 0%, rgba(255,255,255,1) 100%)" : "white",
+    color: isAiStyled ? "#867EC9" : S.text,
+    outline: "none",
+    fontFamily: "inherit",
+    fontSize: 14,
+    lineHeight: 1.65,
+    fontStyle: isAiStyled ? "italic" : "normal",
+    boxShadow: isAiStyled ? "inset 0 0 0 1px rgba(175,169,236,0.28)" : "none",
+  };
+
+  return (
+    <label style={{ display: "grid", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+        {hasAi && (
+          <span title={`AI draft available for ${fieldKey}`} style={{ fontSize: 12, fontWeight: 700, color: P[600] }}>
+            ✨ AI draft
+          </span>
+        )}
+      </div>
+      {rows > 1 ? (
+        <textarea
+          value={displayValue}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          style={{ ...sharedStyle, resize: "vertical", minHeight: rows * 28 }}
+        />
+      ) : (
+        <input
+          value={displayValue}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={sharedStyle}
+        />
+      )}
+      {helper && <div style={{ fontSize: 12, lineHeight: 1.55, color: S.muted }}>{helper}</div>}
+    </label>
+  );
+}
+
+function SimplifiedSectionCard({ title, description, children, improveMode = false, onEnhance, enhancing = false }) {
+  return (
+    <div style={{
+      background: "white",
+      border: `1px solid ${improveMode ? P[200] : S.border}`,
+      borderRadius: 22,
+      padding: 22,
+      boxShadow: improveMode ? "0 12px 28px rgba(83, 74, 183, 0.08)" : "0 10px 24px rgba(38, 33, 92, 0.04)",
+      display: "grid",
+      gap: 16,
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {improveMode && <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(180deg, rgba(238,237,254,0.2) 0%, rgba(255,255,255,0) 24%)" }} />}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, position: "relative" }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: P[900], letterSpacing: "-0.03em" }}>{title}</div>
+          <div style={{ marginTop: 8, maxWidth: 720, fontSize: 14, lineHeight: 1.65, color: S.muted }}>{description}</div>
+        </div>
+        {improveMode && (
+          <button
+            onClick={onEnhance}
+            disabled={enhancing}
+            style={{
+              border: "none",
+              background: enhancing ? P[100] : P[600],
+              color: enhancing ? P[700] : "white",
+              borderRadius: 12,
+              padding: "11px 14px",
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: enhancing ? "wait" : "pointer",
+              fontFamily: "inherit",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {enhancing ? "Enhancing..." : "Enhance"}
+          </button>
+        )}
+      </div>
+      <div style={{ display: "grid", gap: 14, position: "relative" }}>{children}</div>
+    </div>
+  );
+}
+
+function BuildNarrativeWorkspacePanel({
+  section,
+  pd,
+  pos,
+  msg,
+  strat,
+  aiDraft,
+  userEdits,
+  improveMode,
+  enhancingSection,
+  onEnhanceSection,
+  onFieldChange,
+}) {
+  const derivedProblem = aiDraft.productTruth.problem || pd.problem || pd.problemStatement || "";
+  const derivedSolution = aiDraft.productTruth.solution || pd.solution || pd.solutionMechanism || "";
+  const derivedAudience = aiDraft.productTruth.icp || pd.audience || strat.icp || "";
+  const derivedDifferentiation = aiDraft.productTruth.differentiation || pd.diff || "";
+  const derivedPositioning = aiDraft.narrative.positioning || pos.statement || "";
+  const derivedValueProposition = aiDraft.narrative.valueProposition || pos.valueProp || "";
+  const derivedMessaging = aiDraft.narrative.messaging || normalizeDraftText(aiDraft.narrative.topMessages) || msg.pillars || "";
+  const derivedHeadline = aiDraft.assets.headline || msg.headline || "";
+  const derivedElevator = aiDraft.assets.elevatorPitch || msg.elevator || "";
+  const derivedGtmStrategy = aiDraft.gtm.strategy || strat.goal || "";
+  const derivedChannels = aiDraft.gtm.channels || strat.channels || "";
+  const derivedLaunchStrategy = aiDraft.gtm.launchApproach || strat.hooks || "";
+
+  const helperCopy = improveMode ? {
+    productTruth: {
+      overview: "Summarize what the product does in plain language and what category it belongs to.",
+      problem: "Describe the core customer pain and what breaks if the problem stays unresolved.",
+      solution: "Explain how the product solves the problem in plain English.",
+      icp: "Describe the ideal customer by company type, team, role, and urgency.",
+      differentiation: "Explain what feels uniquely valuable or meaningfully different about the product.",
+    },
+    narrative: {
+      positioning: "Make the positioning specific to the audience, category, and differentiated benefit.",
+      valueProposition: "State the clearest buyer outcome or business value this product delivers.",
+      messaging: "Keep messaging concise, repeatable, and easy for sales or founders to say out loud.",
+      headline: "Write the one-line message a buyer should understand on first read.",
+      elevator: "Turn the core story into a short spoken explanation a PMM or founder can say out loud.",
+    },
+    gtm: {
+      strategy: "Describe the launch goal and how this product should enter the market first.",
+      channels: "Focus on the channels that realistically matter for the first launch motion.",
+      launchStrategy: "Describe how the launch should be sequenced or executed at a practical level.",
+    },
+  } : {};
+
+  if (section === "productTruth") {
+    return (
+      <SimplifiedSectionCard
+        title="Product Truth"
+        description="Start with the AI draft, then tighten the product problem, ideal customer, and value until it feels true."
+        improveMode={improveMode}
+        enhancing={enhancingSection === "productTruth"}
+        onEnhance={() => onEnhanceSection("productTruth")}
+      >
+        <SmartInput
+          label="Product Overview"
+          fieldKey="productTruth.overview"
+          aiValue=""
+          userEdited={!!userEdits["productTruth.overview"]}
+          value={pd.whatItDoes || ""}
+          onChange={value => onFieldChange("productTruth.overview", value)}
+          rows={3}
+          placeholder="Describe what the product does, what category it belongs to, and who it serves."
+          helper={helperCopy.productTruth?.overview}
+        />
+        <SmartInput
+          label="Problem"
+          fieldKey="productTruth.problem"
+          aiValue={derivedProblem}
+          userEdited={!!userEdits["productTruth.problem"]}
+          value={pd.problem}
+          onChange={value => onFieldChange("productTruth.problem", value)}
+          rows={4}
+          helper={helperCopy.productTruth?.problem}
+        />
+        <SmartInput
+          label="Solution"
+          fieldKey="productTruth.solution"
+          aiValue={derivedSolution}
+          userEdited={!!userEdits["productTruth.solution"]}
+          value={pd.solution || ""}
+          onChange={value => onFieldChange("productTruth.solution", value)}
+          rows={4}
+          helper={helperCopy.productTruth?.solution}
+        />
+        <SmartInput
+          label="Primary Audience"
+          fieldKey="productTruth.icp"
+          aiValue={derivedAudience}
+          userEdited={!!userEdits["productTruth.icp"]}
+          value={pd.audience}
+          onChange={value => onFieldChange("productTruth.icp", value)}
+          rows={3}
+          helper={helperCopy.productTruth?.icp}
+        />
+        <SmartInput
+          label="Differentiation"
+          fieldKey="productTruth.differentiation"
+          aiValue={derivedDifferentiation}
+          userEdited={!!userEdits["productTruth.differentiation"]}
+          value={pd.diff || ""}
+          onChange={value => onFieldChange("productTruth.differentiation", value)}
+          rows={3}
+          placeholder="Explain why this product is meaningfully different and what makes it stand out."
+          helper={helperCopy.productTruth?.differentiation}
+        />
+      </SimplifiedSectionCard>
+    );
+  }
+
+  if (section === "narrative") {
+    return (
+      <SimplifiedSectionCard
+        title="Core Narrative"
+        description="Refine the positioning and messaging until the story is clear enough to repeat across launch materials."
+        improveMode={improveMode}
+        enhancing={enhancingSection === "narrative"}
+        onEnhance={() => onEnhanceSection("narrative")}
+      >
+        <SmartInput
+          label="Positioning"
+          fieldKey="narrative.positioning"
+          aiValue={derivedPositioning}
+          userEdited={!!userEdits["narrative.positioning"]}
+          value={pos.statement}
+          onChange={value => onFieldChange("narrative.positioning", value)}
+          rows={5}
+          helper={helperCopy.narrative?.positioning}
+        />
+        <SmartInput
+          label="Value Proposition"
+          fieldKey="narrative.valueProposition"
+          aiValue={derivedValueProposition}
+          userEdited={!!userEdits["narrative.valueProposition"]}
+          value={pos.valueProp || ""}
+          onChange={value => onFieldChange("narrative.valueProposition", value)}
+          rows={4}
+          helper={helperCopy.narrative?.valueProposition}
+        />
+        <SmartInput
+          label="Messaging"
+          fieldKey="narrative.messaging"
+          aiValue={derivedMessaging}
+          userEdited={!!userEdits["narrative.messaging"]}
+          value={msg.pillars}
+          onChange={value => onFieldChange("narrative.messaging", value)}
+          rows={5}
+          helper={helperCopy.narrative?.messaging}
+        />
+        <SmartInput
+          label="Headline Message"
+          fieldKey="narrative.headline"
+          aiValue={derivedHeadline}
+          userEdited={!!userEdits["narrative.headline"]}
+          value={msg.headline || ""}
+          onChange={value => onFieldChange("narrative.headline", value)}
+          rows={3}
+          placeholder="Write the one-line message you want buyers to remember first."
+          helper={helperCopy.narrative?.headline}
+        />
+        <SmartInput
+          label="Elevator Pitch"
+          fieldKey="narrative.elevator"
+          aiValue={derivedElevator}
+          userEdited={!!userEdits["narrative.elevator"]}
+          value={msg.elevator || ""}
+          onChange={value => onFieldChange("narrative.elevator", value)}
+          rows={4}
+          placeholder="Turn the story into a short, spoken explanation a founder or PMM can use live."
+          helper={helperCopy.narrative?.elevator}
+        />
+      </SimplifiedSectionCard>
+    );
+  }
+
+  return (
+    <SimplifiedSectionCard
+      title="GTM"
+      description="Use the draft as a starting point for a focused go-to-market motion. Keep this light and execution-ready."
+      improveMode={improveMode}
+      enhancing={enhancingSection === "gtm"}
+      onEnhance={() => onEnhanceSection("gtm")}
+    >
+      <SmartInput
+        label="GTM Strategy"
+        fieldKey="gtm.strategy"
+        aiValue={derivedGtmStrategy}
+        userEdited={!!userEdits["gtm.strategy"]}
+        value={strat.goal || ""}
+        onChange={value => onFieldChange("gtm.strategy", value)}
+        rows={4}
+        helper={helperCopy.gtm?.strategy}
+      />
+      <SmartInput
+        label="Key Channels"
+        fieldKey="gtm.channels"
+        aiValue={derivedChannels}
+        userEdited={!!userEdits["gtm.channels"]}
+        value={strat.channels}
+        onChange={value => onFieldChange("gtm.channels", value)}
+        rows={4}
+        helper={helperCopy.gtm?.channels}
+      />
+      <SmartInput
+        label="Launch Strategy"
+        fieldKey="gtm.launchStrategy"
+        aiValue={derivedLaunchStrategy}
+        userEdited={!!userEdits["gtm.launchStrategy"]}
+        value={strat.hooks || ""}
+        onChange={value => onFieldChange("gtm.launchStrategy", value)}
+        rows={4}
+        placeholder="Describe the launch approach, sequencing, and execution plan for this first motion."
+        helper={helperCopy.gtm?.launchStrategy}
+      />
+    </SimplifiedSectionCard>
+  );
+}
+
+function NarrativeGeneratingOverlay({ productName }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        background: "linear-gradient(180deg, rgba(248,247,255,0.97) 0%, rgba(244,243,255,0.99) 100%)",
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+      }}
+    >
+      <style>{`
+        @keyframes loopSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes loopPulse {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.08); opacity: 1; }
+        }
+      `}</style>
+      <div
+        style={{
+          width: "min(520px, 100%)",
+          background: "white",
+          border: `1px solid ${S.border}`,
+          borderRadius: 28,
+          padding: "34px 30px",
+          boxShadow: "0 26px 60px rgba(83, 74, 183, 0.12)",
+          display: "grid",
+          justifyItems: "center",
+          gap: 18,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 78,
+            height: 78,
+            borderRadius: 24,
+            background: "linear-gradient(135deg, #534AB7 0%, #8A80F1 100%)",
+            color: "white",
+            display: "grid",
+            placeItems: "center",
+            fontSize: 28,
+            fontWeight: 900,
+            boxShadow: "0 18px 34px rgba(83, 74, 183, 0.26)",
+            animation: "loopPulse 1.8s ease-in-out infinite",
+          }}
+        >
+          L
+        </div>
+        <div
+          style={{
+            width: 118,
+            height: 118,
+            borderRadius: 999,
+            border: `3px solid ${P[100]}`,
+            borderTopColor: P[600],
+            animation: "loopSpin 1.2s linear infinite",
+            position: "absolute",
+            pointerEvents: "none",
+          }}
+        />
+        <div style={{ fontSize: 32, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>
+          Generating Narrative
+        </div>
+        <div style={{ maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: S.muted }}>
+          {productName
+            ? `Loop is building a first draft for ${productName}. We’re creating context, product truth, narrative, and GTM before opening the workspace.`
+            : "Loop is building your first draft. We’re creating context, product truth, narrative, and GTM before opening the workspace."}
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          {["Context", "Product Truth", "Core Narrative", "GTM", "Assets"].map(step => (
+            <span
+              key={step}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: P[50],
+                color: P[700],
+                fontSize: 12,
+                fontWeight: 800,
+              }}
+            >
+              {step}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AiContextReviewPage({
+  productName,
+  context,
+  isLoading,
+  onUpdateContext,
+  onBack,
+  onConfirm,
+}) {
+  const contextRows = [
+    ["Product Category", "productCategory", "What category best describes this product?"],
+    ["Target Audience", "targetAudience", "Who is this primarily for?"],
+    ["Core Use Case", "coreUseCase", "What does this product help someone do?"],
+    ["Market Type", "marketType", "What kind of market or buying motion does this fit?"],
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)", padding: "54px 24px" }}>
+      <div style={{ maxWidth: 980, margin: "0 auto", display: "grid", gap: 20 }}>
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 28, padding: "28px 30px", boxShadow: "0 18px 40px rgba(83, 74, 183, 0.08)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>AI Context Review</div>
+          <div style={{ marginTop: 10, fontSize: 38, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>
+            Confirm the product context before Loop drafts the narrative
+          </div>
+          <div style={{ marginTop: 12, maxWidth: 760, fontSize: 15, lineHeight: 1.7, color: S.muted }}>
+            {productName
+              ? `Loop has interpreted the product information for ${productName}. Confirm or correct the context below so Product Truth, Core Narrative, and GTM are drafted from the right starting point.`
+              : "Loop has interpreted the product information. Confirm or correct the context below so Product Truth, Core Narrative, and GTM are drafted from the right starting point."}
+          </div>
+        </div>
+
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 14px 34px rgba(83, 74, 183, 0.06)" }}>
+          {isLoading ? (
+            <div style={{ minHeight: 340, display: "grid", placeItems: "center" }}>
+              <div style={{ display: "grid", justifyItems: "center", gap: 16, textAlign: "center" }}>
+                <div style={{ width: 74, height: 74, borderRadius: 22, background: "linear-gradient(135deg, #534AB7 0%, #8A80F1 100%)", color: "white", display: "grid", placeItems: "center", fontSize: 26, fontWeight: 900, boxShadow: "0 18px 34px rgba(83, 74, 183, 0.24)" }}>L</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Understanding your product</div>
+                <div style={{ maxWidth: 520, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
+                  Loop is generating context first so the rest of the narrative is based on the right audience, use case, and market interpretation.
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 }}>
+                {contextRows.map(([label, key, placeholder]) => (
+                  <label key={key} style={{ display: "grid", gap: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+                    <textarea
+                      value={context?.[key] || ""}
+                      onChange={e => onUpdateContext(key, e.target.value)}
+                      placeholder={placeholder}
+                      rows={key === "coreUseCase" ? 4 : 3}
+                      style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.65 }}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <label style={{ display: "grid", gap: 8, marginTop: 16 }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>AI Assumptions</span>
+                <textarea
+                  value={Array.isArray(context?.assumptions) ? context.assumptions.join("\n") : ""}
+                  onChange={e => onUpdateContext("assumptions", e.target.value.split("\n").map(item => item.trim()).filter(Boolean))}
+                  placeholder="Assumption: ..."
+                  rows={5}
+                  style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.65 }}
+                />
+              </label>
+            </>
+          )}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <button
+            onClick={onBack}
+            style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            Back to Product Info
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoading}
+            style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "14px 20px", fontSize: 14, fontWeight: 800, cursor: isLoading ? "default" : "pointer", opacity: isLoading ? 0.6 : 1, fontFamily: "inherit" }}
+          >
+            Looks Right, Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AddSectionPanel() {
   const premiumSections = [
     { name: "Proof Points", note: "Add evidence, outcomes, and credibility signals to strengthen product claims." },
@@ -1848,17 +3150,24 @@ const WORKFLOW_STEPS = [
 ];
 
 const MVP_NAV = [
-  { group: "Product Truth", items: NAV.find(group => group.group === "Product Truth")?.items || [] },
-  { group: "Core Narrative", items: NAV.find(group => group.group === "Core Narrative")?.items || [] },
   {
-    group: "Competition",
+    group: "Product Truth",
     items: [
-      { id: "competitionOverview", label: "Competition Overview", icon: "CO" },
-      { id: "competitionComparison", label: "Comparison", icon: "CM" },
-      { id: "competitionSales", label: "Sales Intelligence", icon: "SI" },
+      { id: "productTruth", label: "Product Truth", icon: "PT" },
     ],
   },
-  { group: "GTM", items: NAV.find(group => group.group === "GTM")?.items || [] },
+  {
+    group: "Core Narrative",
+    items: [
+      { id: "narrative", label: "Core Narrative", icon: "CN" },
+    ],
+  },
+  {
+    group: "GTM",
+    items: [
+      { id: "strategy", label: "GTM", icon: "GT" },
+    ],
+  },
   { group: "Assets", items: NAV.find(group => group.group === "Assets")?.items || [] },
   {
     group: "Feedback",
@@ -2087,12 +3396,121 @@ function WorkflowCommandCenter({
   );
 }
 
+function CompactWorkflowStrip({
+  stage,
+  launchComplete,
+  feedbackCaptured,
+  checklistStatus,
+  primaryAction,
+  secondaryAction,
+  tertiaryAction,
+  reviewCount,
+}) {
+  const currentStep = WORKFLOW_STEPS.find(step => step.id === stage) || WORKFLOW_STEPS[0];
+  const checklist = WORKFLOW_CHECKLISTS[stage] || [];
+  const activeStepIndex = Math.max(0, WORKFLOW_STEPS.findIndex(step => step.id === stage));
+  const progressPercent = Math.max(10, Math.round(((activeStepIndex + 1) / WORKFLOW_STEPS.length) * 100));
+  const nextStep = WORKFLOW_STEPS[activeStepIndex + 1] || null;
+  const completedChecklist = checklistStatus.filter(Boolean).length;
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(247,246,255,0.96) 100%)",
+      border: `1px solid ${S.border}`,
+      borderRadius: 18,
+      padding: "14px 16px",
+      marginBottom: 18,
+      boxShadow: "0 12px 28px rgba(83, 74, 183, 0.05)",
+      display: "grid",
+      gap: 12,
+    }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) auto", gap: 14, alignItems: "center" }}>
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Workflow
+            </span>
+            <span style={{ padding: "6px 10px", borderRadius: 999, background: P[50], color: P[700], fontSize: 12, fontWeight: 800 }}>
+              Stage: {currentStep.label}
+            </span>
+            {nextStep && (
+              <span style={{ padding: "6px 10px", borderRadius: 999, background: "white", border: `1px solid ${S.border}`, color: S.muted, fontSize: 12, fontWeight: 700 }}>
+                Next: {nextStep.label}
+              </span>
+            )}
+            {!!reviewCount && (
+              <span style={{ padding: "6px 10px", borderRadius: 999, background: "#FFF7E8", color: "#C77812", fontSize: 12, fontWeight: 800 }}>
+                {reviewCount} review item{reviewCount === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 14, lineHeight: 1.55, color: S.muted }}>
+            {currentStep.summary}
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 12, color: S.muted, fontWeight: 700 }}>
+                Progress {progressPercent}%
+              </span>
+              <span style={{ fontSize: 12, color: S.muted }}>
+                Checklist {completedChecklist}/{checklist.length || 0}
+              </span>
+            </div>
+            <div style={{ height: 8, borderRadius: 999, background: "#ECE9FF", overflow: "hidden" }}>
+              <div style={{ width: `${progressPercent}%`, height: "100%", background: "linear-gradient(90deg, #534AB7 0%, #7F77DD 100%)" }} />
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <span style={{ padding: "7px 10px", borderRadius: 999, background: launchComplete ? "#E8F7EE" : P[50], color: launchComplete ? "#177A51" : P[700], fontSize: 12, fontWeight: 800 }}>
+            User Loop: {launchComplete ? "Complete" : "Open"}
+          </span>
+          <span style={{ padding: "7px 10px", borderRadius: 999, background: feedbackCaptured ? "#E8F7EE" : "#FFF7E8", color: feedbackCaptured ? "#177A51" : "#C77812", fontSize: 12, fontWeight: 800 }}>
+            Platform: {feedbackCaptured ? "Closed" : "Waiting"}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        {primaryAction && (
+          <button
+            onClick={primaryAction.onClick}
+            style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {primaryAction.label}
+          </button>
+        )}
+        {secondaryAction && (
+          <button
+            onClick={secondaryAction.onClick}
+            style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {secondaryAction.label}
+          </button>
+        )}
+        {tertiaryAction && (
+          <button
+            onClick={tertiaryAction.onClick}
+            style={{ border: `1px solid ${P[100]}`, background: P[50], color: P[700], borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {tertiaryAction.label}
+          </button>
+        )}
+        {checklist[0] && (
+          <div style={{ marginLeft: "auto", padding: "10px 12px", borderRadius: 12, background: "white", border: `1px solid ${S.border}`, fontSize: 12, lineHeight: 1.45, color: S.muted }}>
+            <span style={{ fontWeight: 700, color: S.text }}>Current focus:</span> {checklist[0]}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AppTabsHeader({ screen, onChangeScreen }) {
   const tabs = [
     { id: "landing", label: "Loop" },
     { id: "intelligence", label: "Narrative Intelligence" },
     { id: "brand", label: "Brand Guideline" },
-    { id: "community", label: "Community" },
   ];
 
   return (
@@ -2108,45 +3526,69 @@ function AppTabsHeader({ screen, onChangeScreen }) {
       backdropFilter: "blur(10px)",
     }}>
       <div style={{
+        width: "100%",
+        maxWidth: 1600,
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: 6,
-        background: S.sidebar,
-        border: `1px solid ${S.border}`,
-        borderRadius: 16,
-        flexWrap: "wrap",
+        justifyContent: "space-between",
+        gap: 20,
       }}>
-        {tabs.map(tab => {
-          const active = ((screen === "workspace" || screen === "projectSetup") ? "landing" : screen) === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onChangeScreen(tab.id)}
-              style={{
-                border: "none",
-                background: active ? "white" : "transparent",
-                color: active ? P[600] : S.muted,
-                borderRadius: 12,
-                padding: "10px 16px",
-                fontSize: 14,
-                fontWeight: active ? 700 : 500,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                boxShadow: active ? "0 1px 0 rgba(38, 33, 92, 0.05)" : "none",
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+        <div style={{ display: "flex", alignItems: "center", gap: 18, minWidth: 0 }}>
+          <button
+            onClick={() => onChangeScreen("landing")}
+            style={{ display: "flex", alignItems: "center", gap: 10, border: "none", background: "transparent", color: P[900], cursor: "pointer", fontFamily: "inherit", padding: 0 }}
+          >
+            <span style={{ width: 18, height: 18, borderRadius: 5, border: `3px solid ${P[900]}`, boxSizing: "border-box", display: "inline-block" }} />
+            <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.03em" }}>Loop</span>
+          </button>
+
+          <div style={{ width: 1, alignSelf: "stretch", background: S.border }} />
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            {tabs.map(tab => {
+              const active = ((screen === "workspace" || screen === "projectSetup") ? "landing" : screen) === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => onChangeScreen(tab.id)}
+                  style={{
+                    border: "none",
+                    background: active ? P[50] : "transparent",
+                    color: active ? P[700] : S.muted,
+                    borderRadius: 12,
+                    padding: "10px 14px",
+                    fontSize: 14,
+                    fontWeight: active ? 700 : 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <button
+            aria-label="Notifications"
+            style={{ width: 38, height: 38, borderRadius: 12, border: `1px solid ${S.border}`, background: "white", color: P[700], cursor: "pointer", fontSize: 16, fontFamily: "inherit", position: "relative" }}
+          >
+            🔔
+            <span style={{ position: "absolute", top: 7, right: 8, width: 8, height: 8, borderRadius: "50%", background: "#EF4444" }} />
+          </button>
+          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, #2E265E 0%, #5C52C7 100%)", color: "white", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800 }}>
+            MT
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function MainWebsiteHeader({ onOpenLoop, onStartProject, activeTab, setActiveTab }) {
-  const tabs = ["Who We Are", "What Is Loop", "Why Loop"];
+function MainWebsiteHeader({ onOpenLoop, onViewProjects, activeTab, setActiveTab }) {
+  const tabs = ["Who We Are", "What Is Loop", "Why Loop", "Projects"];
 
   return (
     <div style={{
@@ -2167,7 +3609,17 @@ function MainWebsiteHeader({ onOpenLoop, onStartProject, activeTab, setActiveTab
         {tabs.map(tab => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              if (tab === "What Is Loop") {
+                onOpenLoop();
+                return;
+              }
+              if (tab === "Projects") {
+                onViewProjects();
+                return;
+              }
+              setActiveTab(tab);
+            }}
             style={{
               border: "none",
               background: activeTab === tab ? "white" : "transparent",
@@ -2185,12 +3637,6 @@ function MainWebsiteHeader({ onOpenLoop, onStartProject, activeTab, setActiveTab
         ))}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-        <button
-          onClick={onStartProject}
-          style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "12px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-        >
-          Start Project
-        </button>
         <button
           onClick={onOpenLoop}
           style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "12px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
@@ -2296,10 +3742,25 @@ function GuidedWalkthroughModal({
   if (!open) return null;
 
   const currentStep = steps[stepIndex] || steps[0];
+  const introMode = mode === "intro";
+  const completeMode = mode === "complete";
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 85, background: "rgba(34, 27, 86, 0.26)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 24 }}>
-      <div style={{ width: "100%", maxWidth: 780, background: "white", border: `1px solid ${S.border}`, borderRadius: 30, boxShadow: "0 32px 72px rgba(83, 74, 183, 0.2)", overflow: "hidden" }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 780,
+          maxHeight: "min(86vh, 920px)",
+          background: "white",
+          border: `1px solid ${S.border}`,
+          borderRadius: 30,
+          boxShadow: "0 32px 72px rgba(83, 74, 183, 0.2)",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <div style={{ padding: "26px 28px 20px", borderBottom: `1px solid ${S.border}`, background: "linear-gradient(135deg, #FFFFFF 0%, #F3F1FF 100%)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
             <div>
@@ -2323,7 +3784,7 @@ function GuidedWalkthroughModal({
           </div>
         </div>
 
-        <div style={{ padding: 28, display: "grid", gap: 20 }}>
+        <div style={{ padding: 28, display: "grid", gap: 20, overflowY: "auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(124px, 1fr))", gap: 10 }}>
             {steps.map((step, index) => {
               const active = index === stepIndex;
@@ -2347,7 +3808,7 @@ function GuidedWalkthroughModal({
             })}
           </div>
 
-          {mode === "intro" && (
+          {introMode && (
             <>
               <div style={{ display: "grid", gap: 12 }}>
                 {steps.map(step => (
@@ -2356,21 +3817,6 @@ function GuidedWalkthroughModal({
                     <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.6, color: S.muted }}>{step.description}</div>
                   </div>
                 ))}
-              </div>
-
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button
-                  onClick={onStart}
-                  style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                >
-                  Start 30-sec Walkthrough
-                </button>
-                <button
-                  onClick={onSkip}
-                  style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                >
-                  I&apos;ll build it myself
-                </button>
               </div>
             </>
           )}
@@ -2388,7 +3834,7 @@ function GuidedWalkthroughModal({
             </div>
           )}
 
-          {mode === "complete" && (
+          {completeMode && (
             <div style={{ display: "grid", gap: 14 }}>
               <div style={{ padding: "18px 18px", borderRadius: 22, border: "1px solid #CFEFD9", background: "linear-gradient(135deg, #F5FFF9 0%, #EEFFF5 100%)" }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: "#177A51", textTransform: "uppercase", letterSpacing: "0.08em" }}>Walkthrough Complete</div>
@@ -2397,23 +3843,54 @@ function GuidedWalkthroughModal({
                   Product Truth, Core Narrative, GTM, Assets, and Feedback were filled in so the user can inspect the complete MVP flow and then change any section manually.
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button
-                  onClick={onClose}
-                  style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                >
-                  Open Workspace
-                </button>
-              </div>
             </div>
           )}
         </div>
+
+        {(introMode || completeMode) && (
+          <div
+            style={{
+              padding: "0 28px 28px",
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              borderTop: `1px solid ${S.border}`,
+              background: "white",
+            }}
+          >
+            {introMode && (
+              <>
+                <button
+                  onClick={onStart}
+                  style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 20 }}
+                >
+                  Start 30-sec Walkthrough
+                </button>
+                <button
+                  onClick={onSkip}
+                  style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 20 }}
+                >
+                  I&apos;ll build it myself
+                </button>
+              </>
+            )}
+
+            {completeMode && (
+              <button
+                onClick={onClose}
+                style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 20 }}
+              >
+                Open Workspace
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function MainWebsitePage({ onOpenLoop, onStartProject }) {
+function MainWebsitePage({ onOpenLoop, onViewProjects, onStartProject }) {
   const [activeTab, setActiveTab] = useState("What Is Loop");
   const content = {
     "Who We Are": {
@@ -2437,7 +3914,7 @@ function MainWebsitePage({ onOpenLoop, onStartProject }) {
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)" }}>
       <MainWebsiteHeader
         onOpenLoop={onOpenLoop}
-        onStartProject={onStartProject}
+        onViewProjects={onViewProjects}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
@@ -2505,6 +3982,267 @@ function MainWebsitePage({ onOpenLoop, onStartProject }) {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function MainWebsitePageSimple({ onOpenLoop, pd, setPd, onSaveProject, onViewProjects }) {
+  const [activeTab, setActiveTab] = useState("What Is Loop");
+  const content = {
+    "Who We Are": {
+      eyebrow: "Who We Are",
+      title: "Loop is building the narrative operating system for product-led teams.",
+      body: "We believe founders, PMMs, product teams, and sales teams need one shared system to align product truth, messaging, go-to-market execution, and feedback over time.",
+    },
+    "What Is Loop": {
+      eyebrow: "Build Your Narrative",
+      title: "Turn your product into a clear, launch-ready narrative in minutes.",
+      body: "Loop drafts the first narrative for you, then gives PMMs and founders a simple workspace to refine the story, generate assets, and close the loop with feedback.",
+    },
+    "Why Loop": {
+      eyebrow: "Why Loop",
+      title: "Because launches break when the story breaks.",
+      body: "Loop exists to reduce narrative drift, shorten review cycles, align teams around one approved story, and turn every launch into a feedback loop that improves the next version.",
+    },
+  }[activeTab];
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)" }}>
+      <MainWebsiteHeader onOpenLoop={onOpenLoop} onViewProjects={onViewProjects} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "52px 28px 64px", display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(360px, 0.9fr)", gap: 24, alignItems: "stretch" }}>
+        <div style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #F1EFFF 100%)", border: `1px solid ${S.border}`, borderRadius: 28, padding: "42px 40px", minHeight: 470, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 18px 40px rgba(83, 74, 183, 0.08)" }}>
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 999, background: P[50], color: P[600], fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
+              {content.eyebrow}
+            </div>
+            <h1 style={{ margin: 0, fontSize: 56, lineHeight: 1.02, letterSpacing: "-0.06em", color: P[900], maxWidth: 780 }}>
+              {content.title}
+            </h1>
+            <p style={{ margin: "22px 0 0", maxWidth: 680, fontSize: 19, lineHeight: 1.68, color: S.muted }}>
+              {content.body}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gap: 18 }}>
+          <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 12px 28px rgba(83, 74, 183, 0.06)" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Build Your Narrative</div>
+            <div style={{ fontSize: 30, lineHeight: 1.08, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>Build your first AI draft</div>
+            <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.65, color: S.muted }}>
+              Add a product name and short description. Loop will draft Product Truth, Core Narrative, and GTM direction, then take you straight into the workspace to refine it.
+            </div>
+            <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Product Name</span>
+                <input value={pd.name} onChange={e => setPd(prev => ({ ...prev, name: e.target.value }))} placeholder="Loop AI Launch Pilot" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+              </label>
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Product Description</span>
+                <textarea value={pd.description} onChange={e => setPd(prev => ({ ...prev, description: e.target.value }))} placeholder="Narrative operating system for launches" rows={6} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
+                <label style={{ display: "grid", gap: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Audience</span>
+                  <input value={pd.audience} onChange={e => setPd(prev => ({ ...prev, audience: e.target.value }))} placeholder="PMM teams at B2B SaaS companies" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+                </label>
+                <label style={{ display: "grid", gap: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Category</span>
+                  <input value={pd.category} onChange={e => setPd(prev => ({ ...prev, category: e.target.value }))} placeholder="Narrative intelligence platform" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+                </label>
+              </div>
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Wow Factor</span>
+                <textarea value={pd.wowFactor} onChange={e => setPd(prev => ({ ...prev, wowFactor: e.target.value }))} placeholder="What feels special, surprising, or unusually useful about this product?" rows={3} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
+              </label>
+              <div style={{ padding: "12px 14px", borderRadius: 16, background: "#F8F7FF", border: `1px solid ${S.border}`, fontSize: 13, lineHeight: 1.6, color: S.muted }}>
+                Loop will first infer product context, then draft Product Truth, Core Narrative, GTM, and starter assets. You will refine the draft and keep control over what becomes final.
+              </div>
+            </div>
+            <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 12 }}>
+              <button
+                onClick={onSaveProject}
+                style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", width: "100%" }}
+              >
+                Generate Narrative
+              </button>
+              <button
+                onClick={onViewProjects}
+                style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", width: "100%" }}
+              >
+                View Projects
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectSection({ title, subtitle, items, emptyState, onOpenProject, onDeleteProject, onAddProject, onDownloadProject }) {
+  return (
+    <div style={{ width: "100%", display: "grid", gap: 16 }}>
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>{title}</div>
+        <div style={{ fontSize: 14, lineHeight: 1.6, color: S.muted }}>{subtitle}</div>
+      </div>
+      <div style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 18 }}>
+        {items.length === 0 && (
+          <div style={{ padding: "22px 20px", borderRadius: 22, border: `1px dashed ${S.border}`, background: "rgba(255,255,255,0.72)", fontSize: 13, lineHeight: 1.7, color: S.muted }}>
+            {emptyState}
+          </div>
+        )}
+        {items.map(project => (
+          (() => {
+            const lifecycle = getProjectLifecycle(project);
+            const statusLabel = lifecycle.label;
+            const statusColor = lifecycle.key === "closed" ? "#177A51" : lifecycle.key === "live" ? "#1F6FEB" : "#8A5CF6";
+            const statusBg = lifecycle.key === "closed" ? "#ECFDF3" : lifecycle.key === "live" ? "#EEF4FF" : "#F6F1FF";
+            const eyebrowLabel = lifecycle.key === "closed" ? "Closed Loop" : "Open Narrative";
+            return (
+          <div
+            key={project.id}
+            style={{
+              border: `1px solid ${S.border}`,
+              background: "white",
+              borderRadius: 24,
+              padding: "24px 22px",
+              boxShadow: "0 16px 36px rgba(83, 74, 183, 0.08)",
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+              <div style={{ display: "grid", gap: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  {eyebrowLabel}
+                </div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 999, background: statusBg, color: statusColor, fontSize: 11, fontWeight: 800 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: statusColor, display: "inline-block" }} />
+                  {statusLabel}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button
+                  onClick={event => {
+                    event.stopPropagation();
+                    onDownloadProject(project);
+                  }}
+                  title="Download report"
+                  style={{ border: `1px solid ${S.border}`, background: "white", color: S.muted, borderRadius: 12, padding: "8px 10px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }}
+                >
+                  ↓
+                </button>
+                <button
+                  onClick={event => {
+                    event.stopPropagation();
+                    onDeleteProject(project.id);
+                  }}
+                  style={{ border: `1px solid ${S.border}`, background: "white", color: S.muted, borderRadius: 12, padding: "8px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => onOpenProject(project)}
+              style={{ textAlign: "left", border: "none", background: "transparent", padding: 0, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              <div style={{ fontSize: 24, lineHeight: 1.15, fontWeight: 800, color: P[900] }}>
+                {project.name || "Untitled Project"}
+              </div>
+              <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.6, color: S.muted }}>
+                {project.description || "Loop product workspace"}
+              </div>
+            </button>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ padding: "8px 10px", borderRadius: 999, background: P[50], color: P[700], fontSize: 11, fontWeight: 800 }}>
+                {project.version || "v1.0"}
+              </span>
+              <span style={{ padding: "8px 10px", borderRadius: 999, background: "#F8F7FF", color: S.text, fontSize: 11, fontWeight: 700 }}>
+                {statusLabel}
+              </span>
+            </div>
+          </div>
+            );
+          })()
+        ))}
+        {title === "Open Narratives" && (
+          <button
+            onClick={onAddProject}
+            style={{
+              border: `1px dashed ${P[200]}`,
+              background: "rgba(255,255,255,0.78)",
+              borderRadius: 24,
+              padding: "24px 22px",
+              boxShadow: "0 16px 36px rgba(83, 74, 183, 0.05)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "grid",
+              placeItems: "center",
+              minHeight: 220,
+              color: P[700],
+              textAlign: "center",
+            }}
+          >
+            <div style={{ display: "grid", gap: 10, justifyItems: "center" }}>
+              <div style={{ width: 58, height: 58, borderRadius: 18, background: P[50], display: "grid", placeItems: "center", fontSize: 32, fontWeight: 500 }}>+</div>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>Add Project</div>
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted, maxWidth: 180 }}>
+                Start another product narrative and add it to your Loop project list.
+              </div>
+            </div>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProjectsHubPage({ onOpenLoop, projects, onOpenProject, onAddProject, onDeleteProject, onDownloadProject }) {
+  const [activeTab, setActiveTab] = useState("What Is Loop");
+  const visibleProjects = [...projects].sort((a, b) => {
+    const left = new Date(a.updatedAt || 0).getTime();
+    const right = new Date(b.updatedAt || 0).getTime();
+    return right - left;
+  });
+  const closedLoopProjects = visibleProjects.filter(project => getProjectLifecycle(project).key === "closed");
+  const openNarrativeProjects = visibleProjects.filter(project => !closedLoopProjects.some(closed => closed.id === project.id));
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)" }}>
+      <MainWebsiteHeader onOpenLoop={onOpenLoop} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "72px 28px 64px", display: "grid", gap: 28, justifyItems: "center" }}>
+        <div style={{ textAlign: "center", display: "grid", gap: 10, maxWidth: 720 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Projects</div>
+          <div style={{ fontSize: 44, lineHeight: 1.04, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>
+            Choose a project to enter Loop
+          </div>
+          <div style={{ fontSize: 15, lineHeight: 1.7, color: S.muted }}>
+            View your active narrative projects and any loops you have already closed. Select a tile to reopen that product inside Loop.
+          </div>
+        </div>
+        <ProjectSection
+          title="Open Narratives"
+          subtitle="Projects still being refined, reviewed, or prepared for launch."
+          items={openNarrativeProjects}
+          emptyState="No open narratives yet. Generate a new narrative to see it here."
+          onOpenProject={onOpenProject}
+          onDeleteProject={onDeleteProject}
+          onAddProject={onAddProject}
+          onDownloadProject={onDownloadProject}
+        />
+        <ProjectSection
+          title="Closed Loop Projects"
+          subtitle="Projects that reached launch and feedback completion."
+          items={closedLoopProjects}
+          emptyState="No closed-loop projects yet. Once a project reaches feedback completion, it will appear here."
+          onOpenProject={onOpenProject}
+          onDeleteProject={onDeleteProject}
+          onAddProject={onAddProject}
+          onDownloadProject={onDownloadProject}
+        />
       </div>
     </div>
   );
@@ -3927,6 +5665,8 @@ function AskAIFloating({
 
 export default function App() {
   const hasHydratedRef = useRef(false);
+  const remoteSyncTimerRef = useRef(null);
+  const restoringProjectRef = useRef(false);
   const [screen, setScreen] = useState("home");
   const [platformMode, setPlatformMode] = useState("original");
   const [active, setActive] = useState("productTruth");
@@ -3949,17 +5689,14 @@ export default function App() {
   const [approvedChanges, setApprovedChanges] = useState({});
   const [compareVersionId, setCompareVersionId] = useState("");
   const [starredTiles, setStarredTiles] = useState({});
-  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
-  const [walkthroughMode, setWalkthroughMode] = useState("intro");
-  const [walkthroughStep, setWalkthroughStep] = useState(0);
-  const [walkthroughSeen, setWalkthroughSeen] = useState(false);
   const [testProjects, setTestProjects] = useState([]);
   const [currentTestProjectId, setCurrentTestProjectId] = useState("");
+  const [remoteProjectsLoaded, setRemoteProjectsLoaded] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(typeof window === "undefined" ? 1280 : window.innerWidth);
-  const walkthroughTimersRef = useRef([]);
   const [pd, setPd] = useState({
     name: "",
     description: "",
+    wowFactor: "",
     launchDate: "",
     version: "",
     status: "Planned",
@@ -3977,6 +5714,14 @@ export default function App() {
     whyNow: "",
     audience: "",
     diff: "",
+  });
+  const [aiDraft, setAiDraft] = useState(makeEmptyAiDraft());
+  const [userEdits, setUserEdits] = useState({});
+  const [narrativeUiState, setNarrativeUiState] = useState({
+    isGenerated: false,
+    improveMode: false,
+    isGenerating: false,
+    enhancingSection: "",
   });
   const [cap, setCap] = useState({
     features: "",
@@ -4022,8 +5767,8 @@ export default function App() {
   const [primaryPersonaLayout, setPrimaryPersonaLayout] = useState(makeSingleTileLayout("primary", 220));
   const [secondaryPersonaLayout, setSecondaryPersonaLayout] = useState(makeSingleTileLayout("secondary", 160));
   const [buyerPersonaLayout, setBuyerPersonaLayout] = useState(makeSingleTileLayout("persona", 190));
-  const [strat, setStrat] = useState({ goal: "", icp: "", channels: "" });
-  const [stratLayout, setStratLayout] = useState(DEFAULT_STRATEGY_LAYOUT);
+  const [strat, setStrat] = useState({ goal: "", icp: "", channels: "", hooks: "" });
+  const [_stratLayout, _setStratLayout] = useState(DEFAULT_STRATEGY_LAYOUT);
   const [story, setStory] = useState({ origin: "", customer: "", demo: "" });
   const [storyLayout, setStoryLayout] = useState(DEFAULT_STORY_LAYOUT);
   const [alignment, setAlignment] = useState({
@@ -4257,13 +6002,14 @@ export default function App() {
       severity: "suggested",
     } : null,
   ].filter(Boolean).filter(item => !reviewDismissed[item.id]);
+  const reportAlignmentScore = Math.max(42, 100 - rawReviewItems.length * 10 - (projectReview.status === "Requested" ? 6 : 0));
   const sectionFlagCounts = rawReviewItems.reduce((acc, item) => {
     acc[item.target] = (acc[item.target] || 0) + 1;
     return acc;
   }, {});
 
   const panelMap = {
-    productTruth: <ProductTruthOverviewPanel pd={pd} cap={cap} comp={comp} />,
+    productTruth: <BuildNarrativeWorkspacePanel section="productTruth" pd={pd} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
     productOverview: <ProductOverviewSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={productOverviewLayout} setLayout={setProductOverviewLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="productOverview" />,
     problemStatementSection: <ProblemStatementSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={problemStatementLayout} setLayout={setProblemStatementLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="problemStatementSection" />,
     solutionSection: <SolutionSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={solutionSectionLayout} setLayout={setSolutionSectionLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="solutionSection" />,
@@ -4273,7 +6019,7 @@ export default function App() {
     capabilitiesTruth: <CapabilitiesTruthPanel d={cap} set={setCap} compact={!useCanvasColumns} layout={capabilitiesSectionLayout} setLayout={setCapabilitiesSectionLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="capabilitiesTruth" />,
     competitorsTruth: <CompetitorsTruthPanel d={comp} set={setComp} compact={!useCanvasColumns} layout={competitorsSectionLayout} setLayout={setCompetitorsSectionLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitorsTruth" />,
     addSection: <AddSectionPanel />,
-    narrative: <NarrativeOverviewPanel pos={pos} msg={msg} aud={aud} />,
+    narrative: <BuildNarrativeWorkspacePanel section="narrative" pd={pd} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
     positioningStatementSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={positioningStatementLayout} setLayout={setPositioningStatementLayout} minHeight={360} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="positioningStatementSection" tile={{ id: "statement", title: "Positioning Statement", render: tile => <CanvasField label="Positioning Statement (Geoffrey Moore Style)" value={pos.statement} onChange={value => setPos(prev => ({ ...prev, statement: value }))} placeholder="For [target customer] who [statement of need or opportunity], [product name] is a [product category] that [key benefit]. Unlike [primary competitive alternative], [product name] [primary differentiation]." rows={6} minHeight={Math.max(190, (tile?.h || 190) - 34)} accent="#F8F7FF" /> }} suggestions={[{ type: "section", icon: "◔", title: "Value Proposition", description: "Capture the strongest promise that supports this positioning." }, { type: "section", icon: "◫", title: "Category Design", description: "Add category framing to make the positioning more ownable." }, { type: "asset", icon: "▤", title: "Positioning Brief", description: "Generate a concise positioning brief for internal alignment." }]} />,
     valuePropSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={valuePropLayout} setLayout={setValuePropLayout} minHeight={330} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="valuePropSection" tile={{ id: "valueProp", title: "Value Proposition", render: tile => <CanvasField label="Value Proposition" value={pos.valueProp} onChange={value => setPos(prev => ({ ...prev, valueProp: value }))} placeholder="Summarize the core promise and business value your product delivers..." rows={5} minHeight={Math.max(160, (tile?.h || 160) - 34)} /> }} suggestions={[{ type: "section", icon: "◌", title: "Key Value", description: "Break the value proposition into sharper value outcomes." }, { type: "section", icon: "▦", title: "Messaging Pillars", description: "Turn the value proposition into repeatable message themes." }, { type: "asset", icon: "▣", title: "Value Prop One-Pager", description: "Generate a short internal or investor-facing value summary." }]} />,
     headlineSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={headlineLayout} setLayout={setHeadlineLayout} minHeight={300} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="headlineSection" tile={{ id: "headline", title: "Headline Message", render: tile => <CanvasField label="Headline Message" value={msg.headline} onChange={value => setMsg(prev => ({ ...prev, headline: value }))} placeholder="Your primary hero message..." rows={3} minHeight={Math.max(140, (tile?.h || 140) - 34)} /> }} suggestions={[{ type: "section", icon: "▦", title: "Messaging Pillars", description: "Build support messages under this headline." }, { type: "section", icon: "◫", title: "Elevator Pitch", description: "Expand this headline into a short verbal story." }, { type: "asset", icon: "!", title: "Homepage Hero Copy", description: "Generate homepage hero copy from the headline." }]} />,
@@ -4285,7 +6031,7 @@ export default function App() {
     secondaryPersonaSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={secondaryPersonaLayout} setLayout={setSecondaryPersonaLayout} minHeight={300} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="secondaryPersonaSection" tile={{ id: "secondary", title: "Secondary Persona", render: tile => <CanvasField label="Secondary Persona" value={aud.secondary} onChange={value => setAud(prev => ({ ...prev, secondary: value }))} placeholder="Additional buyer or influencer persona..." rows={4} minHeight={Math.max(130, (tile?.h || 130) - 34)} accent="#F8F7FF" /> }} suggestions={[{ type: "section", icon: "⊙", title: "Primary Persona", description: "Clarify how this persona differs from the primary audience." }, { type: "section", icon: "◫", title: "Objection Handling", description: "Capture concerns this persona is likely to raise." }, { type: "asset", icon: "▤", title: "Influencer Brief", description: "Generate a short brief on how to message to this persona." }]} />,
     buyerPersonaSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={buyerPersonaLayout} setLayout={setBuyerPersonaLayout} minHeight={340} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="buyerPersonaSection" tile={{ id: "persona", title: "Detailed Buyer Persona", render: () => <GenBlock label="Detailed Buyer Persona" prompt={pd.audience ? `Create a buyer persona for: ${pd.audience}. Include: name/title, day-in-the-life challenge, what they care about (3 things), key objections, how they discover tools.` : ""} /> }} suggestions={[{ type: "section", icon: "▦", title: "Messaging Pillars", description: "Translate persona detail into stronger message framing." }, { type: "section", icon: "◫", title: "Sales Enablement Brief", description: "Give sales a more usable understanding of this buyer." }, { type: "asset", icon: "▣", title: "Buyer Persona Card", description: "Generate a polished buyer persona summary asset." }]} />,
     addNarrativeSection: <NarrativeAddSectionPanel />,
-    strategy: <StrategyPanel d={strat} set={setStrat} pd={pd} compact={!useCanvasColumns} layout={stratLayout} setLayout={setStratLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="strategy" />,
+    strategy: <BuildNarrativeWorkspacePanel section="gtm" pd={pd} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
     story: <StoryPanel d={story} set={setStory} pd={pd} compact={!useCanvasColumns} layout={storyLayout} setLayout={setStoryLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="story" />,
     alignment: <AlignmentPanel d={{
       ...feedbackDashboardData,
@@ -4406,6 +6152,35 @@ export default function App() {
     setCompareVersionId(current.id);
   }
 
+  async function refreshRemoteProjects(showNoticeOnFail = false, syncMode = "merge", allowEmptyReplace = false) {
+    if (!isSupabaseConfigured()) {
+      setRemoteProjectsLoaded(true);
+      return [];
+    }
+
+    try {
+      const projects = await listLoopProjects();
+      const sanitizedRemoteProjects = sanitizeProjects(projects);
+      setTestProjects(prev => (
+        syncMode === "replace"
+          ? (sanitizedRemoteProjects.length || allowEmptyReplace
+              ? sanitizedRemoteProjects
+              : sanitizeProjects(prev))
+          : mergeProjectsById(sanitizeProjects(prev), sanitizedRemoteProjects)
+      ));
+      setRemoteProjectsLoaded(true);
+      return sanitizedRemoteProjects;
+    } catch {
+      setRemoteProjectsLoaded(true);
+      if (showNoticeOnFail) {
+        setPlatformNotice("Loop could not refresh projects from Supabase. Check the connection and try again.");
+      } else {
+        setPlatformNotice("Supabase is connected, but Loop's database schema is not ready yet. Run the SQL in supabase/loop_mvp_schema.sql to enable live project saves.");
+      }
+      return [];
+    }
+  }
+
   useEffect(() => {
     function onResize() {
       setViewportWidth(window.innerWidth);
@@ -4413,10 +6188,6 @@ export default function App() {
 
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  useEffect(() => () => {
-    walkthroughTimersRef.current.forEach(timer => window.clearTimeout(timer));
   }, []);
 
   useEffect(() => {
@@ -4441,7 +6212,7 @@ export default function App() {
       if (saved.approvedChanges) setApprovedChanges(saved.approvedChanges);
       if (saved.compareVersionId) setCompareVersionId(saved.compareVersionId);
       if (saved.starredTiles) setStarredTiles(saved.starredTiles);
-      if (saved.testProjects) setTestProjects(saved.testProjects);
+      if (saved.testProjects) setTestProjects(sanitizeProjects(saved.testProjects));
       if (saved.currentTestProjectId) setCurrentTestProjectId(saved.currentTestProjectId);
       if (saved.pd) setPd(saved.pd);
       if (saved.cap) setCap(saved.cap);
@@ -4454,6 +6225,9 @@ export default function App() {
       if (saved.assets) setAssets(saved.assets);
       if (saved.analytics) setAnalytics(saved.analytics);
       if (saved.confidence) setConfidence(saved.confidence);
+      if (saved.aiDraft) setAiDraft(saved.aiDraft);
+      if (saved.userEdits) setUserEdits(saved.userEdits);
+      if (saved.narrativeUiState) setNarrativeUiState(saved.narrativeUiState);
       if (saved.brand) setBrand(saved.brand);
       if (saved.workspaceSaves) setWorkspaceSaves(saved.workspaceSaves);
       if (saved.projectReview) setProjectReview(saved.projectReview);
@@ -4464,6 +6238,31 @@ export default function App() {
       hasHydratedRef.current = true;
     }
   }, []);
+
+  useEffect(() => {
+    refreshRemoteProjects(false, "replace", false);
+  }, []);
+
+  useEffect(() => {
+    if (screen !== "projectsHub") return;
+    refreshRemoteProjects(true, "replace", false);
+  }, [screen]);
+
+  useEffect(() => {
+    if (screen !== "projectsHub" || !isSupabaseConfigured()) return;
+
+    const syncProjects = () => {
+      refreshRemoteProjects(false, "replace", false);
+    };
+
+    const intervalId = window.setInterval(syncProjects, 4000);
+    window.addEventListener("focus", syncProjects);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncProjects);
+    };
+  }, [screen]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !hasHydratedRef.current) return;
@@ -4481,7 +6280,7 @@ export default function App() {
       approvedChanges,
       compareVersionId,
       starredTiles,
-      testProjects,
+      testProjects: sanitizeProjects(testProjects),
       currentTestProjectId,
       pd,
       cap,
@@ -4494,6 +6293,9 @@ export default function App() {
       assets,
       analytics,
       confidence,
+      aiDraft,
+      userEdits,
+      narrativeUiState,
       brand,
       workspaceSaves,
       projectReview,
@@ -4527,6 +6329,9 @@ export default function App() {
     assets,
     analytics,
     confidence,
+    aiDraft,
+    userEdits,
+    narrativeUiState,
     brand,
     workspaceSaves,
     projectReview,
@@ -4535,11 +6340,31 @@ export default function App() {
 
   useEffect(() => {
     if (!currentTestProjectId) return;
-    setTestProjects(prev => prev.map(project => (
-      project.id === currentTestProjectId ? buildTestProjectSnapshot(currentTestProjectId) : project
-    )));
+    if (restoringProjectRef.current) return;
+    if (!["workspace", "contextReview"].includes(screen)) return;
+    const snapshot = buildTestProjectSnapshot(currentTestProjectId);
+    setTestProjects(prev => mergeProjectsById(prev, [snapshot]));
+
+    if (!remoteProjectsLoaded || !isSupabaseConfigured()) return;
+
+    if (remoteSyncTimerRef.current) {
+      clearTimeout(remoteSyncTimerRef.current);
+    }
+
+    remoteSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const savedProject = await saveLoopProject(snapshot);
+        if (savedProject) {
+          setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+        }
+      } catch {
+        setPlatformNotice("Loop could not save to Supabase. Check that the loop_projects table and public policies were created.");
+      }
+    }, 500);
   }, [
     currentTestProjectId,
+    screen,
+    remoteProjectsLoaded,
     pd,
     cap,
     comp,
@@ -4551,6 +6376,9 @@ export default function App() {
     assets,
     analytics,
     confidence,
+    aiDraft,
+    userEdits,
+    narrativeUiState,
     workspaceSaves,
     projectReview,
     feedbackEntries,
@@ -4569,11 +6397,24 @@ export default function App() {
     }
   }, [isMobile]);
 
+  useEffect(() => () => {
+    if (remoteSyncTimerRef.current) {
+      clearTimeout(remoteSyncTimerRef.current);
+    }
+  }, []);
+
   async function runAssistantPrompt(promptText) {
     if (!promptText?.trim() || aiLoading) return;
     setAiLoading(true);
-    setAiOutput(await callClaude(promptText));
-    setAiLoading(false);
+    try {
+      const response = await callClaude(promptText);
+      setAiOutput(response || "Loop AI did not return a response. Try asking with more product context.");
+    } catch {
+      setAiOutput("Loop AI could not answer right now. Check the OpenAI key, model access, and billing, then try again.");
+      setPlatformNotice("Ask AI could not complete that request. Verify the OpenAI key and billing, then try again.");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   function handleQuickAction(action) {
@@ -4583,43 +6424,297 @@ export default function App() {
     runAssistantPrompt(promptText);
   }
 
-  const workspaceTabs = ["Product Truth", "Core Narrative", "Competition", "GTM", "Assets", "Feedback"];
-  const activeWorkspace = workspaceTabs.includes(activeGroup) ? activeGroup : "Product Truth";
-  const visibleGroups = MVP_NAV.filter(group => group.group === activeWorkspace);
-  const walkthroughSteps = [
-    { id: "productTruth", workspace: "Product Truth", target: "productTruth", description: "Define the product, the problem, the solution, the audience, and why the product matters." },
-    { id: "narrative", workspace: "Core Narrative", target: "narrative", description: "Turn product truth into positioning, value proposition, messaging pillars, and a clear story." },
-    { id: "competition", workspace: "Competition", target: "competitionOverview", description: "Capture alternatives, why you win, and the sales-ready market story." },
-    { id: "gtm", workspace: "GTM", target: "strategy", description: "Translate the narrative into a launch goal, ICP focus, channels, and rollout plan." },
-    { id: "assets", workspace: "Assets", target: "assets", description: "Create launch-ready outputs and aligned messaging assets from the approved narrative." },
-    { id: "feedback", workspace: "Feedback", target: "analytics", description: "Track what landed, what changed, and what should improve in the next version." },
-  ];
-  const askAiRightOffset = screen === "workspace" && showDesktopAiRail ? (aiRailCollapsed ? 92 : 354) : 24;
+  function applyNarrativeDraftToWorkingState(draft, preserveEdited = false) {
+    const shouldApply = key => !preserveEdited || !userEdits[key];
+    const productInput = buildProductInput(pd);
+    const legacy = buildLegacyCanvasValues(productInput, draft);
 
-  function openWorkspaceTab(group) {
-    setScreen("workspace");
-    const overviewId = groupOverviewMap[group];
-    if (overviewId) {
-      setActive(overviewId);
-      return;
+    if (shouldApply("productTruth.problem")) {
+      setPd(prev => ({
+        ...prev,
+        category: prev.category || draft.context.productCategory || prev.category,
+        whatItDoes: prev.whatItDoes || legacy.whatItDoes,
+        builtFor: prev.builtFor || legacy.builtFor,
+        problem: draft.productTruth.problem || prev.problem,
+        problemStatement: draft.productTruth.problem || prev.problemStatement,
+        problemImpact: prev.problemImpact || legacy.problemImpact,
+        currentSolutionGaps: prev.currentSolutionGaps || legacy.currentSolutionGaps,
+        solution: draft.productTruth.solution || prev.solution || prev.description || draft.sourceSummary || "",
+        solutionMechanism: prev.solutionMechanism || legacy.solutionMechanism,
+        whyNow: prev.whyNow || legacy.whyNow,
+      }));
     }
-    const firstItem = NAV.find(navGroup => navGroup.group === group)?.items?.[0];
-    if (firstItem) {
-      setActive(firstItem.id);
+
+    if (shouldApply("productTruth.icp")) {
+      setPd(prev => ({ ...prev, audience: draft.productTruth.icp || prev.audience }));
+      setStrat(prev => ({ ...prev, icp: draft.productTruth.icp || prev.icp }));
+    }
+
+    if (shouldApply("productTruth.value")) {
+      setPos(prev => ({ ...prev, valueProp: draft.narrative.valueProposition || draft.productTruth.value || prev.valueProp }));
+      setPd(prev => ({ ...prev, diff: draft.productTruth.differentiation || draft.productTruth.value || prev.diff }));
+      setComp(prev => ({
+        ...prev,
+        differentiators: prev.differentiators || legacy.differentiators,
+        alternativeGaps: prev.alternativeGaps || legacy.alternativeGaps,
+        proofPoints: prev.proofPoints || legacy.proofPoints,
+      }));
+    }
+
+    if (shouldApply("narrative.positioning")) {
+      setPos(prev => ({ ...prev, statement: draft.narrative.positioning || prev.statement }));
+    }
+
+    if (shouldApply("narrative.messaging")) {
+      const joinedMessages = normalizeDraftText(draft.narrative.topMessages);
+      setMsg(prev => ({
+        ...prev,
+        pillars: draft.narrative.messaging || joinedMessages || prev.pillars,
+        headline: draft.assets.headline || prev.headline || (draft.narrative.positioning || "").split(".")[0],
+        elevator: draft.assets.elevatorPitch || prev.elevator || `${draft.productTruth.value || ""} ${draft.narrative.positioning || ""}`.trim(),
+      }));
+    }
+
+    if (shouldApply("gtm.channels")) {
+      setStrat(prev => ({ ...prev, channels: draft.gtm.channels || prev.channels }));
+    }
+
+    if (shouldApply("gtm.strategy") || shouldApply("gtm.launchStrategy")) {
+      setStrat(prev => ({
+        ...prev,
+        goal: draft.gtm.strategy || prev.goal || "Validate the narrative with early launch feedback.",
+        hooks: draft.gtm.launchApproach || draft.gtm.hooks || prev.hooks,
+      }));
     }
   }
 
-  function buildTestProjectSnapshot(projectId = currentTestProjectId || `test-${Date.now()}`) {
+async function generateNarrativeDraft(productInput, contextOverride = null) {
+  const fallback = buildLocalNarrativeDraft(productInput);
+  const context = contextOverride || await generateContext(productInput);
+    const productTruth = await generateProductTruth(context, productInput);
+    const narrative = await generateNarrative(productTruth, context, productInput);
+    const gtm = await generateGtm(narrative, productTruth, context, productInput);
+    const assetsDraft = await generateAssets(narrative, gtm, productTruth, context, productInput);
+
     return {
-      id: projectId,
-      name: pd.name || "Untitled Test Project",
-      description: pd.description || "Loop MVP test workspace",
-      launchDate: pd.launchDate,
+      ...fallback,
+      context,
+      productTruth: { ...fallback.productTruth, ...productTruth },
+      narrative: { ...fallback.narrative, ...narrative },
+      gtm: { ...fallback.gtm, ...gtm },
+      assets: { ...fallback.assets, ...assetsDraft },
+      sourceSummary: productInput.description || fallback.sourceSummary,
+    };
+  }
+
+  async function _handleGenerateNarrative() {
+    if (!(pd.name || "").trim() || !(pd.description || "").trim()) {
+      setPlatformNotice("Add a product name and product description before generating a narrative.");
+      return;
+    }
+
+    setPlatformNotice("");
+    setNarrativeUiState(prev => ({ ...prev, isGenerating: true }));
+    const nextProjectId = currentTestProjectId || `test-${Date.now()}`;
+    const productInput = buildProductInput(pd);
+    const draft = await generateNarrativeDraft(productInput);
+    const nextLaunchDate = pd.launchDate || addDays(new Date().toISOString().slice(0, 10), 21);
+    const legacy = buildLegacyCanvasValues(productInput, draft);
+
+    setPlatformMode("test");
+    setCurrentTestProjectId(nextProjectId);
+    setAiDraft(draft);
+    setUserEdits({});
+    setPd(prev => ({
+      ...prev,
+      launchDate: nextLaunchDate,
+      version: prev.version || "v1.0",
+      status: "Started",
+      whatItDoes: prev.description || prev.whatItDoes,
+      category: prev.category || draft.context.productCategory || "",
+    }));
+    applyNarrativeDraftToWorkingState(draft, false);
+    setAssets(prev => ({
+      ...prev,
+      notes: prev.notes || [
+        draft.assets.headline ? `Homepage headline: ${draft.assets.headline}` : "",
+        draft.assets.elevatorPitch ? `Elevator pitch: ${draft.assets.elevatorPitch}` : "",
+        draft.assets.emailPitch ? `Email pitch: ${draft.assets.emailPitch}` : "",
+        draft.assets.messagingAsset ? `Messaging asset: ${draft.assets.messagingAsset}` : "",
+      ].filter(Boolean).join("\n\n") || "Generate launch-ready assets from the approved narrative draft.",
+    }));
+    setProjectReview(prev => ({ ...prev, status: "Draft", lastAction: "AI narrative draft generated" }));
+    setWorkflowStage("productTruth");
+    setActive("productTruth");
+    setScreen("workspace");
+    setNarrativeUiState({
+      isGenerated: true,
+      improveMode: false,
+      isGenerating: false,
+      enhancingSection: "",
+    });
+    setTestScenarioLoaded(false);
+    setPlatformNotice("✨ Draft generated — refine it, generate assets, and close the loop with feedback.");
+
+    const projectSnapshot = {
+      id: nextProjectId,
+      name: pd.name.trim(),
+      description: pd.description.trim(),
+      launchDate: nextLaunchDate,
       version: pd.version || "v1.0",
-      status: pd.status || "Planned",
+      status: "Started",
       updatedAt: new Date().toISOString(),
       snapshot: {
-        pd,
+        pd: {
+          ...pd,
+          launchDate: nextLaunchDate,
+          version: pd.version || "v1.0",
+          status: "Started",
+          whatItDoes: pd.whatItDoes || legacy.whatItDoes,
+          builtFor: pd.builtFor || legacy.builtFor,
+          category: pd.category || draft.context.productCategory || "",
+          problem: draft.productTruth.problem,
+          problemStatement: draft.productTruth.problem,
+          problemImpact: pd.problemImpact || legacy.problemImpact,
+          currentSolutionGaps: pd.currentSolutionGaps || legacy.currentSolutionGaps,
+          audience: draft.productTruth.icp,
+          solution: draft.productTruth.solution,
+          solutionMechanism: pd.solutionMechanism || legacy.solutionMechanism,
+          whyNow: pd.whyNow || legacy.whyNow,
+          diff: draft.productTruth.differentiation || draft.productTruth.value,
+        },
+        cap,
+        comp: {
+          ...comp,
+          differentiators: comp.differentiators || legacy.differentiators,
+          alternativeGaps: comp.alternativeGaps || legacy.alternativeGaps,
+          proofPoints: comp.proofPoints || legacy.proofPoints,
+        },
+        pos: {
+          ...pos,
+          statement: draft.narrative.positioning,
+          valueProp: draft.narrative.valueProposition || draft.productTruth.value,
+        },
+        msg: {
+          ...msg,
+          pillars: draft.narrative.messaging || normalizeDraftText(draft.narrative.topMessages),
+          headline: draft.assets.headline || msg.headline || (draft.narrative.positioning || "").split(".")[0],
+          elevator: draft.assets.elevatorPitch || msg.elevator || `${draft.productTruth.value || ""} ${draft.narrative.positioning || ""}`.trim(),
+        },
+        aud,
+        strat: {
+          ...strat,
+          icp: draft.productTruth.icp,
+          goal: draft.gtm.strategy || strat.goal || "Validate the narrative with early launch feedback.",
+          channels: draft.gtm.channels,
+          hooks: draft.gtm.hooks,
+        },
+        story,
+        assets: {
+          ...assets,
+          notes: assets.notes || [
+            draft.assets.headline ? `Homepage headline: ${draft.assets.headline}` : "",
+            draft.assets.elevatorPitch ? `Elevator pitch: ${draft.assets.elevatorPitch}` : "",
+            draft.assets.emailPitch ? `Email pitch: ${draft.assets.emailPitch}` : "",
+            draft.assets.messagingAsset ? `Messaging asset: ${draft.assets.messagingAsset}` : "",
+          ].filter(Boolean).join("\n\n") || "Generate launch-ready assets from the approved narrative draft.",
+        },
+        analytics,
+        confidence,
+        workspaceSaves,
+        projectReview: {
+          ...projectReview,
+          status: "Draft",
+          lastAction: "AI narrative draft generated",
+        },
+        feedbackEntries,
+        aiDraft: draft,
+        userEdits: {},
+        narrativeUiState: {
+          isGenerated: true,
+          improveMode: false,
+          isGenerating: false,
+          enhancingSection: "",
+        },
+        active: "productTruth",
+        workflowStage: "productTruth",
+        launchComplete: false,
+        feedbackCaptured: false,
+        reviewDismissed: {},
+        approvedChanges: {},
+        compareVersionId: "",
+      },
+    };
+
+    setTestProjects(prev => mergeProjectsById(prev, [projectSnapshot]));
+    if (isSupabaseConfigured()) {
+      try {
+        const savedProject = await saveLoopProject(projectSnapshot);
+        if (savedProject) {
+          setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+          refreshRemoteProjects(false);
+        }
+      } catch {
+        setPlatformNotice("Narrative generated, but Loop could not save the new project to Supabase. Check the connection and try again.");
+      }
+    }
+  }
+
+  async function handleGenerateNarrativeReliable() {
+    if (!(pd.name || "").trim() || !(pd.description || "").trim()) {
+      setPlatformNotice("Add a product name and product description before generating a narrative.");
+      return;
+    }
+
+    setPlatformNotice("");
+    setNarrativeUiState(prev => ({ ...prev, isGenerating: true }));
+
+    const currentProject = testProjects.find(project => project.id === currentTestProjectId);
+    const currentProjectName = (
+      currentProject?.snapshot?.pd?.name ||
+      currentProject?.name ||
+      ""
+    ).trim().toLowerCase();
+    const requestedProjectName = (pd.name || "").trim().toLowerCase();
+    const shouldCreateNewProject =
+      !currentTestProjectId ||
+      screen !== "workspace" ||
+      (requestedProjectName && currentProjectName && requestedProjectName !== currentProjectName);
+    const nextProjectId = shouldCreateNewProject ? `test-${Date.now()}` : currentTestProjectId;
+    const nextLaunchDate = pd.launchDate || addDays(new Date().toISOString().slice(0, 10), 21);
+
+    setPlatformMode("test");
+    setCurrentTestProjectId(nextProjectId);
+    setUserEdits({});
+    setWorkflowStage("productTruth");
+    setActive("productTruth");
+    setScreen("contextReview");
+    setTestScenarioLoaded(false);
+    setPd(prev => ({
+      ...prev,
+      launchDate: nextLaunchDate,
+      version: prev.version || "v1.0",
+      status: "Started",
+      whatItDoes: prev.description || prev.whatItDoes,
+    }));
+    setProjectReview(prev => ({ ...prev, status: "Draft", lastAction: "Narrative generation started" }));
+
+    const baseProjectSnapshot = {
+      id: nextProjectId,
+      name: pd.name.trim(),
+      description: pd.description.trim(),
+      launchDate: nextLaunchDate,
+      version: pd.version || "v1.0",
+      status: "Started",
+      updatedAt: new Date().toISOString(),
+      snapshot: {
+        pd: {
+          ...pd,
+          launchDate: nextLaunchDate,
+          version: pd.version || "v1.0",
+          status: "Started",
+          whatItDoes: pd.description || pd.whatItDoes,
+        },
         cap,
         comp,
         pos,
@@ -4631,22 +6726,389 @@ export default function App() {
         analytics,
         confidence,
         workspaceSaves,
-        projectReview,
+        projectReview: {
+          ...projectReview,
+          status: "Draft",
+          lastAction: "Narrative generation started",
+        },
         feedbackEntries,
-        active,
-        workflowStage,
-        launchComplete,
-        feedbackCaptured,
-        reviewDismissed,
-        approvedChanges,
-        compareVersionId,
+        aiDraft: makeEmptyAiDraft(),
+        userEdits: {},
+        narrativeUiState: {
+          isGenerated: false,
+          improveMode: false,
+          isGenerating: true,
+          enhancingSection: "",
+        },
+        active: "productTruth",
+        workflowStage: "productTruth",
+        launchComplete: false,
+        feedbackCaptured: false,
+        reviewDismissed: {},
+        approvedChanges: {},
+        compareVersionId: "",
+      },
+    };
+
+    setTestProjects(prev => mergeProjectsById(prev, [baseProjectSnapshot]));
+    if (isSupabaseConfigured()) {
+      try {
+        const savedProject = await saveLoopProject(baseProjectSnapshot);
+        if (savedProject) {
+          setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+          refreshRemoteProjects(false);
+        }
+      } catch (error) {
+        setPlatformNotice(`Loop started the project locally, but could not save the new project to Supabase yet: ${error?.message || "Unknown error"}`);
+      }
+    }
+
+    try {
+      const productInput = buildProductInput(pd);
+      const context = await generateContext(productInput);
+      setAiDraft(prev => ({ ...prev, context }));
+      setNarrativeUiState(prev => ({ ...prev, isGenerating: false }));
+      setPlatformNotice("AI context is ready. Confirm it, then Loop will draft Product Truth, Core Narrative, and GTM.");
+    } catch {
+      setNarrativeUiState(prev => ({ ...prev, isGenerating: false }));
+      setPlatformNotice("Loop could not generate AI context right now. Check the OpenAI setup and try again.");
+    }
+  }
+
+  async function handleConfirmAiContext() {
+    if (!(pd.name || "").trim() || !(pd.description || "").trim()) {
+      setPlatformNotice("Add a product name and product description before generating a narrative.");
+      return;
+    }
+
+    const nextLaunchDate = pd.launchDate || addDays(new Date().toISOString().slice(0, 10), 21);
+    const productInput = buildProductInput(pd);
+    const reviewedContext = {
+      ...makeEmptyAiDraft().context,
+      ...(aiDraft.context || {}),
+    };
+    const baseProjectSnapshot = buildTestProjectSnapshot(currentTestProjectId || `test-${Date.now()}`);
+
+    setScreen("workspace");
+    setNarrativeUiState(prev => ({ ...prev, isGenerating: true }));
+
+    try {
+      const draft = await generateNarrativeDraft(productInput, reviewedContext);
+      const legacy = buildLegacyCanvasValues(productInput, draft);
+      const assetNotes = [
+        draft.assets.headline ? `Homepage headline: ${draft.assets.headline}` : "",
+        draft.assets.elevatorPitch ? `Elevator pitch: ${draft.assets.elevatorPitch}` : "",
+        draft.assets.emailPitch ? `Email pitch: ${draft.assets.emailPitch}` : "",
+        draft.assets.messagingAsset ? `Messaging asset: ${draft.assets.messagingAsset}` : "",
+      ].filter(Boolean).join("\n\n") || "Generate launch-ready assets from the approved narrative draft.";
+
+      setAiDraft(draft);
+      setPd(prev => ({
+        ...prev,
+        launchDate: nextLaunchDate,
+        version: prev.version || "v1.0",
+        status: "Started",
+        whatItDoes: prev.whatItDoes || legacy.whatItDoes,
+        builtFor: prev.builtFor || legacy.builtFor,
+        category: prev.category || draft.context.productCategory || "",
+      }));
+      applyNarrativeDraftToWorkingState(draft, false);
+      setAssets(prev => ({ ...prev, notes: prev.notes || assetNotes }));
+      setProjectReview(prev => ({ ...prev, status: "Draft", lastAction: "AI narrative draft generated" }));
+      setNarrativeUiState({
+        isGenerated: true,
+        improveMode: false,
+        isGenerating: false,
+        enhancingSection: "",
+      });
+      setPlatformNotice("Draft generated. Refine it, generate assets, and close the loop with feedback.");
+
+      const rawProjectSnapshot = {
+        ...baseProjectSnapshot,
+        updatedAt: new Date().toISOString(),
+        snapshot: {
+          ...baseProjectSnapshot.snapshot,
+          pd: {
+            ...baseProjectSnapshot.snapshot.pd,
+            whatItDoes: pd.whatItDoes || legacy.whatItDoes,
+            builtFor: pd.builtFor || legacy.builtFor,
+            category: pd.category || draft.context.productCategory || "",
+            problem: draft.productTruth.problem,
+            problemStatement: draft.productTruth.problem,
+            problemImpact: pd.problemImpact || legacy.problemImpact,
+            currentSolutionGaps: pd.currentSolutionGaps || legacy.currentSolutionGaps,
+            audience: draft.productTruth.icp,
+            solution: draft.productTruth.solution,
+            solutionMechanism: pd.solutionMechanism || legacy.solutionMechanism,
+            whyNow: pd.whyNow || legacy.whyNow,
+            diff: draft.productTruth.differentiation || draft.productTruth.value,
+          },
+          comp: {
+            ...comp,
+            differentiators: comp.differentiators || legacy.differentiators,
+            alternativeGaps: comp.alternativeGaps || legacy.alternativeGaps,
+            proofPoints: comp.proofPoints || legacy.proofPoints,
+          },
+          pos: {
+            ...pos,
+            statement: draft.narrative.positioning,
+            valueProp: draft.narrative.valueProposition || draft.productTruth.value,
+          },
+          msg: {
+            ...msg,
+            pillars: draft.narrative.messaging || normalizeDraftText(draft.narrative.topMessages),
+            headline: draft.assets.headline || msg.headline || (draft.narrative.positioning || "").split(".")[0],
+            elevator: draft.assets.elevatorPitch || msg.elevator || `${draft.productTruth.value || ""} ${draft.narrative.positioning || ""}`.trim(),
+          },
+          strat: {
+            ...strat,
+            icp: draft.productTruth.icp,
+            goal: draft.gtm.strategy || strat.goal || "Validate the narrative with early launch feedback.",
+            channels: draft.gtm.channels,
+            hooks: draft.gtm.hooks,
+          },
+          assets: {
+            ...assets,
+            notes: assets.notes || assetNotes,
+          },
+          projectReview: {
+            ...projectReview,
+            status: "Draft",
+            lastAction: "AI narrative draft generated",
+          },
+          aiDraft: draft,
+          userEdits: {},
+          narrativeUiState: {
+            isGenerated: true,
+            improveMode: false,
+            isGenerating: false,
+            enhancingSection: "",
+          },
+        },
+      };
+      const hydratedProjectSnapshot = hydrateDraftSnapshot(rawProjectSnapshot.snapshot);
+      const projectSnapshot = {
+        ...rawProjectSnapshot,
+        status: getProjectLifecycle(hydratedProjectSnapshot).label,
+        snapshot: hydratedProjectSnapshot,
+      };
+
+      setTestProjects(prev => mergeProjectsById(prev, [projectSnapshot]));
+      if (isSupabaseConfigured()) {
+        try {
+          const savedProject = await saveLoopProject(projectSnapshot);
+          if (savedProject) {
+            setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+            refreshRemoteProjects(false);
+          }
+        } catch (error) {
+          setPlatformNotice(`Narrative generated, but Loop could not save the completed draft to Supabase: ${error?.message || "Unknown error"}. The local project is still available.`);
+        }
+      }
+    } catch {
+      setNarrativeUiState({
+        isGenerated: false,
+        improveMode: false,
+        isGenerating: false,
+        enhancingSection: "",
+      });
+      setPlatformNotice("Loop could not finish the AI draft. Your project was still created, so you can continue manually and retry generation.");
+    }
+  }
+
+  function updateAiContextField(key, value) {
+    setAiDraft(prev => ({
+      ...prev,
+      context: {
+        ...prev.context,
+        [key]: value,
+      },
+    }));
+  }
+
+  function updateNarrativeField(fieldKey, value) {
+    setUserEdits(prev => ({ ...prev, [fieldKey]: true }));
+
+    if (fieldKey === "productTruth.overview") {
+      setPd(prev => ({ ...prev, whatItDoes: value }));
+      return;
+    }
+    if (fieldKey === "productTruth.problem") {
+      setPd(prev => ({ ...prev, problem: value, problemStatement: value }));
+      return;
+    }
+    if (fieldKey === "productTruth.solution") {
+      setPd(prev => ({ ...prev, solution: value }));
+      return;
+    }
+    if (fieldKey === "productTruth.icp") {
+      setPd(prev => ({ ...prev, audience: value }));
+      setStrat(prev => ({ ...prev, icp: value }));
+      return;
+    }
+    if (fieldKey === "productTruth.differentiation") {
+      setPd(prev => ({ ...prev, diff: value }));
+      return;
+    }
+    if (fieldKey === "narrative.positioning") {
+      setPos(prev => ({ ...prev, statement: value }));
+      return;
+    }
+    if (fieldKey === "narrative.valueProposition") {
+      setPos(prev => ({ ...prev, valueProp: value }));
+      return;
+    }
+    if (fieldKey === "narrative.messaging") {
+      setMsg(prev => ({ ...prev, pillars: value }));
+      return;
+    }
+    if (fieldKey === "narrative.headline") {
+      setMsg(prev => ({ ...prev, headline: value }));
+      return;
+    }
+    if (fieldKey === "narrative.elevator") {
+      setMsg(prev => ({ ...prev, elevator: value }));
+      return;
+    }
+    if (fieldKey === "gtm.strategy") {
+      setStrat(prev => ({ ...prev, goal: value }));
+      return;
+    }
+    if (fieldKey === "gtm.channels") {
+      setStrat(prev => ({ ...prev, channels: value }));
+      return;
+    }
+    if (fieldKey === "gtm.launchStrategy") {
+      setStrat(prev => ({ ...prev, hooks: value }));
+    }
+  }
+
+  async function handleEnhanceSection(sectionId) {
+    if (!narrativeUiState.isGenerated) return;
+    setNarrativeUiState(prev => ({ ...prev, enhancingSection: sectionId, improveMode: true }));
+
+    const productInput = buildProductInput(pd);
+    const context = {
+      productInput,
+      aiDraft,
+      currentState: {
+        pd,
+        pos,
+        msg,
+        strat,
+      },
+    };
+
+    const fallback = buildLocalNarrativeDraft(productInput);
+    try {
+      const prompt = `You are improving one section of a product narrative. Return ONLY valid JSON for the requested section.
+Section: ${sectionId}
+Context:
+${JSON.stringify(context, null, 2)}
+
+If section is productTruth return:
+{"problem":"string","icp":"string","value":"string","solution":"string","differentiation":"string"}
+
+If section is narrative return:
+{"positioning":"string","messaging":"string","valueProposition":"string","topMessages":["string","string","string"]}
+
+If section is gtm return:
+{"channels":"string","hooks":"string","strategy":"string","launchApproach":"string"}`;
+      const raw = await generateOpenAiText(prompt);
+      const parsed = parseJsonResponse(raw, sectionId === "productTruth" ? fallback.productTruth : sectionId === "narrative" ? fallback.narrative : fallback.gtm);
+      setAiDraft(prev => {
+        const next = { ...prev, [sectionId]: parsed };
+        applyNarrativeDraftToWorkingState(next, true);
+        return next;
+      });
+    } catch {
+      setPlatformNotice("Loop could not enhance that section with AI right now. The current draft is still safe to refine manually.");
+    } finally {
+      setNarrativeUiState(prev => ({ ...prev, enhancingSection: "" }));
+    }
+  }
+
+  const workspaceTabs = ["Product Truth", "Core Narrative", "GTM", "Assets", "Feedback"];
+  const activeWorkspace = workspaceTabs.includes(activeGroup) ? activeGroup : "Product Truth";
+  const sidebarGroups = MVP_NAV.filter(group =>
+    ["Product Truth", "Core Narrative", "GTM", "Assets", "Feedback"].includes(group.group)
+  );
+  const askAiRightOffset = screen === "workspace" && showDesktopAiRail ? (aiRailCollapsed ? 92 : 354) : 24;
+
+  function openWorkspaceTab(group) {
+    setScreen("workspace");
+    const overviewId = groupOverviewMap[group];
+    if (overviewId) {
+      setActive(overviewId);
+      return;
+    }
+    const firstItem = MVP_NAV.find(navGroup => navGroup.group === group)?.items?.[0];
+    if (firstItem) {
+      setActive(firstItem.id);
+    }
+  }
+
+  function buildTestProjectSnapshot(projectId = currentTestProjectId || `test-${Date.now()}`) {
+    const existingProject = testProjects.find(project => project.id === projectId);
+    const existingSnapshotPd = existingProject?.snapshot?.pd || {};
+    const resolvedName = (pd.name || existingSnapshotPd.name || existingProject?.name || "").trim();
+    const resolvedDescription = (pd.description || existingSnapshotPd.description || existingProject?.description || "").trim();
+    const rawSnapshot = {
+      pd: {
+        ...pd,
+        name: resolvedName || pd.name,
+        description: resolvedDescription || pd.description,
+      },
+      cap,
+      comp,
+      pos,
+      msg,
+      aud,
+      strat,
+      story,
+      assets,
+      analytics,
+      confidence,
+      workspaceSaves,
+      projectReview,
+      feedbackEntries,
+      aiDraft,
+      userEdits,
+      narrativeUiState,
+      active,
+      workflowStage,
+      launchComplete,
+      feedbackCaptured,
+      reviewDismissed,
+      approvedChanges,
+      compareVersionId,
+    };
+    const hydratedSnapshot = mergeSnapshotPreservingContent(existingProject?.snapshot || {}, rawSnapshot);
+    const lifecycle = getProjectLifecycle(hydratedSnapshot);
+
+    return {
+      id: projectId,
+      name: resolvedName || "Untitled Test Project",
+      description: resolvedDescription || "Loop MVP test workspace",
+      launchDate: pd.launchDate,
+      version: pd.version || "v1.0",
+      status: lifecycle.label,
+      updatedAt: new Date().toISOString(),
+      snapshot: {
+        ...hydratedSnapshot,
+        pd: {
+          ...hydratedSnapshot.pd,
+          name: resolvedName || hydratedSnapshot.pd?.name || pd.name,
+          description: resolvedDescription || hydratedSnapshot.pd?.description || pd.description,
+        },
       },
     };
   }
 
   function openTestProject(project) {
     if (!project?.snapshot) return;
-    const s = project.snapshot;
+    const s = hydrateDraftSnapshot(project.snapshot);
+    restoringProjectRef.current = true;
     setPlatformMode("test");
     setCurrentTestProjectId(project.id);
     setScreen("workspace");
@@ -4661,6 +7123,9 @@ export default function App() {
     setAssets(s.assets);
     setAnalytics(s.analytics);
     setConfidence(s.confidence);
+    setAiDraft(s.aiDraft || makeEmptyAiDraft());
+    setUserEdits(s.userEdits || {});
+    setNarrativeUiState(s.narrativeUiState || { isGenerated: false, improveMode: false, isGenerating: false, enhancingSection: "" });
     setWorkspaceSaves(s.workspaceSaves || {});
     setProjectReview(s.projectReview || { status: "Draft", required: false, teams: ["Product", "Sales"], lastAction: "Project opened" });
     setFeedbackEntries(s.feedbackEntries || []);
@@ -4671,11 +7136,30 @@ export default function App() {
     setReviewDismissed(s.reviewDismissed || {});
     setApprovedChanges(s.approvedChanges || {});
     setCompareVersionId(s.compareVersionId || "");
+    setTestProjects(prev => mergeProjectsById(prev, [{
+      ...project,
+      name: s.pd?.name || project.name,
+      description: s.pd?.description || project.description,
+      status: getProjectLifecycle(s).label,
+      snapshot: s,
+    }]));
+    window.setTimeout(() => {
+      restoringProjectRef.current = false;
+    }, 200);
   }
 
   function deleteTestProject(projectId) {
     const remainingProjects = testProjects.filter(project => project.id !== projectId);
     setTestProjects(remainingProjects);
+
+    if (isSupabaseConfigured()) {
+      deleteRemoteLoopProject(projectId)
+        .then(() => refreshRemoteProjects(true, "replace", true))
+        .catch(() => {
+          setPlatformNotice("Loop could not delete that project from Supabase. The platform will stay unchanged until the delete succeeds.");
+          refreshRemoteProjects(true, "replace", false);
+        });
+    }
 
     if (currentTestProjectId !== projectId) return;
 
@@ -4696,90 +7180,11 @@ export default function App() {
     setApprovedChanges({});
     setCompareVersionId("");
     setWorkspaceSaves({});
+    setAiDraft(makeEmptyAiDraft());
+    setUserEdits({});
+    setNarrativeUiState({ isGenerated: false, improveMode: false, isGenerating: false, enhancingSection: "" });
     setProjectReview({ status: "Draft", required: false, teams: ["Product", "Sales"], lastAction: "Project reset" });
     setFeedbackEntries([]);
-  }
-
-  function clearWalkthroughTimers() {
-    walkthroughTimersRef.current.forEach(timer => window.clearTimeout(timer));
-    walkthroughTimersRef.current = [];
-  }
-
-  function closeWalkthrough() {
-    clearWalkthroughTimers();
-    setWalkthroughOpen(false);
-  }
-
-  function skipWalkthrough() {
-    clearWalkthroughTimers();
-    setWalkthroughSeen(true);
-    setWalkthroughMode("intro");
-    setWalkthroughStep(0);
-    setWalkthroughOpen(false);
-  }
-
-  function startGuidedWalkthrough() {
-    clearWalkthroughTimers();
-    setPlatformMode("test");
-    setScreen("workspace");
-    setWalkthroughSeen(true);
-    setWalkthroughOpen(true);
-    setWalkthroughMode("running");
-    setWalkthroughStep(0);
-    setActive("productTruth");
-    setWorkflowStage("productTruth");
-    setReviewDismissed({});
-    setApprovedChanges({});
-    setCompareVersionId("");
-    setLaunchComplete(false);
-    setFeedbackCaptured(false);
-    setWorkflowEvents([]);
-
-    seedProductTruth(true);
-    logWorkflowEvent("Walkthrough: Product Truth", "Loop created a mock product truth so the user can see how the workspace starts.");
-
-    walkthroughTimersRef.current = [
-      window.setTimeout(() => {
-        seedNarrative(true);
-        setWalkthroughStep(1);
-        setWorkflowStage("narrative");
-        setActive("narrative");
-        logWorkflowEvent("Walkthrough: Core Narrative", "Loop turned the seeded product truth into positioning, value proposition, and messaging.");
-      }, 5000),
-      window.setTimeout(() => {
-        setWalkthroughStep(2);
-        setWorkflowStage("competition");
-        setActive("competitionOverview");
-        logWorkflowEvent("Walkthrough: Competition", "Loop framed the market alternatives, win themes, and competitive story.");
-      }, 10000),
-      window.setTimeout(() => {
-        seedGtmAndAssets(true);
-        setWalkthroughStep(3);
-        setWorkflowStage("gtm");
-        setActive("strategy");
-        logWorkflowEvent("Walkthrough: GTM", "Loop translated the narrative into launch strategy and channel planning.");
-      }, 15000),
-      window.setTimeout(() => {
-        seedGtmAndAssets(true);
-        setWalkthroughStep(4);
-        setWorkflowStage("assets");
-        setActive("assets");
-        logWorkflowEvent("Walkthrough: Assets", "Loop staged launch assets so the user can see execution outputs immediately.");
-      }, 20000),
-      window.setTimeout(() => {
-        seedFeedbackSnapshot();
-        setWalkthroughStep(5);
-        setWorkflowStage("feedback");
-        setActive("analytics");
-        setLaunchComplete(true);
-        setFeedbackCaptured(true);
-        logWorkflowEvent("Walkthrough: Feedback", "Loop closed the mock launch cycle with analytics and recommendations.");
-      }, 25000),
-      window.setTimeout(() => {
-        setWorkflowStage("complete");
-        setWalkthroughMode("complete");
-      }, 28000),
-    ];
   }
 
   const onboardingReady = !!(pd.name && pd.launchDate);
@@ -4954,8 +7359,41 @@ export default function App() {
   }
 
   function saveWorkspace(workspace) {
-    setWorkspaceSaves(prev => ({ ...prev, [workspace]: new Date().toISOString() }));
-    logWorkflowEvent("Workspace saved", `${workspace} was saved and is ready for the next step.`);
+    const workspaceKey = workspace === "Product Truth"
+      ? "productTruth"
+      : workspace === "Core Narrative"
+        ? "narrative"
+        : workspace === "GTM"
+          ? "gtm"
+          : workspace === "Assets"
+            ? "assets"
+            : workspace === "Feedback"
+              ? "feedback"
+              : workspace;
+    setWorkspaceSaves(prev => ({ ...prev, [workspaceKey]: new Date().toISOString() }));
+    logWorkflowEvent("Workspace saved", `${workspaceKey} was saved and is ready for the next step.`);
+  }
+
+  function getNextWorkspaceOverviewId(workspace) {
+    if (workspace === "Product Truth" || workspace === "productTruth") return "narrative";
+    if (workspace === "Core Narrative" || workspace === "narrative") return "strategy";
+    if (workspace === "GTM" || workspace === "gtm") return "assets";
+    if (workspace === "Assets" || workspace === "assets") return "reviewCenter";
+    return "";
+  }
+
+  async function handleSaveWorkspaceAndAdvance(workspace) {
+    const resolvedWorkspace = workspace || activeGroup || active;
+    saveWorkspace(resolvedWorkspace);
+    await syncCurrentProjectSnapshot(true);
+
+    const nextWorkspaceId = getNextWorkspaceOverviewId(resolvedWorkspace);
+    if (nextWorkspaceId) {
+      setActive(nextWorkspaceId);
+      setPlatformNotice(`${resolvedWorkspace} saved. Loop moved you to the next workspace.`);
+    } else {
+      setPlatformNotice(`${resolvedWorkspace} saved.`);
+    }
   }
 
   function saveFullProject() {
@@ -5004,9 +7442,154 @@ export default function App() {
     logWorkflowEvent("Feedback added", `${source} added post-launch signal into the feedback loop.`);
   }
 
+  function downloadProjectReport() {
+    const reportHtml = buildProjectReportHtml({
+      pd,
+      pos,
+      msg,
+      aud,
+      comp,
+      strat,
+      story,
+      assets,
+      feedbackEntries,
+      projectReview,
+      narrativeHealthScore,
+      confidenceScore,
+      alignmentScore: reportAlignmentScore,
+    });
+
+    const blob = new Blob([reportHtml], { type: "text/html;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeName = (pd.name || "loop-project-report").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "loop-project-report";
+    link.href = url;
+    link.download = `${safeName}-report.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    setPlatformNotice("Project report downloaded. Open the HTML file in a browser to print or save it as a PDF.");
+  }
+
+  function downloadProjectFromHub(project) {
+    if (!project?.snapshot) {
+      setPlatformNotice("Loop could not find a saved snapshot for that project yet.");
+      return;
+    }
+
+    const snapshot = hydrateDraftSnapshot(project.snapshot);
+    const narrativeMetrics = {
+      positioningClarity: boundedNarrativeScore(snapshot.pos?.statement, 4),
+      messagingAlignment: boundedNarrativeScore((snapshot.msg?.pillars || "") + (snapshot.msg?.headline || ""), 4),
+      marketAdoption: Math.max(1, Math.min(10, Math.round(average((snapshot.analytics?.metrics || []).map(metric => Number.parseFloat(metric.value) || 0)) / 10))),
+      storyResonance: boundedNarrativeScore((snapshot.story?.customer || "") + (snapshot.story?.origin || ""), 4),
+    };
+    const exportedNarrativeHealthScore = Number((Object.values(narrativeMetrics).reduce((sum, value) => sum + value, 0) / Object.values(narrativeMetrics).length).toFixed(1));
+    const exportedConfidenceScore = Number((average((snapshot.confidence?.factors || []).map(factor => (Number(factor.score) || 0) * 2))).toFixed(1));
+    const exportedAlignmentScore = Math.max(
+      42,
+      100
+        - ((snapshot.projectReview?.status || "") === "Requested" ? 16 : 8)
+        - ((snapshot.feedbackEntries || []).length ? 0 : 8)
+    );
+
+    const reportHtml = buildProjectReportHtml({
+      pd: snapshot.pd,
+      pos: snapshot.pos,
+      msg: snapshot.msg,
+      aud: snapshot.aud,
+      comp: snapshot.comp,
+      strat: snapshot.strat,
+      story: snapshot.story,
+      assets: snapshot.assets,
+      feedbackEntries: snapshot.feedbackEntries || [],
+      projectReview: snapshot.projectReview || {},
+      narrativeHealthScore: exportedNarrativeHealthScore,
+      confidenceScore: exportedConfidenceScore,
+      alignmentScore: exportedAlignmentScore,
+    });
+
+    const blob = new Blob([reportHtml], { type: "text/html;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeName = ((project.name || snapshot.pd?.name || "loop-project-report").trim()).replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "loop-project-report";
+    link.href = url;
+    link.download = `${safeName}-report.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    setPlatformNotice(`${project.name || "Project"} report downloaded.`);
+  }
+
+  function downloadCurrentWorkspace() {
+    const workspaceTitle = activeGroup || activeLabel || "Workspace";
+    let rows = [];
+    let intro = "Loop exported the current workspace so you can review or share it outside the platform.";
+
+    if (workspaceTitle === "Product Truth") {
+      rows = [
+        { label: "Product Overview", value: pd.whatItDoes || pd.what || pd.description },
+        { label: "Problem", value: pd.problem || pd.problemStatement },
+        { label: "Solution", value: pd.solution },
+        { label: "Primary Audience", value: pd.audience || strat.icp },
+        { label: "Differentiation", value: pd.diff },
+      ];
+      intro = "This export captures the current Product Truth draft and the core product context behind the narrative.";
+    } else if (workspaceTitle === "Core Narrative") {
+      rows = [
+        { label: "Positioning Statement", value: pos.statement },
+        { label: "Value Proposition", value: pos.valueProp },
+        { label: "Messaging", value: msg.pillars },
+        { label: "Headline Message", value: msg.headline },
+        { label: "Elevator Pitch", value: msg.elevator },
+      ];
+      intro = "This export captures the current narrative draft, including positioning, value proposition, and core messaging.";
+    } else if (workspaceTitle === "GTM") {
+      rows = [
+        { label: "GTM Strategy", value: strat.goal },
+        { label: "Key Channels", value: strat.channels },
+        { label: "Launch Strategy", value: strat.hooks },
+      ];
+      intro = "This export captures the current go-to-market direction from Loop's guided MVP workflow.";
+    } else if (workspaceTitle === "Assets") {
+      rows = [
+        { label: "Homepage Headline", value: aiDraft.assets.headline || "" },
+        { label: "Elevator Pitch", value: aiDraft.assets.elevatorPitch || msg.elevator },
+        { label: "Email Pitch", value: aiDraft.assets.emailPitch || "" },
+        { label: "Messaging Asset", value: aiDraft.assets.messagingAsset || "" },
+        { label: "Asset Notes", value: assets.notes },
+      ];
+      intro = "This export captures the current starter assets and asset notes generated from the narrative.";
+    } else {
+      return;
+    }
+
+    const exportHtml = buildSectionExportHtml({
+      projectName: pd.name || "Loop Project",
+      workspaceTitle,
+      intro,
+      rows,
+    });
+    const blob = new Blob([exportHtml], { type: "text/html;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeProjectName = (pd.name || "loop-project").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "loop-project";
+    const safeWorkspaceName = workspaceTitle.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "workspace";
+    link.href = url;
+    link.download = `${safeProjectName}-${safeWorkspaceName}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    setPlatformNotice(`${workspaceTitle} downloaded. Open the HTML file in a browser to review or print it.`);
+  }
+
   function handleOpenLoopPlatform() {
     setPlatformMode("original");
-    setScreen("landing");
+    setScreen("workspace");
+    setActive("productTruth");
   }
 
   function handleStartProject() {
@@ -5021,91 +7604,97 @@ export default function App() {
     setScreen("projectSetup");
   }
 
-  function handleSaveProject() {
-    setScreen("workspace");
+  function handleAddAnotherProject() {
+    setPlatformMode("test");
+    setCurrentTestProjectId("");
+    setPd({
+      name: "",
+      description: "",
+      launchDate: addDays(new Date().toISOString().slice(0, 10), 21),
+      version: "v1.0",
+      status: "Planned",
+      owner: pd.owner || "",
+      reviewers: pd.reviewers || [],
+      reviewTeam: pd.reviewTeam || [],
+    });
+    setAiDraft(makeEmptyAiDraft());
+    setUserEdits({});
+    setNarrativeUiState({ isGenerated: false, improveMode: false, isGenerating: false, enhancingSection: "" });
+    setScreen("home");
+  }
+
+  async function syncCurrentProjectSnapshot(showNoticeOnFail = false) {
+    if (platformMode !== "test" || !(pd.name || "").trim()) return null;
+
+    const snapshot = buildTestProjectSnapshot(currentTestProjectId || `test-${Date.now()}`);
+    setTestProjects(prev => mergeProjectsById(prev, [snapshot]));
+
+    if (isSupabaseConfigured()) {
+      try {
+        const savedProject = await saveLoopProject(snapshot);
+        if (savedProject) {
+          setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+          return savedProject;
+        }
+      } catch (error) {
+        if (showNoticeOnFail) {
+          setPlatformNotice(`Loop could not sync this project to Supabase: ${error?.message || "Unknown error"}`);
+        }
+      }
+    }
+
+    return snapshot;
+  }
+
+  async function goToProjectsHub() {
+    await syncCurrentProjectSnapshot(false);
+    setPlatformMode("test");
+    setScreen("projectsHub");
+  }
+
+  function handleViewProjectsFromHome() {
+    setPlatformMode("test");
+    setCurrentTestProjectId("");
+    setScreen("projectsHub");
+  }
+
+  function handleSaveProject(modeOverride = null) {
+    if (!(pd.name || "").trim()) {
+      setPlatformNotice("Add a product name before starting a new project.");
+      return;
+    }
     setActive("productTruth");
     setLaunchComplete(false);
     setFeedbackCaptured(false);
     setReviewDismissed({});
     setApprovedChanges({});
     setCompareVersionId("");
-    if (platformMode === "test") {
+    const targetMode = modeOverride || platformMode;
+    if (targetMode === "test") {
       const nextProjectId = currentTestProjectId || `test-${Date.now()}`;
       setCurrentTestProjectId(nextProjectId);
       setWorkflowStage("productTruth");
       setWorkflowEvents(prev => prev.length ? prev : [{ id: "project-created", title: "Project created", note: "A new test project entered the MVP workflow at Product Truth." }]);
       setTestScenarioLoaded(false);
       setTestProjects(prev => {
-        const snapshot = {
-          id: nextProjectId,
-          name: pd.name || "Untitled Test Project",
-          description: pd.description || "Loop MVP test workspace",
-          launchDate: pd.launchDate,
-          version: pd.version || "v1.0",
-          status: pd.status || "Planned",
-          updatedAt: new Date().toISOString(),
-          snapshot: {
-            pd,
-            cap,
-            comp,
-            pos,
-            msg,
-            aud,
-            strat,
-            story,
-            assets,
-            analytics,
-            confidence,
-            workspaceSaves,
-            projectReview,
-            feedbackEntries,
-            active: "productTruth",
-            workflowStage: "productTruth",
-            launchComplete: false,
-            feedbackCaptured: false,
-            reviewDismissed: {},
-            approvedChanges: {},
-            compareVersionId: "",
-          },
-        };
+        const snapshot = buildTestProjectSnapshot(nextProjectId);
         const existing = prev.find(project => project.id === nextProjectId);
         if (existing) {
           return prev.map(project => (project.id === nextProjectId ? snapshot : project));
         }
         return [snapshot, ...prev];
       });
+      setScreen("projectsHub");
     } else {
+      setScreen("workspace");
       setWorkflowStage("login");
       setWorkflowEvents([]);
     }
-
-    if (!walkthroughSeen) {
-      setWalkthroughMode("intro");
-      setWalkthroughStep(0);
-      setWalkthroughOpen(true);
-    }
   }
 
-  function switchToOriginalWorkspaceMode() {
-    setPlatformMode("original");
+  function openProjectFromHub(project) {
+    openTestProject(project);
     setScreen("workspace");
-  }
-
-  function switchToTestWorkspaceMode() {
-    setPlatformMode("test");
-    setScreen("workspace");
-    if (currentTestProjectId) {
-      const currentProject = testProjects.find(project => project.id === currentTestProjectId);
-      if (currentProject) {
-        openTestProject(currentProject);
-        return;
-      }
-    }
-    if (testProjects[0]) {
-      openTestProject(testProjects[0]);
-      return;
-    }
-    setWorkflowStage(prev => (prev === "login" ? "productTruth" : prev));
   }
 
   function handleCreateLaunchWorkspace() {
@@ -5142,16 +7731,8 @@ export default function App() {
     if (workflowStage === "narrative") {
       saveWorkspace("narrative");
       setWorkflowStage("gtm");
-      setActive("competitionOverview");
-      logWorkflowEvent("Competition unlocked", "Core Narrative is ready, so Loop opened the Competition workspace to sharpen differentiation.");
-      return;
-    }
-
-    if (workflowStage === "competition") {
-      saveWorkspace("competition");
-      setWorkflowStage("gtm");
       setActive("strategy");
-      logWorkflowEvent("Narrative approved for GTM", "Loop moved the approved story and competition context into GTM planning and channel messaging.");
+      logWorkflowEvent("Narrative approved for GTM", "Loop moved the approved story into GTM planning and channel messaging.");
       return;
     }
 
@@ -5203,94 +7784,13 @@ export default function App() {
     }
   }
 
-  function handleLoadTestScenario() {
-    clearWalkthroughTimers();
-    setWalkthroughOpen(false);
-    setWalkthroughSeen(true);
-    setPlatformMode("test");
-    seedProductTruth(true);
-    seedNarrative(true);
-    seedGtmAndAssets(true);
-    seedFeedbackSnapshot();
-    setScreen("workspace");
-    setWorkflowStage("review");
-    setActive("reviewCenter");
-    setLaunchComplete(false);
-    setFeedbackCaptured(false);
-    setTestScenarioLoaded(true);
-    setReviewDismissed({});
-    setApprovedChanges({});
-    const scenarioId = currentTestProjectId || `test-${Date.now()}`;
-    setCurrentTestProjectId(scenarioId);
-    setTestProjects(prev => {
-      const scenarioProject = {
-        id: scenarioId,
-        name: "Loop AI Launch Pilot",
-        description: "Seeded MVP walkthrough project",
-        launchDate: pd.launchDate || addDays(new Date().toISOString().slice(0, 10), 21),
-        version: "v1.0",
-        status: "Started",
-        updatedAt: new Date().toISOString(),
-        snapshot: {
-          pd: {
-            ...pd,
-            name: "Loop AI Launch Pilot",
-            description: "Narrative operating system for product launches",
-          },
-          cap,
-          comp,
-          pos,
-          msg,
-          aud,
-          strat,
-          story,
-          assets,
-          analytics,
-          confidence,
-          workspaceSaves,
-          projectReview,
-          feedbackEntries,
-          active: "reviewCenter",
-          workflowStage: "review",
-          launchComplete: false,
-          feedbackCaptured: false,
-          reviewDismissed: {},
-          approvedChanges: {},
-          compareVersionId: "",
-        },
-      };
-      const existing = prev.find(project => project.id === scenarioId);
-      if (existing) {
-        return prev.map(project => (project.id === scenarioId ? scenarioProject : project));
-      }
-      return [scenarioProject, ...prev];
-    });
-    logWorkflowEvent("Test scenario loaded", "Loop seeded realistic MVP data so you can test the workflow without AI or a backend.");
-  }
-
-  function handleResetWorkflow() {
-    clearWalkthroughTimers();
-    setWalkthroughOpen(false);
-    setWorkflowStage("login");
-    setWorkflowEvents([]);
-    setLaunchComplete(false);
-    setFeedbackCaptured(false);
-    setTestScenarioLoaded(false);
-    setReviewDismissed({});
-    setApprovedChanges({});
-    setCompareVersionId("");
-    setScreen("landing");
-    setPlatformMode("original");
-    setActive("productTruth");
-    logWorkflowEvent("Workflow reset", "The guided flow was reset to the website entry point.");
-  }
 
   const workflowPrimaryActionMap = {
     login: { label: "Enter Loop Platform", onClick: handleAdvanceWorkflow },
     onboarding: { label: "Create Launch Workspace", onClick: handleAdvanceWorkflow },
     productTruth: { label: "Move to Core Narrative", onClick: handleAdvanceWorkflow },
-    narrative: { label: "Move to Competition", onClick: () => { saveWorkspace("narrative"); setWorkflowStage("competition"); setActive("competitionOverview"); logWorkflowEvent("Competition workspace opened", "The narrative is ready, so the owner moved into competition to sharpen differentiation."); } },
-    competition: { label: "Move to GTM", onClick: () => { setWorkflowStage("competition"); handleAdvanceWorkflow(); } },
+    narrative: { label: "Move to GTM", onClick: handleAdvanceWorkflow },
+    competition: { label: "Move to GTM", onClick: () => { setWorkflowStage("narrative"); handleAdvanceWorkflow(); } },
     gtm: { label: "Generate GTM + Assets", onClick: handleAdvanceWorkflow },
     assets: { label: "Open Review Decision", onClick: handleAdvanceWorkflow },
     review: projectReview.required
@@ -5304,11 +7804,46 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: S.bg, color: S.text }}>
       {screen === "home" ? (
-        <MainWebsitePage
+        <MainWebsitePageSimple
           onOpenLoop={() => { setPlatformNotice(""); handleOpenLoopPlatform(); }}
-          onStartProject={() => { setPlatformNotice(""); handleStartProject(); }}
+          pd={pd}
+          setPd={setPd}
+          onSaveProject={() => { setPlatformNotice(""); handleGenerateNarrativeReliable(); }}
+          onViewProjects={() => { setPlatformNotice(""); handleViewProjectsFromHome(); }}
         />
-      ) : (
+      ) : screen === "contextReview" ? (
+        <AiContextReviewPage
+          productName={pd.name}
+          context={aiDraft.context}
+          isLoading={narrativeUiState.isGenerating}
+          onUpdateContext={updateAiContextField}
+          onBack={() => {
+            setPlatformNotice("");
+            setNarrativeUiState(prev => ({ ...prev, isGenerating: false }));
+            setScreen("home");
+          }}
+          onConfirm={() => {
+            setPlatformNotice("");
+            handleConfirmAiContext();
+          }}
+        />
+      ) : screen === "projectsHub" ? (
+        <ProjectsHubPage
+          onOpenLoop={() => { setPlatformNotice(""); handleOpenLoopPlatform(); }}
+          projects={sanitizeProjects(
+            platformMode === "test" && currentTestProjectId
+              ? mergeProjectsById(
+                testProjects,
+                [buildTestProjectSnapshot(currentTestProjectId)]
+              )
+              : testProjects
+          )}
+          onOpenProject={project => { setPlatformNotice(""); openProjectFromHub(project); }}
+          onAddProject={() => { setPlatformNotice(""); handleAddAnotherProject(); }}
+          onDeleteProject={projectId => { setPlatformNotice(""); deleteTestProject(projectId); }}
+          onDownloadProject={project => { setPlatformNotice(""); downloadProjectFromHub(project); }}
+        />
+      ) : screen !== "workspace" ? (
         <AppTabsHeader
           screen={screen}
           onChangeScreen={nextScreen => {
@@ -5320,7 +7855,7 @@ export default function App() {
             setScreen(nextScreen);
           }}
         />
-      )}
+      ) : null}
 
       {screen === "landing" && (
         <LandingPage
@@ -5373,435 +7908,439 @@ export default function App() {
         </div>
       )}
 
+      {screen === "workspace" && narrativeUiState.isGenerating && (
+        <NarrativeGeneratingOverlay productName={pd.name} />
+      )}
+
       {screen === "workspace" && (
         <div style={{ minHeight: "calc(100vh - 73px)", background: S.bg, color: S.text, overflowX: "hidden" }}>
-        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "calc(100vh - 73px)", background: S.bg, color: S.text, overflowX: "hidden" }}>
+        <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 73px)", background: S.bg, color: S.text, overflowX: "hidden" }}>
 
-      {/* Sidebar */}
-      <div style={{ width: isMobile ? "100%" : leftRailCollapsed ? 74 : isCompact ? 220 : 255, flexShrink: 0, background: S.sidebar, borderRight: isMobile ? "none" : `1px solid ${S.border}`, borderBottom: isMobile ? `1px solid ${S.border}` : "none", display: "flex", flexDirection: "column", overflowY: "auto", transition: "width 180ms ease" }}>
-        <div style={{ padding: leftRailCollapsed ? "18px 12px 14px" : "18px 18px 14px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: leftRailCollapsed ? "center" : "space-between", gap: 8 }}>
-          {!leftRailCollapsed && <div style={{ fontSize: 24, fontWeight: 700, color: P[800], letterSpacing: "-0.5px" }}>LOOP</div>}
-          <button
-            onClick={() => setLeftRailCollapsed(v => !v)}
-            aria-label={leftRailCollapsed ? "Expand navigation" : "Collapse navigation"}
-            style={{ width: 34, height: 34, borderRadius: 12, border: `1px solid ${S.border}`, background: "white", color: P[700], cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit", boxShadow: "0 8px 20px rgba(83, 74, 183, 0.06)" }}
-          >
-            {leftRailCollapsed ? "→" : "←"}
-          </button>
-        </div>
-        {!leftRailCollapsed && (
-          <div style={{ padding: "14px 18px 8px" }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: S.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>Workspace</span>
-          </div>
-        )}
-
-        {visibleGroups.map(({ group, icon, items }) => (
-          <div key={group}>
-            <button onClick={() => {
-              if (groupOverviewMap[group]) {
-                setActive(groupOverviewMap[group]);
-                return;
-              }
-              setCollapsed(c => ({ ...c, [group]: !c[group] }));
-            }} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              width: "100%", padding: leftRailCollapsed ? "10px 12px" : "10px 18px", background: activeGroup === group ? P[100] : "transparent",
-              border: "none", cursor: "pointer", fontFamily: "inherit",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: leftRailCollapsed ? 0 : 8, justifyContent: leftRailCollapsed ? "center" : "flex-start", width: "100%" }}>
-                <span style={{ fontSize: 13, color: P[400] }}>{icon}</span>
-                {!leftRailCollapsed && <span style={{ fontSize: 13, fontWeight: 600, color: P[800] }}>{group}</span>}
+        {/* Global workspace header */}
+        <div style={{ padding: isMobile ? "12px 16px 14px" : "14px 28px 16px", borderBottom: `1px solid ${S.border}`, background: "white", display: "grid", gap: 14, flexShrink: 0 }}>
+          <div style={{ display: "grid", gap: 14, padding: isMobile ? "12px 14px" : "12px 18px", border: `1px solid ${S.border}`, borderRadius: 22, background: "linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0, flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  <span style={{ width: 18, height: 18, borderRadius: 5, border: `3px solid ${P[900]}`, boxSizing: "border-box", display: "inline-block" }} />
+                  <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.03em", color: P[900] }}>Loop</span>
+                </div>
+                <div style={{ width: 1, alignSelf: "stretch", background: S.border, minHeight: 28 }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  {[
+                    { id: "landing", label: "Loop" },
+                    { id: "intelligence", label: "Narrative Intelligence" },
+                    { id: "brand", label: "Brand Guideline" },
+                  ].map(tab => {
+                    const activeTopTab = ((screen === "workspace" || screen === "projectSetup") ? "landing" : screen) === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          if (tab.id === "landing") {
+                            setPlatformMode("original");
+                            setScreen("workspace");
+                            return;
+                          }
+                          setScreen(tab.id);
+                        }}
+                        style={{
+                          border: "none",
+                          background: activeTopTab ? P[50] : "transparent",
+                          color: activeTopTab ? P[700] : S.muted,
+                          borderRadius: 12,
+                          padding: "10px 14px",
+                          fontSize: 14,
+                          fontWeight: activeTopTab ? 700 : 600,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              {!groupOverviewMap[group] && <span style={{ fontSize: 10, color: S.muted, transform: collapsed[group] ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>}
-            </button>
-            {(groupOverviewMap[group] || !collapsed[group]) && items.map(item => (
-              <button key={item.id} title={item.label} onClick={() => setActive(item.id)} style={{
-                display: "flex", alignItems: "center", gap: 8,
-                width: "100%", padding: leftRailCollapsed ? "10px 12px" : groupOverviewMap[group] ? "8px 18px 8px 42px" : "8px 18px 8px 30px",
-                background: active === item.id ? P[200] + "88" : "transparent",
-                border: "none", cursor: "pointer", fontFamily: "inherit",
-                borderLeft: active === item.id ? `3px solid ${P[600]}` : "3px solid transparent",
-                justifyContent: leftRailCollapsed ? "center" : "flex-start",
-              }}>
-                <span style={{ fontSize: 11, color: active === item.id ? P[600] : S.light }}>{item.icon}</span>
-                {!leftRailCollapsed && <span style={{ fontSize: 13, color: active === item.id ? P[800] : S.muted, fontWeight: active === item.id ? 600 : 400, textAlign: "left" }}>
-                  {item.label.length > 20 ? item.label.slice(0, 19) + "…" : item.label}
-                </span>}
-                {!!sectionFlagCounts[item.id] && !leftRailCollapsed && (
-                  <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 999, background: "#FFF7E8", color: "#D97706", fontSize: 10, fontWeight: 800, display: "grid", placeItems: "center" }}>
-                    {sectionFlagCounts[item.id]}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        ))}
 
-      </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                <button
+                  aria-label="Notifications"
+                  style={{ width: 38, height: 38, borderRadius: 12, border: `1px solid ${S.border}`, background: "white", color: P[700], cursor: "pointer", fontSize: 16, fontFamily: "inherit", position: "relative" }}
+                >
+                  🔔
+                  <span style={{ position: "absolute", top: 7, right: 8, width: 8, height: 8, borderRadius: "50%", background: "#EF4444" }} />
+                </button>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, #2E265E 0%, #5C52C7 100%)", color: "white", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800 }}>
+                  MT
+                </div>
+              </div>
+            </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-
-        {/* Top bar */}
-        <div style={{ padding: isMobile ? "14px 18px" : "16px 28px", borderBottom: `1px solid ${S.border}`, background: "white", display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between", gap: isMobile ? 14 : 22, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 14, minWidth: 0, flex: 1 }}>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", background: P[100], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: P[600] }}>∞</div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isCompact ? "minmax(0, 1fr)" : "minmax(280px, 1fr) minmax(280px, 1fr)", alignItems: "center", gap: isMobile ? 10 : 32, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", fontSize: 13, color: S.muted }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", minWidth: 0 }}>
                 <input
                   value={pd.name}
                   onChange={e => setPd(p => ({ ...p, name: e.target.value }))}
                   placeholder="Product Name"
                   style={{
-                    minWidth: 0,
+                    minWidth: 140,
                     border: "none",
                     background: "transparent",
-                    padding: "2px 0",
-                    fontSize: 15,
-                    lineHeight: 1.3,
-                    fontWeight: 600,
-                    color: S.text,
-                    outline: "none",
-                    fontFamily: "inherit",
-                  }}
-                />
-                <input
-                  value={pd.description}
-                  onChange={e => setPd(p => ({ ...p, description: e.target.value }))}
-                  placeholder="Add one-line description"
-                  style={{
-                    minWidth: 0,
-                    border: "none",
-                    background: "transparent",
-                    padding: "2px 0",
-                    textAlign: "right",
-                    fontSize: 15,
-                    lineHeight: 1.3,
-                    fontWeight: 600,
-                    color: S.text,
-                    outline: "none",
-                    fontFamily: "inherit",
-                  }}
-                />
-              </div>
-              <div style={{ marginTop: 10, fontSize: 11, color: S.muted, display: "flex", gap: 12, alignItems: "center", flexWrap: isCompact ? "wrap" : "nowrap", whiteSpace: isCompact ? "normal" : "nowrap", overflowX: "auto", paddingBottom: 2 }}>
-                <span>Owner: Mayank Trivedi</span>
-                <span>·</span>
-                <span style={{ fontWeight: 500 }}>Launch Date</span>
-                <input
-                  type="date"
-                  value={pd.launchDate}
-                  onChange={e => setPd(p => ({ ...p, launchDate: e.target.value }))}
-                  style={{
-                    border: `1px solid ${S.border}`,
-                    background: S.bg,
-                    borderRadius: 6,
-                    padding: "3px 8px",
-                    fontSize: 11,
-                    color: S.muted,
-                    outline: "none",
-                    fontFamily: "inherit",
-                    height: 28,
-                  }}
-                />
-                <span>·</span>
-                <span style={{ fontWeight: 500 }}>Version</span>
-                <input
-                  value={pd.version}
-                  onChange={e => setPd(p => ({ ...p, version: e.target.value }))}
-                  placeholder="v1.0"
-                  style={{
-                    width: 68,
-                    border: `1px solid ${S.border}`,
-                    background: S.bg,
-                    borderRadius: 6,
-                    padding: "3px 8px",
-                    fontSize: 11,
-                    color: S.muted,
-                    outline: "none",
-                    fontFamily: "inherit",
-                    height: 28,
-                  }}
-                />
-                <span>·</span>
-                <span style={{ fontWeight: 500 }}>Status</span>
-                <select
-                  value={pd.status}
-                  onChange={e => setPd(p => ({ ...p, status: e.target.value }))}
-                  style={{
-                    border: `1px solid ${P[200]}`,
-                    background: P[50],
-                    color: P[800],
-                    borderRadius: 6,
-                    fontSize: 11,
+                    padding: 0,
+                    fontSize: 16,
+                    lineHeight: 1.2,
                     fontWeight: 700,
-                    padding: "3px 9px",
+                    color: S.text,
                     outline: "none",
                     fontFamily: "inherit",
-                    height: 28,
                   }}
-                >
-                  <option>Planned</option>
-                  <option>Started</option>
-                  <option>Work-In-Progress</option>
-                  <option>delayed</option>
-                  <option>ready</option>
-                  <option>live</option>
-                </select>
+                />
+                <span style={{ color: S.light }}>•</span>
+                <span><span style={{ fontWeight: 700 }}>Owner:</span> Mayank Trivedi</span>
+                <span style={{ color: S.light }}>•</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 700 }}>Launch Date:</span>
+                  <input
+                    type="date"
+                    value={pd.launchDate}
+                    onChange={e => setPd(p => ({ ...p, launchDate: e.target.value }))}
+                    style={{
+                      border: `1px solid ${S.border}`,
+                      background: S.bg,
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      color: S.muted,
+                      outline: "none",
+                      fontFamily: "inherit",
+                      height: 30,
+                    }}
+                  />
+                </span>
+                <span style={{ color: S.light }}>•</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 700 }}>Version:</span>
+                  <input
+                    value={pd.version}
+                    onChange={e => setPd(p => ({ ...p, version: e.target.value }))}
+                    placeholder="v1.0"
+                    style={{
+                      width: 78,
+                      border: `1px solid ${S.border}`,
+                      background: S.bg,
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      color: S.muted,
+                      outline: "none",
+                      fontFamily: "inherit",
+                      height: 30,
+                    }}
+                  />
+                </span>
+                <span style={{ color: S.light }}>•</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 700 }}>Status:</span>
+                  <select
+                    value={pd.status}
+                    onChange={e => setPd(p => ({ ...p, status: e.target.value }))}
+                    style={{
+                      border: `1px solid ${P[200]}`,
+                      background: P[50],
+                      color: P[800],
+                      borderRadius: 8,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "4px 10px",
+                      outline: "none",
+                      fontFamily: "inherit",
+                      height: 30,
+                    }}
+                  >
+                    <option>Planned</option>
+                    <option>Started</option>
+                    <option>Work-In-Progress</option>
+                    <option>delayed</option>
+                    <option>ready</option>
+                    <option>live</option>
+                  </select>
+                </span>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: isMobile ? "flex-start" : "flex-end" }}>
+                <span style={{ padding: "10px 14px", borderRadius: 999, background: P[50], color: P[700], fontSize: 12, fontWeight: 800 }}>
+                  Review: {projectReview.status}
+                </span>
+                {platformMode === "test" && (
+                  <>
+                    <button
+                      onClick={() => goToProjectsHub()}
+                      style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      View Projects
+                    </button>
+                    <button
+                      onClick={handleAddAnotherProject}
+                      style={{ border: `1px solid ${P[100]}`, background: P[50], color: P[700], borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      Add Project
+                    </button>
+                  </>
+                )}
+                {isMobile && (
+                  <button
+                    onClick={() => setAiOpen(v => !v)}
+                    style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${aiOpen ? P[200] : S.border}`, background: aiOpen ? P[50] : "white", color: aiOpen ? P[700] : S.text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    {aiOpen ? "Hide AI Assistant" : `AI Assistant${rawReviewItems.length ? ` (${rawReviewItems.length})` : ""}`}
+                  </button>
+                )}
               </div>
             </div>
           </div>
-              <div style={{ display: "flex", gap: 10, alignSelf: isMobile ? "flex-start" : "auto" }}>
-            {!isMobile && (
-              <span style={{ alignSelf: "center", padding: "8px 12px", borderRadius: 999, background: P[50], color: P[700], fontSize: 12, fontWeight: 700 }}>
-                Review: {projectReview.status}
-              </span>
-            )}
-            {isMobile && (
-              <button
-                onClick={() => setAiOpen(v => !v)}
-                style={{ padding: "9px 14px", borderRadius: 10, border: `1px solid ${aiOpen ? P[200] : S.border}`, background: aiOpen ? P[50] : "white", color: aiOpen ? P[700] : S.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
-              >
-                {aiOpen ? "Hide AI Assistant" : `AI Assistant${rawReviewItems.length ? ` (${rawReviewItems.length})` : ""}`}
-              </button>
-            )}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", flex: 1, minHeight: 0, background: S.bg, color: S.text, overflowX: "hidden" }}>
+
+      {/* Sidebar */}
+      {isMobile ? (
+        <div style={{ width: "100%", flexShrink: 0, background: S.sidebar, borderBottom: `1px solid ${S.border}`, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+          <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: P[800], letterSpacing: "-0.5px" }}>LOOP</div>
             <button
-              onClick={platformMode === "test" ? switchToTestWorkspaceMode : switchToOriginalWorkspaceMode}
-              style={{ padding: "9px 18px", borderRadius: 10, border: `1px solid ${S.border}`, background: "white", color: S.text, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
+              onClick={() => setLeftRailCollapsed(v => !v)}
+              aria-label={leftRailCollapsed ? "Expand navigation" : "Collapse navigation"}
+              style={{ width: 34, height: 34, borderRadius: 12, border: `1px solid ${S.border}`, background: "white", color: P[700], cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit", boxShadow: "0 8px 20px rgba(83, 74, 183, 0.06)" }}
             >
-              {platformMode === "test" ? "Reload Test Platform" : "Original Platform"}
+              {leftRailCollapsed ? "→" : "←"}
             </button>
           </div>
+          {!leftRailCollapsed && (
+            <>
+              <div style={{ padding: "14px 18px 8px" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: S.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>Workspace</span>
+              </div>
+              {sidebarGroups.map(({ group, icon, items }) => (
+                <div key={group}>
+                  <button onClick={() => {
+                    if (groupOverviewMap[group]) {
+                      setActive(groupOverviewMap[group]);
+                      return;
+                    }
+                    setCollapsed(c => ({ ...c, [group]: !c[group] }));
+                  }} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    width: "100%", padding: "10px 18px", background: activeGroup === group ? P[100] : "transparent",
+                    border: "none", cursor: "pointer", fontFamily: "inherit",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+                      <span style={{ fontSize: 13, color: P[400] }}>{icon}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: P[800] }}>{group}</span>
+                    </div>
+                    {!groupOverviewMap[group] && <span style={{ fontSize: 10, color: S.muted, transform: collapsed[group] ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>}
+                  </button>
+                  {(groupOverviewMap[group] || !collapsed[group]) && items.map(item => (
+                    <button key={item.id} title={item.label} onClick={() => setActive(item.id)} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      width: "100%", padding: groupOverviewMap[group] ? "8px 18px 8px 42px" : "8px 18px 8px 30px",
+                      background: active === item.id ? P[200] + "88" : "transparent",
+                      border: "none", cursor: "pointer", fontFamily: "inherit",
+                      borderLeft: active === item.id ? `3px solid ${P[600]}` : "3px solid transparent",
+                      justifyContent: "flex-start",
+                    }}>
+                      <span style={{ fontSize: 11, color: active === item.id ? P[600] : S.light }}>{item.icon}</span>
+                      <span style={{ fontSize: 13, color: active === item.id ? P[800] : S.muted, fontWeight: active === item.id ? 600 : 400, textAlign: "left" }}>
+                        {item.label.length > 20 ? item.label.slice(0, 19) + "…" : item.label}
+                      </span>
+                      {!!sectionFlagCounts[item.id] && (
+                        <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 999, background: "#FFF7E8", color: "#D97706", fontSize: 10, fontWeight: 800, display: "grid", placeItems: "center" }}>
+                          {sectionFlagCounts[item.id]}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
         </div>
+      ) : (
+        <div style={{ width: leftRailCollapsed ? 64 : (isCompact ? 250 : 292), flexShrink: 0, background: S.sidebar, borderRight: `1px solid ${S.border}`, display: "flex", minHeight: "100%" }}>
+          <div style={{ width: 64, borderRight: `1px solid ${S.border}`, display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0 12px", gap: 10, background: "rgba(255,255,255,0.55)" }}>
+            <button
+              onClick={() => setLeftRailCollapsed(v => !v)}
+              aria-label={leftRailCollapsed ? "Expand navigation" : "Collapse navigation"}
+              style={{ width: 38, height: 38, borderRadius: 14, border: `1px solid ${S.border}`, background: "white", color: P[700], cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit", boxShadow: "0 8px 20px rgba(83, 74, 183, 0.06)" }}
+            >
+              {leftRailCollapsed ? "→" : "←"}
+            </button>
 
-        <div style={{ padding: isMobile ? "12px 14px" : "14px 22px", borderBottom: `1px solid ${S.border}`, background: "white", display: "flex", justifyContent: "center" }}>
-          <div style={{ display: "grid", gap: 12, justifyItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 6, background: S.sidebar, border: `1px solid ${S.border}`, borderRadius: 16, flexWrap: "wrap" }}>
-              <button
-                onClick={switchToOriginalWorkspaceMode}
-                style={{
-                  border: "none",
-                  background: platformMode === "original" ? "white" : "transparent",
-                  color: platformMode === "original" ? P[600] : S.muted,
-                  borderRadius: 12,
-                  padding: "9px 14px",
-                  fontSize: 13,
-                  fontWeight: platformMode === "original" ? 700 : 500,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                Original Platform
-              </button>
-              <button
-                onClick={switchToTestWorkspaceMode}
-                style={{
-                  border: "none",
-                  background: platformMode === "test" ? "white" : "transparent",
-                  color: platformMode === "test" ? P[600] : S.muted,
-                  borderRadius: 12,
-                  padding: "9px 14px",
-                  fontSize: 13,
-                  fontWeight: platformMode === "test" ? 700 : 500,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                Test Platform
-              </button>
+            <div style={{ width: "100%", display: "grid", gap: 6, padding: "8px 0" }}>
+              {sidebarGroups.map(({ group, icon, items }) => {
+                const targetId = groupOverviewMap[group] || items[0]?.id;
+                const isActiveEntry = activeGroup === group || active === targetId;
+                return (
+                  <button
+                    key={group}
+                    title={group}
+                    onClick={() => {
+                      if (leftRailCollapsed) setLeftRailCollapsed(false);
+                      if (targetId) setActive(targetId);
+                    }}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      margin: "0 auto",
+                      borderRadius: 14,
+                      border: "none",
+                      background: isActiveEntry ? "white" : "transparent",
+                      color: isActiveEntry ? P[600] : P[400],
+                      cursor: "pointer",
+                      fontSize: 16,
+                      fontFamily: "inherit",
+                      boxShadow: isActiveEntry ? "0 10px 24px rgba(83, 74, 183, 0.08)" : "none",
+                    }}
+                  >
+                    {icon}
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 6, background: S.sidebar, border: `1px solid ${S.border}`, borderRadius: 16, flexWrap: "wrap" }}>
-            {workspaceTabs.map(tab => {
-              const isActive = activeWorkspace === tab;
-              return (
-                <button
-                  key={tab}
-                  onClick={() => openWorkspaceTab(tab)}
-                  style={{
-                    border: "none",
-                    background: isActive ? "white" : "transparent",
-                    color: isActive ? P[600] : S.muted,
-                    borderRadius: 12,
-                    padding: "10px 16px",
-                    fontSize: 14,
-                    fontWeight: isActive ? 700 : 500,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    boxShadow: isActive ? "0 1px 0 rgba(38, 33, 92, 0.05)" : "none",
-                  }}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
-          </div>
+          {!leftRailCollapsed && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+              <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: P[800], letterSpacing: "-0.5px" }}>LOOP</div>
+              </div>
+              <div style={{ padding: "14px 18px 8px" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: S.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>Workspace</span>
+              </div>
+
+              <div style={{ overflowY: "auto", paddingBottom: 16 }}>
+                {sidebarGroups.map(({ group, icon, items }) => (
+                  <div key={group}>
+                    <button onClick={() => {
+                      if (groupOverviewMap[group]) {
+                        setActive(groupOverviewMap[group]);
+                        return;
+                      }
+                      setCollapsed(c => ({ ...c, [group]: !c[group] }));
+                    }} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      width: "100%", padding: "10px 18px", background: activeGroup === group ? P[100] : "transparent",
+                      border: "none", cursor: "pointer", fontFamily: "inherit",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+                        <span style={{ fontSize: 13, color: P[400] }}>{icon}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: P[800] }}>{group}</span>
+                      </div>
+                      {!groupOverviewMap[group] && <span style={{ fontSize: 10, color: S.muted, transform: collapsed[group] ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>}
+                    </button>
+                    {(groupOverviewMap[group] || !collapsed[group]) && items.map(item => (
+                      <button key={item.id} title={item.label} onClick={() => setActive(item.id)} style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        width: "100%", padding: groupOverviewMap[group] ? "8px 18px 8px 42px" : "8px 18px 8px 30px",
+                        background: active === item.id ? P[200] + "88" : "transparent",
+                        border: "none", cursor: "pointer", fontFamily: "inherit",
+                        borderLeft: active === item.id ? `3px solid ${P[600]}` : "3px solid transparent",
+                        justifyContent: "flex-start",
+                      }}>
+                        <span style={{ fontSize: 11, color: active === item.id ? P[600] : S.light }}>{item.icon}</span>
+                        <span style={{ fontSize: 13, color: active === item.id ? P[800] : S.muted, fontWeight: active === item.id ? 600 : 400, textAlign: "left" }}>
+                          {item.label.length > 20 ? item.label.slice(0, 19) + "…" : item.label}
+                        </span>
+                        {!!sectionFlagCounts[item.id] && (
+                          <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 999, background: "#FFF7E8", color: "#D97706", fontSize: 10, fontWeight: 800, display: "grid", placeItems: "center" }}>
+                            {sectionFlagCounts[item.id]}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Main Content */}
+      <div style={{ flex: 1, display: "flex", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
 
         {/* Body */}
         <div style={{ flex: 1, overflow: "hidden", padding: 0, minHeight: 0 }}>
-        <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
-          <div style={{ flex: 1, minWidth: 0, padding: isMobile ? "18px 14px 24px" : isCompact ? "22px 20px 28px" : "28px 36px 36px", overflowY: "auto", minHeight: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: S.text }}>{activeGroup}</h2>
-              <span style={{ fontSize: 18, color: S.light, cursor: "pointer", letterSpacing: 2 }}>···</span>
-            </div>
+        <div style={{ height: "100%", minHeight: 0 }}>
+          <div style={{ height: "100%", minWidth: 0, padding: isMobile ? "18px 14px 24px" : isCompact ? "18px 20px 28px" : "18px 24px 36px", overflowY: "auto", minHeight: 0 }}>
 
             {platformMode === "test" ? (
               <div style={{ display: "grid", gap: 18, marginBottom: 18 }}>
-                <div style={{
-                  background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(244,243,255,0.96) 100%)",
-                  border: `1px solid ${S.border}`,
-                  borderRadius: 22,
-                  padding: "18px 20px",
-                  boxShadow: "0 18px 40px rgba(83, 74, 183, 0.06)",
-                  display: "grid",
-                  gap: 14,
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                    <div style={{ display: "grid", gap: 6 }}>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Test Platform</div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Started test projects</div>
-                      <div style={{ maxWidth: 760, fontSize: 14, lineHeight: 1.65, color: S.muted }}>
-                        This is the workspace playground for test projects. Open any started project below and keep editing it in the Loop MVP.
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      <button
-                        onClick={() => {
-                          setScreen("landing");
-                          setPlatformMode("test");
-                        }}
-                        style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                      >
-                        Start New Test Project
-                      </button>
-                      <button
-                        onClick={handleLoadTestScenario}
-                        style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
-                      >
-                        Load Test Scenario
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-                    {testProjects.length === 0 && (
-                      <div style={{ padding: "16px 18px", borderRadius: 18, border: `1px dashed ${S.border}`, background: "white", fontSize: 13, lineHeight: 1.7, color: S.muted }}>
-                        No test projects yet. Start one from the landing page to see it here.
-                      </div>
-                    )}
-                    {testProjects.map(project => {
-                      const isCurrent = project.id === currentTestProjectId;
-                      return (
-                        <div
-                          key={project.id}
-                          style={{ textAlign: "left", border: `1px solid ${isCurrent ? P[200] : S.border}`, background: isCurrent ? P[50] : "white", borderRadius: 18, padding: 16 }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-                            <button
-                              onClick={() => openTestProject(project)}
-                              style={{ border: "none", background: "transparent", padding: 0, margin: 0, cursor: "pointer", fontFamily: "inherit", textAlign: "left", flex: 1 }}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-                                <div style={{ fontSize: 15, fontWeight: 800, color: P[900], lineHeight: 1.3 }}>{project.name}</div>
-                                <span style={{ padding: "4px 8px", borderRadius: 999, background: isCurrent ? "white" : S.bg, color: isCurrent ? P[700] : S.muted, fontSize: 10, fontWeight: 800 }}>
-                                  {isCurrent ? "Open" : "Saved"}
-                                </span>
-                              </div>
-                              <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.6, color: S.muted }}>
-                                {project.description || "Loop MVP test workspace"}
-                              </div>
-                              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap", fontSize: 11, color: S.muted }}>
-                                <span>Version {project.version || "v1.0"}</span>
-                                <span>Status {project.status || "Planned"}</span>
-                              </div>
-                            </button>
-                            <button
-                              onClick={() => deleteTestProject(project.id)}
-                              style={{ border: `1px solid ${S.border}`, background: "white", color: S.muted, borderRadius: 10, padding: "7px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <WorkflowCommandCenter
+                <CompactWorkflowStrip
                   stage={workflowStage}
                   launchComplete={launchComplete}
                   feedbackCaptured={feedbackCaptured}
                   stepCompletion={stepCompletion}
                   checklistStatus={checklistStatusMap[workflowStage] || []}
                   primaryAction={workflowPrimaryActionMap[workflowStage]}
-                  secondaryAction={{ label: "Load Test Scenario", onClick: handleLoadTestScenario }}
-                  tertiaryAction={{ label: workflowStage === "complete" ? "Reset Workflow" : "Reset to Website", onClick: handleResetWorkflow }}
+                  secondaryAction={{ label: "View Projects", onClick: () => goToProjectsHub() }}
+                  tertiaryAction={{ label: "New Project", onClick: handleAddAnotherProject }}
                   events={workflowEvents}
                   reviewCount={rawReviewItems.length}
                 />
               </div>
-            ) : (
-              <div style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(244,243,255,0.96) 100%)",
-                border: `1px solid ${S.border}`,
-                borderRadius: 22,
-                padding: "18px 20px",
-                marginBottom: 18,
-                boxShadow: "0 18px 40px rgba(83, 74, 183, 0.06)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 16,
-                flexWrap: "wrap",
-              }}>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Original Platform</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Classic Loop workspace</div>
-                  <div style={{ maxWidth: 760, fontSize: 14, lineHeight: 1.65, color: S.muted }}>
-                    This view keeps the original workspace structure and sections without the guided MVP workflow layer. Switch to Test Platform when you want the end-to-end CTA-driven demo flow.
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button
-                    onClick={() => {
-                      setWalkthroughMode("intro");
-                      setWalkthroughStep(0);
-                      setWalkthroughOpen(true);
-                    }}
-                    style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                  >
-                    Show Walkthrough
-                  </button>
-                  <button
-                    onClick={switchToTestWorkspaceMode}
-                    style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
-                  >
-                    Open Test Platform
-                  </button>
-                </div>
-              </div>
-            )}
+            ) : null}
 
             <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 18, overflow: "hidden" }}>
-              <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: S.text }}>{activeLabel}</span>
-                  {!!sectionFlagCounts[active] && (
-                    <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: "#FFF7E8", color: "#D97706", fontSize: 10, fontWeight: 800, display: "grid", placeItems: "center" }}>
-                      {sectionFlagCounts[active]}
-                    </span>
-                  )}
+              <div style={{ padding: "14px 16px", borderBottom: `1px solid ${S.border}`, background: "linear-gradient(180deg, #FBFAFF 0%, #F7F5FF 100%)", display: "grid", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 6, background: S.sidebar, border: `1px solid ${S.border}`, borderRadius: 16, flexWrap: "wrap", justifyContent: "flex-start" }}>
+                  {workspaceTabs.map(tab => {
+                    const isActive = activeWorkspace === tab;
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => openWorkspaceTab(tab)}
+                        style={{
+                          border: "none",
+                          background: isActive ? "white" : "transparent",
+                          color: isActive ? P[600] : S.muted,
+                          borderRadius: 12,
+                          padding: "10px 16px",
+                          fontSize: 14,
+                          fontWeight: isActive ? 700 : 500,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          boxShadow: isActive ? "0 1px 0 rgba(38, 33, 92, 0.05)" : "none",
+                        }}
+                      >
+                        {tab}
+                      </button>
+                    );
+                  })}
                 </div>
-                <span style={{ fontSize: 18, color: S.light, cursor: "pointer" }}>···</span>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: S.text }}>{activeLabel}</span>
+                    {!!sectionFlagCounts[active] && (
+                      <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: "#FFF7E8", color: "#D97706", fontSize: 10, fontWeight: 800, display: "grid", placeItems: "center" }}>
+                        {sectionFlagCounts[active]}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 18, color: S.light, cursor: "pointer" }}>···</span>
+                </div>
               </div>
               <div style={{ padding: "22px 20px 28px" }}>
+                {narrativeUiState.isGenerated && (
+                  <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "linear-gradient(135deg, #F8F6FF 0%, #F1EEFF 100%)", border: `1px solid ${P[200]}`, color: P[800], fontSize: 13, fontWeight: 700 }}>
+                    ✨ Draft generated — refine it, make it yours, then generate assets and feedback.
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
                   <button
-                    onClick={() => saveWorkspace(activeGroup || active)}
+                    onClick={() => handleSaveWorkspaceAndAdvance(activeGroup || active)}
                     style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
                   >
                     Save Workspace
@@ -5812,8 +8351,30 @@ export default function App() {
                   >
                     Save Project
                   </button>
+                  {["Product Truth", "Core Narrative", "GTM", "Assets"].includes(activeGroup) && (
+                    <button
+                      onClick={downloadCurrentWorkspace}
+                      style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      Download Section
+                    </button>
+                  )}
+                  {["Product Truth", "Core Narrative", "GTM"].includes(activeGroup) && (
+                    <button
+                      onClick={() => setNarrativeUiState(prev => ({ ...prev, improveMode: !prev.improveMode }))}
+                      style={{ border: `1px solid ${narrativeUiState.improveMode ? P[200] : S.border}`, background: narrativeUiState.improveMode ? P[50] : "white", color: narrativeUiState.improveMode ? P[700] : S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      {narrativeUiState.improveMode ? "Exit Improve Mode" : "Improve Narrative"}
+                    </button>
+                  )}
                   {activeGroup === "Feedback" && (
                     <>
+                      <button
+                        onClick={downloadProjectReport}
+                        style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                      >
+                        Download Report
+                      </button>
                       <button
                         onClick={requestProjectReview}
                         style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
@@ -5850,7 +8411,10 @@ export default function App() {
                       )}
                       {workflowStage === "feedback" && (
                         <button
-                          onClick={handleAdvanceWorkflow}
+                          onClick={() => {
+                            downloadProjectReport();
+                            handleAdvanceWorkflow();
+                          }}
                           style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
                         >
                           Generate Feedback Report
@@ -5864,30 +8428,6 @@ export default function App() {
             </div>
           </div>
 
-          {showDesktopAiRail && (
-            <div style={{ width: aiRailCollapsed ? 74 : 336, flexShrink: 0, background: "white", transition: "width 180ms ease", height: "calc(100vh - 166px)", maxHeight: "calc(100vh - 166px)", minHeight: 0, position: "sticky", top: 0, alignSelf: "flex-start", overflow: "hidden", borderLeft: `1px solid ${S.border}`, boxShadow: aiRailCollapsed ? "none" : "0 18px 40px rgba(83, 74, 183, 0.06)" }}>
-              <WorkspaceAIPanel
-                collapsed={aiRailCollapsed}
-                onToggle={() => setAiRailCollapsed(v => !v)}
-                activeLabel={activeLabel}
-                activeSummary={activeSummary}
-                aiTab={aiTab}
-                setAiTab={setAiTab}
-                quickActions={quickActions}
-                onRunQuickAction={handleQuickAction}
-                reviewItems={rawReviewItems}
-                onOpenSection={sectionId => setActive(sectionId)}
-                onMarkReviewed={itemId => setReviewDismissed(prev => ({ ...prev, [itemId]: true }))}
-                askPrompt={aiPrompt}
-                setAskPrompt={setAiPrompt}
-                onAsk={() => runAssistantPrompt(aiPrompt)}
-                askOutput={aiOutput}
-                askLoading={aiLoading}
-                chatDocked={!aiRailCollapsed}
-                showChat={false}
-              />
-            </div>
-          )}
         </div>
 
           {aiOpen && (isCompact || isMobile) && (
@@ -5916,18 +8456,37 @@ export default function App() {
         </div>
         </div>
       </div>
+
+      {showDesktopAiRail && (
+        <div style={{ width: aiRailCollapsed ? 74 : 336, flexShrink: 0, background: S.bg, transition: "width 180ms ease", padding: isCompact ? "18px 18px 24px 0" : "18px 24px 24px 0", minHeight: 0, overflow: "hidden", borderLeft: `1px solid ${S.border}`, display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "hidden", border: `1px solid ${S.border}`, borderRadius: 22, background: "white", boxShadow: aiRailCollapsed ? "none" : "0 18px 40px rgba(83, 74, 183, 0.06)" }}>
+            <WorkspaceAIPanel
+              collapsed={aiRailCollapsed}
+              onToggle={() => setAiRailCollapsed(v => !v)}
+              activeLabel={activeLabel}
+              activeSummary={activeSummary}
+              aiTab={aiTab}
+              setAiTab={setAiTab}
+              quickActions={quickActions}
+              onRunQuickAction={handleQuickAction}
+              reviewItems={rawReviewItems}
+              onOpenSection={sectionId => setActive(sectionId)}
+              onMarkReviewed={itemId => setReviewDismissed(prev => ({ ...prev, [itemId]: true }))}
+              askPrompt={aiPrompt}
+              setAskPrompt={setAiPrompt}
+              onAsk={() => runAssistantPrompt(aiPrompt)}
+              askOutput={aiOutput}
+              askLoading={aiLoading}
+              chatDocked={!aiRailCollapsed}
+              showChat={false}
+            />
+          </div>
         </div>
       )}
-
-      <GuidedWalkthroughModal
-        open={walkthroughOpen}
-        mode={walkthroughMode}
-        stepIndex={walkthroughStep}
-        steps={walkthroughSteps}
-        onClose={closeWalkthrough}
-        onStart={startGuidedWalkthrough}
-        onSkip={skipWalkthrough}
-      />
+      </div>
+      </div>
+        </div>
+      )}
 
       {platformNotice && (
         <div style={{ position: "fixed", left: 24, bottom: 24, zIndex: 60, maxWidth: 420, background: "white", border: `1px solid ${S.border}`, borderRadius: 18, boxShadow: "0 20px 44px rgba(83, 74, 183, 0.18)", padding: 16 }}>

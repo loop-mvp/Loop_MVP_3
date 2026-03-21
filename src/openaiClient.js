@@ -1,6 +1,31 @@
 const openAiKey = import.meta.env.VITE_OPENAI_API_KEY;
 const openAiModel = import.meta.env.VITE_OPENAI_MODEL || "gpt-5-mini";
 
+function extractResponseText(data) {
+  if (typeof data?.output_text === "string" && data.output_text.trim()) {
+    return data.output_text.trim();
+  }
+
+  const output = Array.isArray(data?.output) ? data.output : [];
+  const parts = [];
+
+  output.forEach(item => {
+    const content = Array.isArray(item?.content) ? item.content : [];
+    content.forEach(entry => {
+      if (typeof entry?.text === "string" && entry.text.trim()) {
+        parts.push(entry.text.trim());
+        return;
+      }
+
+      if (entry?.type === "output_text" && typeof entry?.text === "string" && entry.text.trim()) {
+        parts.push(entry.text.trim());
+      }
+    });
+  });
+
+  return parts.join("\n\n").trim();
+}
+
 async function openAiRequest(input) {
   if (!openAiKey) {
     throw new Error("Missing OpenAI API key");
@@ -14,6 +39,12 @@ async function openAiRequest(input) {
     },
     body: JSON.stringify({
       model: openAiModel,
+      reasoning: { effort: "medium" },
+      text: {
+        format: {
+          type: "text",
+        },
+      },
       input,
     }),
   });
@@ -23,7 +54,7 @@ async function openAiRequest(input) {
   }
 
   const data = await response.json();
-  return data.output_text?.trim() || "";
+  return extractResponseText(data);
 }
 
 function extractJson(text) {
