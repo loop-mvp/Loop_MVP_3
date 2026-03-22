@@ -1,0 +1,88 @@
+<svg width="1440" height="980" viewBox="0 0 1440 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="980" fill="#F7F6FF"/>
+  <rect x="32" y="28" width="1376" height="84" rx="24" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="64" y="72" fill="#2D2A72" font-family="Arial, sans-serif" font-size="30" font-weight="700">Feedback Hub</text>
+  <text x="64" y="96" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Structured review dashboard for narrative quality, section feedback, and AI-generated improvement signals.</text>
+  <rect x="1170" y="48" width="190" height="40" rx="14" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="1192" y="73" fill="#5B55C8" font-family="Arial, sans-serif" font-size="14" font-weight="700">Reviewer: Sales</text>
+
+  <rect x="32" y="132" width="924" height="804" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="64" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Review Matrix</text>
+  <text x="64" y="198" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Each row scores a section. Expand a row to comment, suggest improvements, or approve it.</text>
+
+  <rect x="64" y="228" width="860" height="54" rx="16" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="86" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Section</text>
+  <text x="326" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Clarity</text>
+  <text x="434" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Relevance</text>
+  <text x="560" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Differentiation</text>
+  <text x="718" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Value</text>
+  <text x="830" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Status</text>
+
+  <rect x="64" y="296" width="860" height="58" rx="18" fill="#FBFAFF" stroke="#BDB6FF" stroke-width="2"/>
+  <text x="86" y="331" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Positioning</text>
+  <rect x="312" y="310" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="339" y="330" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="422" y="310" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="449" y="330" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="552" y="310" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="579" y="330" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">5</text>
+  <rect x="690" y="310" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="717" y="330" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="804" y="308" width="100" height="34" rx="17" fill="#FFF5E8" stroke="#F2D8A7"/><text x="826" y="330" fill="#A46812" font-family="Arial, sans-serif" font-size="13" font-weight="700">In Review</text>
+
+  <rect x="64" y="370" width="860" height="254" rx="22" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="88" y="404" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">EXPANDED REVIEW</text>
+  <text x="88" y="434" fill="#2D2A72" font-family="Arial, sans-serif" font-size="20" font-weight="700">Positioning</text>
+
+  <rect x="88" y="452" width="812" height="84" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="108" y="482" fill="#8C88B7" font-family="Arial, sans-serif" font-size="12">Section content</text>
+  <text x="108" y="510" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">Neem Kosh positions neem-wood lids as the cleaner, more premium hospitality choice for preserving in-room snacks and improving guest perception.</text>
+
+  <rect x="88" y="554" width="812" height="96" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="108" y="584" fill="#8C88B7" font-family="Arial, sans-serif" font-size="12">Comment / Suggestion</text>
+  <text x="108" y="612" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">This section is clear, but it needs stronger contrast versus generic plastic lids and should make the premium hospitality value more explicit.</text>
+
+  <rect x="88" y="670" width="152" height="44" rx="14" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="138" y="698" fill="#5B55C8" font-family="Arial, sans-serif" font-size="14" font-weight="700">Improve</text>
+  <rect x="256" y="670" width="152" height="44" rx="14" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="311" y="698" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Approve</text>
+  <text x="438" y="698" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Selecting Improve flags PMM follow-up and adds this section to pending revisions.</text>
+
+  <rect x="64" y="642" width="860" height="58" rx="18" fill="#FFFFFF" stroke="#D9D4FF" opacity="0.65"/>
+  <text x="86" y="677" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Messaging</text>
+  <rect x="312" y="656" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="339" y="676" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">8</text>
+  <rect x="422" y="656" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="449" y="676" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="552" y="656" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="579" y="676" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="690" y="656" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="717" y="676" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="804" y="654" width="100" height="34" rx="17" fill="#ECFDF3" stroke="#BFE9CF"/><text x="833" y="676" fill="#177A51" font-family="Arial, sans-serif" font-size="13" font-weight="700">Approved</text>
+
+  <rect x="64" y="716" width="860" height="58" rx="18" fill="#FFFFFF" stroke="#D9D4FF" opacity="0.65"/>
+  <text x="86" y="751" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Value Proposition</text>
+  <rect x="312" y="730" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="339" y="750" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="422" y="730" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="449" y="750" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="552" y="730" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="579" y="750" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">4</text>
+  <rect x="690" y="730" width="68" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="717" y="750" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">5</text>
+  <rect x="804" y="728" width="100" height="34" rx="17" fill="#FFF5E8" stroke="#F2D8A7"/><text x="826" y="750" fill="#A46812" font-family="Arial, sans-serif" font-size="13" font-weight="700">In Review</text>
+
+  <rect x="980" y="132" width="428" height="804" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1012" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Narrative Intelligence</text>
+  <text x="1012" y="198" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">AI turns the structured review into issues, suggestions, and confidence signals.</text>
+
+  <rect x="1012" y="228" width="364" height="134" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1034" y="258" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">TOP ISSUES</text>
+  <text x="1034" y="290" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">Differentiation remains the weakest signal across reviewed sections.</text>
+  <text x="1034" y="316" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Value Proposition and Positioning both need stronger competitive contrast.</text>
+
+  <rect x="1012" y="382" width="364" height="214" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1034" y="412" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">AI SUGGESTIONS</text>
+  <text x="1034" y="446" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Add a direct contrast between neem lids and low-cost alternatives</text>
+  <text x="1034" y="474" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Strengthen the premium hospitality business value in Positioning</text>
+  <text x="1034" y="502" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Rework Value Proposition around freshness, hygiene, and guest trust</text>
+
+  <rect x="1012" y="616" width="364" height="128" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1034" y="646" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">CONFIDENCE SCORE</text>
+  <text x="1034" y="700" fill="#2D2A72" font-family="Arial, sans-serif" font-size="48" font-weight="700">71</text>
+  <text x="1104" y="700" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="18" font-weight="700">/ 100</text>
+  <text x="1034" y="726" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Weighted from clarity, relevance, differentiation, and value across all active reviews.</text>
+
+  <rect x="1012" y="764" width="364" height="132" rx="20" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1034" y="794" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">ACTION STATE</text>
+  <text x="1034" y="826" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">Sections marked Improve are routed back to PMM review.</text>
+  <text x="1034" y="850" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">Sections marked Approve count toward narrative readiness.</text>
+</svg>

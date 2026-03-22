@@ -1,0 +1,103 @@
+<svg width="1440" height="980" viewBox="0 0 1440 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="980" fill="#F7F6FF"/>
+  <rect x="32" y="28" width="1376" height="80" rx="24" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="68" y="76" fill="#2D2A72" font-family="Arial, sans-serif" font-size="28" font-weight="700">Feedback Hub</text>
+  <text x="68" y="98" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Feedback → Signals → Intelligence → Action</text>
+  <rect x="1128" y="46" width="232" height="42" rx="14" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="1152" y="72" fill="#5B55C8" font-family="Arial, sans-serif" font-size="14" font-weight="700">Reviewer: Sales</text>
+
+  <rect x="32" y="132" width="932" height="788" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="64" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Structured Review Table</text>
+  <text x="64" y="200" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Each row is a narrative section. Expand to inspect content, score it, and leave section-level feedback.</text>
+
+  <rect x="64" y="228" width="868" height="54" rx="16" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="86" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Section</text>
+  <text x="416" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Clarity</text>
+  <text x="544" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Relevance</text>
+  <text x="694" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Differentiation</text>
+  <text x="858" y="261" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Status</text>
+
+  <rect x="64" y="296" width="868" height="62" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="86" y="333" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Positioning</text>
+  <rect x="400" y="311" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="430" y="332" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="532" y="311" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="562" y="332" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="686" y="311" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="716" y="332" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">5</text>
+  <rect x="826" y="309" width="92" height="36" rx="18" fill="#FFF5E8" stroke="#F2D8A7"/>
+  <text x="844" y="332" fill="#A46812" font-family="Arial, sans-serif" font-size="13" font-weight="700">In Review</text>
+
+  <rect x="64" y="374" width="868" height="248" rx="22" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="90" y="412" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">EXPANDED SECTION</text>
+  <text x="90" y="442" fill="#2D2A72" font-family="Arial, sans-serif" font-size="20" font-weight="700">Positioning</text>
+  <rect x="90" y="462" width="816" height="78" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="110" y="492" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Read-only section content appears here so reviewers score the actual narrative,</text>
+  <text x="110" y="514" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">not a summary. This keeps the review grounded in the text Loop generated.</text>
+
+  <rect x="90" y="560" width="116" height="42" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="110" y="586" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Clarity: 7</text>
+  <rect x="222" y="560" width="128" height="42" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="244" y="586" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Relevance: 6</text>
+  <rect x="366" y="560" width="168" height="42" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="388" y="586" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Differentiation: 5</text>
+  <rect x="762" y="560" width="144" height="42" rx="21" fill="#ECFDF3" stroke="#BFE9CF"/>
+  <text x="795" y="586" fill="#177A51" font-family="Arial, sans-serif" font-size="13" font-weight="700">Approved</text>
+
+  <rect x="90" y="622" width="816" height="86" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="110" y="652" fill="#8C88B7" font-family="Arial, sans-serif" font-size="13">Reviewer comment</text>
+  <text x="110" y="679" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Positioning is clear, but the differentiation is not strong enough versus common eco-friendly storage products.</text>
+
+  <rect x="706" y="724" width="200" height="44" rx="14" fill="#5B55C8"/>
+  <text x="748" y="752" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="14" font-weight="700">Improve Suggestion</text>
+
+  <rect x="64" y="644" width="868" height="62" rx="18" fill="#FFFFFF" stroke="#D9D4FF" opacity="0.65"/>
+  <text x="86" y="681" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Messaging</text>
+  <rect x="400" y="659" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="430" y="680" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">8</text>
+  <rect x="532" y="659" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="562" y="680" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="686" y="659" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="716" y="680" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="826" y="657" width="92" height="36" rx="18" fill="#ECFDF3" stroke="#BFE9CF"/>
+  <text x="848" y="680" fill="#177A51" font-family="Arial, sans-serif" font-size="13" font-weight="700">Approved</text>
+
+  <rect x="64" y="720" width="868" height="62" rx="18" fill="#FFFFFF" stroke="#D9D4FF" opacity="0.65"/>
+  <text x="86" y="757" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Value Proposition</text>
+  <rect x="400" y="735" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="430" y="756" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="532" y="735" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="562" y="756" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="686" y="735" width="74" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="716" y="756" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">4</text>
+  <rect x="826" y="733" width="92" height="36" rx="18" fill="#FFF5E8" stroke="#F2D8A7"/>
+  <text x="844" y="756" fill="#A46812" font-family="Arial, sans-serif" font-size="13" font-weight="700">In Review</text>
+
+  <rect x="988" y="132" width="420" height="788" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1020" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Narrative Intelligence</text>
+  <text x="1020" y="200" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">AI converts section feedback into structured signals, patterns, and actions.</text>
+
+  <rect x="1020" y="228" width="356" height="120" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1042" y="260" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">TOP ISSUES</text>
+  <text x="1042" y="292" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">1. Differentiation is the weakest recurring signal</text>
+  <text x="1042" y="318" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Pattern appears across Positioning and Value Proposition.</text>
+
+  <rect x="1020" y="366" width="356" height="202" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1042" y="398" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">AI SUGGESTIONS</text>
+  <text x="1042" y="430" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Strengthen the “why neem” angle in Positioning</text>
+  <text x="1042" y="456" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Add clearer contrast versus generic food-storage lids</text>
+  <text x="1042" y="482" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Reframe value around freshness, hygiene, and premium guest experience</text>
+
+  <rect x="1020" y="586" width="356" height="132" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1042" y="618" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">CONFIDENCE SCORE</text>
+  <text x="1042" y="674" fill="#2D2A72" font-family="Arial, sans-serif" font-size="44" font-weight="700">68</text>
+  <text x="1106" y="674" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="18" font-weight="700">/ 100</text>
+  <text x="1042" y="700" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Weighted from clarity, relevance, and differentiation across all reviewed sections.</text>
+
+  <rect x="1020" y="736" width="356" height="148" rx="20" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1042" y="768" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">AI PIPELINE</text>
+  <text x="1042" y="798" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">1. Normalize feedback by section</text>
+  <text x="1042" y="822" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">2. Aggregate signals across sections</text>
+  <text x="1042" y="846" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">3. Generate actionable suggestions</text>
+  <text x="1042" y="870" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">4. Recalculate confidence score</text>
+</svg>

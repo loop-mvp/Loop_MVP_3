@@ -1,0 +1,50 @@
+<svg width="1260" height="820" viewBox="0 0 1260 820" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1260" height="820" fill="#F5F3FF"/>
+
+  <rect x="46" y="32" width="1168" height="116" rx="26" fill="#FFFFFF" stroke="#D8D4F7"/>
+  <text x="78" y="70" fill="#564CB5" font-family="Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.2">WORKFLOW</text>
+  <text x="78" y="106" fill="#241D63" font-family="Arial, sans-serif" font-size="30" font-weight="800">Go live from one approved source of truth.</text>
+  <text x="78" y="130" fill="#756DBB" font-family="Arial, sans-serif" font-size="15">Launch stage · 80% complete · Feedback is next</text>
+  <rect x="78" y="162" width="760" height="10" rx="5" fill="#E9E5FB"/>
+  <rect x="78" y="162" width="604" height="10" rx="5" fill="#695CD8"/>
+
+  <rect x="930" y="66" width="180" height="48" rx="18" fill="#5B4FD0"/>
+  <text x="970" y="96" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="19" font-weight="700">Launch Product</text>
+  <rect x="1124" y="66" width="72" height="48" rx="18" fill="#FFFFFF" stroke="#D8D4F7"/>
+  <text x="1144" y="96" fill="#241D63" font-family="Arial, sans-serif" font-size="16" font-weight="700">Projects</text>
+
+  <rect x="46" y="168" width="1168" height="620" rx="28" fill="#FFFFFF" stroke="#D8D4F7"/>
+
+  <rect x="68" y="194" width="1124" height="60" rx="22" fill="#F0EDFF" stroke="#D8D4F7"/>
+  <rect x="82" y="206" width="162" height="36" rx="16" fill="#FFFFFF"/>
+  <text x="110" y="229" fill="#564CB5" font-family="Arial, sans-serif" font-size="16" font-weight="700">Product Truth</text>
+  <text x="276" y="229" fill="#6E67B6" font-family="Arial, sans-serif" font-size="16" font-weight="600">Core Narrative</text>
+  <text x="438" y="229" fill="#6E67B6" font-family="Arial, sans-serif" font-size="16" font-weight="600">GTM</text>
+  <text x="520" y="229" fill="#6E67B6" font-family="Arial, sans-serif" font-size="16" font-weight="600">Assets</text>
+  <text x="620" y="229" fill="#6E67B6" font-family="Arial, sans-serif" font-size="16" font-weight="600">Feedback</text>
+
+  <text x="84" y="302" fill="#241D63" font-family="Arial, sans-serif" font-size="34" font-weight="800">Product Truth</text>
+  <text x="84" y="330" fill="#756DBB" font-family="Arial, sans-serif" font-size="15">Start from the AI draft, refine the essentials, then move to the next workspace.</text>
+
+  <rect x="84" y="360" width="1090" height="68" rx="20" fill="#F8F7FF" stroke="#D6D1F8"/>
+  <text x="108" y="402" fill="#40368E" font-family="Arial, sans-serif" font-size="18" font-weight="700">Draft generated — review key sections, then continue.</text>
+
+  <rect x="84" y="452" width="214" height="54" rx="18" fill="#5B4FD0"/>
+  <text x="120" y="485" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="20" font-weight="700">Save &amp; Continue</text>
+  <rect x="312" y="452" width="150" height="54" rx="18" fill="#FFFFFF" stroke="#D8D4F7"/>
+  <text x="342" y="485" fill="#241D63" font-family="Arial, sans-serif" font-size="19" font-weight="700">Save Project</text>
+  <rect x="476" y="452" width="104" height="54" rx="18" fill="#FFFFFF" stroke="#D8D4F7"/>
+  <text x="510" y="485" fill="#241D63" font-family="Arial, sans-serif" font-size="19" font-weight="700">More</text>
+
+  <rect x="84" y="536" width="1090" height="216" rx="24" fill="#FFFFFF" stroke="#D8D4F7"/>
+  <text x="112" y="576" fill="#564CB5" font-family="Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.1">PRODUCT OVERVIEW</text>
+  <rect x="112" y="596" width="1014" height="112" rx="18" fill="#FBFAFF" stroke="#D8D4F7"/>
+  <text x="136" y="634" fill="#241D63" font-family="Arial, sans-serif" font-size="18">An upscale earthy air-tight food container lid made of organic neem wood for hotels.</text>
+  <text x="136" y="662" fill="#241D63" font-family="Arial, sans-serif" font-size="18">Neem is naturally anti-bacterial, preserves freshness, and supports a more premium guest experience.</text>
+
+  <rect x="890" y="452" width="284" height="140" rx="20" fill="#FBFAFF" stroke="#D8D4F7"/>
+  <text x="916" y="484" fill="#564CB5" font-family="Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.1">CURRENT STATE</text>
+  <text x="916" y="520" fill="#241D63" font-family="Arial, sans-serif" font-size="20" font-weight="800">Narrative version is published</text>
+  <text x="916" y="548" fill="#756DBB" font-family="Arial, sans-serif" font-size="15">Feedback is the only step left in this loop.</text>
+  <text x="916" y="574" fill="#756DBB" font-family="Arial, sans-serif" font-size="15">Saved and ready to continue.</text>
+</svg>

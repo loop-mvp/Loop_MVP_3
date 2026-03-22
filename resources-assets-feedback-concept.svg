@@ -1,0 +1,99 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="980" fill="#F7F6FF"/>
+  <rect x="0" y="0" width="1600" height="120" fill="url(#paint0_linear)"/>
+  <text x="56" y="64" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="34" font-weight="700">Loop Resources</text>
+  <text x="56" y="96" fill="#E6E2FF" font-family="Arial, sans-serif" font-size="18">Assets, internal review, and market signal managed in one operational layer.</text>
+
+  <rect x="40" y="144" width="272" height="792" rx="28" fill="#F1EEFF" stroke="#D8D2FF" stroke-width="2"/>
+  <text x="76" y="190" fill="#6B6691" font-family="Arial, sans-serif" font-size="15" font-weight="700">Product Truth</text>
+  <text x="76" y="232" fill="#6B6691" font-family="Arial, sans-serif" font-size="15" font-weight="700">Narrative</text>
+  <text x="76" y="274" fill="#6B6691" font-family="Arial, sans-serif" font-size="15" font-weight="700">GTM Readiness</text>
+  <rect x="66" y="312" width="220" height="60" rx="18" fill="#FFFFFF"/>
+  <text x="96" y="349" fill="#2C276B" font-family="Arial, sans-serif" font-size="18" font-weight="700">Resources</text>
+  <rect x="76" y="398" width="196" height="50" rx="16" fill="#F8F6FF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="106" y="429" fill="#4D46B5" font-family="Arial, sans-serif" font-size="15" font-weight="700">Assets</text>
+  <rect x="76" y="462" width="196" height="50" rx="16" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="106" y="493" fill="#4D46B5" font-family="Arial, sans-serif" font-size="15" font-weight="700">Internal Feedback</text>
+  <rect x="76" y="526" width="196" height="50" rx="16" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="106" y="557" fill="#4D46B5" font-family="Arial, sans-serif" font-size="15" font-weight="700">Market Feedback</text>
+
+  <rect x="336" y="144" width="940" height="792" rx="28" fill="#FFFFFF" stroke="#D8D2FF" stroke-width="2"/>
+  <rect x="364" y="170" width="884" height="92" rx="22" fill="#FBFAFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="394" y="202" fill="#4D46B5" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.1">ASSETS DASHBOARD</text>
+  <text x="394" y="236" fill="#29236A" font-family="Arial, sans-serif" font-size="28" font-weight="700">Assets are scored, reviewed, approved, and downloadable in one place</text>
+
+  <rect x="364" y="286" width="884" height="60" rx="18" fill="#F3F0FF"/>
+  <rect x="378" y="297" width="112" height="38" rx="12" fill="#FFFFFF"/>
+  <text x="414" y="321" fill="#4D46B5" font-family="Arial, sans-serif" font-size="14" font-weight="700">Assets</text>
+  <text x="516" y="321" fill="#6B6691" font-family="Arial, sans-serif" font-size="14" font-weight="700">Internal Feedback</text>
+  <text x="684" y="321" fill="#6B6691" font-family="Arial, sans-serif" font-size="14" font-weight="700">Market Feedback</text>
+
+  <rect x="364" y="368" width="884" height="372" rx="22" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="388" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">ASSET NAME</text>
+  <text x="576" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">TYPE</text>
+  <text x="676" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">CATEGORY</text>
+  <text x="814" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">SECTION</text>
+  <text x="928" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">CLARITY</text>
+  <text x="1022" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">DIFF</text>
+  <text x="1100" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">SCORE</text>
+  <text x="1186" y="400" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">STATUS</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="384" y="418" width="844" height="58" rx="16" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+    <text x="404" y="452" fill="#29236A" font-size="14" font-weight="700">Homepage Copy</text>
+    <text x="582" y="452" fill="#3E386F" font-size="13" font-weight="700">Messaging</text>
+    <text x="690" y="452" fill="#3E386F" font-size="13" font-weight="700">Marketing</text>
+    <text x="820" y="452" fill="#3E386F" font-size="13" font-weight="700">Narrative</text>
+    <text x="946" y="452" fill="#3E386F" font-size="13" font-weight="700">5.8</text>
+    <text x="1030" y="452" fill="#3E386F" font-size="13" font-weight="700">5.2</text>
+    <text x="1106" y="452" fill="#3E386F" font-size="13" font-weight="700">62</text>
+    <rect x="1174" y="430" width="118" height="28" rx="999" fill="#FFF7E8"/>
+    <text x="1202" y="448" fill="#AE7B10" font-size="12" font-weight="700">Needs Work</text>
+
+    <rect x="384" y="490" width="844" height="58" rx="16" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+    <text x="404" y="524" fill="#29236A" font-size="14" font-weight="700">Sales Deck</text>
+    <text x="582" y="524" fill="#3E386F" font-size="13" font-weight="700">Deck</text>
+    <text x="690" y="524" fill="#3E386F" font-size="13" font-weight="700">Sales</text>
+    <text x="820" y="524" fill="#3E386F" font-size="13" font-weight="700">GTM</text>
+    <text x="946" y="524" fill="#3E386F" font-size="13" font-weight="700">7.2</text>
+    <text x="1030" y="524" fill="#3E386F" font-size="13" font-weight="700">6.8</text>
+    <text x="1106" y="524" fill="#3E386F" font-size="13" font-weight="700">75</text>
+    <rect x="1174" y="502" width="98" height="28" rx="999" fill="#ECFFF3"/>
+    <text x="1202" y="520" fill="#177A51" font-size="12" font-weight="700">Approved</text>
+
+    <rect x="384" y="562" width="844" height="58" rx="16" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+    <text x="404" y="596" fill="#29236A" font-size="14" font-weight="700">Email Campaign</text>
+    <text x="582" y="596" fill="#3E386F" font-size="13" font-weight="700">Campaign</text>
+    <text x="690" y="596" fill="#3E386F" font-size="13" font-weight="700">Marketing</text>
+    <text x="820" y="596" fill="#3E386F" font-size="13" font-weight="700">GTM</text>
+    <text x="946" y="596" fill="#3E386F" font-size="13" font-weight="700">6.0</text>
+    <text x="1030" y="596" fill="#3E386F" font-size="13" font-weight="700">5.5</text>
+    <text x="1106" y="596" fill="#3E386F" font-size="13" font-weight="700">61</text>
+    <rect x="1174" y="574" width="98" height="28" rx="999" fill="#EEF4FF"/>
+    <text x="1196" y="592" fill="#315ACB" font-size="12" font-weight="700">In Review</text>
+  </g>
+
+  <rect x="364" y="764" width="884" height="140" rx="22" fill="#FBFAFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="392" y="796" fill="#4D46B5" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.1">KITS + ACTIONS</text>
+  <text x="392" y="832" fill="#29236A" font-family="Arial, sans-serif" font-size="20" font-weight="700">Download approved kits by category</text>
+  <text x="392" y="864" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">Sales Kit: Sales Deck, Pitch Script, One Pager</text>
+  <text x="392" y="890" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">Marketing Kit: Homepage Copy, Email Campaign, Launch Brief</text>
+  <rect x="1048" y="822" width="166" height="48" rx="14" fill="#5B52C4"/>
+  <text x="1088" y="852" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="16" font-weight="700">Download All</text>
+
+  <rect x="1300" y="144" width="260" height="792" rx="28" fill="#FCFBFF" stroke="#D8D2FF" stroke-width="2"/>
+  <text x="1332" y="188" fill="#4D46B5" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.1">WHAT THIS MEANS</text>
+  <text x="1332" y="226" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Assets</text>
+  <text x="1332" y="254" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">All documents and outputs live here, scored and downloadable by team/category.</text>
+  <text x="1332" y="314" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Internal Feedback</text>
+  <text x="1332" y="342" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">Review Center, approvals, action queue, and internal feedback management.</text>
+  <text x="1332" y="402" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Market Feedback</text>
+  <text x="1332" y="430" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">Launch signals, market reactions, customer observations, and what feeds the next version.</text>
+
+  <defs>
+    <linearGradient id="paint0_linear" x1="0" y1="0" x2="1600" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5B52C4"/>
+      <stop offset="1" stop-color="#7F77DD"/>
+    </linearGradient>
+  </defs>
+</svg>

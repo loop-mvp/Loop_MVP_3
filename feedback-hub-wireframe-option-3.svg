@@ -1,0 +1,74 @@
+<svg width="1440" height="980" viewBox="0 0 1440 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="980" fill="#F7F6FF"/>
+  <rect x="32" y="30" width="1376" height="82" rx="24" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="62" y="73" fill="#2D2A72" font-family="Arial, sans-serif" font-size="30" font-weight="700">Feedback Hub</text>
+  <text x="62" y="96" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">A compact review matrix with a persistent intelligence rail for synthesis and action.</text>
+  <rect x="1166" y="50" width="190" height="40" rx="14" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="1188" y="75" fill="#5B55C8" font-family="Arial, sans-serif" font-size="14" font-weight="700">Reviewer: Sales</text>
+
+  <rect x="32" y="132" width="728" height="800" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="64" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Review Matrix</text>
+  <text x="64" y="198" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">The table stays dense and scannable; detail opens to the right instead of growing downward.</text>
+
+  <rect x="64" y="226" width="664" height="52" rx="16" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="86" y="258" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Section</text>
+  <text x="338" y="258" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Clarity</text>
+  <text x="450" y="258" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Relevance</text>
+  <text x="576" y="258" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Differentiation</text>
+  <text x="672" y="258" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Status</text>
+
+  <rect x="64" y="294" width="664" height="58" rx="18" fill="#FBFAFF" stroke="#BDB6FF" stroke-width="2"/>
+  <text x="86" y="329" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Positioning</text>
+  <rect x="324" y="308" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="349" y="328" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="438" y="308" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="463" y="328" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="566" y="308" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="591" y="328" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">5</text>
+  <rect x="648" y="306" width="66" height="34" rx="17" fill="#FFF5E8" stroke="#F2D8A7"/><text x="660" y="328" fill="#A46812" font-family="Arial, sans-serif" font-size="12" font-weight="700">Review</text>
+
+  <rect x="64" y="368" width="664" height="58" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="86" y="403" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Messaging</text>
+  <rect x="324" y="382" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="349" y="402" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">8</text>
+  <rect x="438" y="382" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="463" y="402" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="566" y="382" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="591" y="402" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="648" y="380" width="66" height="34" rx="17" fill="#ECFDF3" stroke="#BFE9CF"/><text x="660" y="402" fill="#177A51" font-family="Arial, sans-serif" font-size="12" font-weight="700">Done</text>
+
+  <rect x="64" y="442" width="664" height="58" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="86" y="477" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Value Proposition</text>
+  <rect x="324" y="456" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="349" y="476" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="438" y="456" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="463" y="476" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="566" y="456" width="62" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="591" y="476" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">4</text>
+  <rect x="648" y="454" width="66" height="34" rx="17" fill="#FFF5E8" stroke="#F2D8A7"/><text x="660" y="476" fill="#A46812" font-family="Arial, sans-serif" font-size="12" font-weight="700">Review</text>
+
+  <rect x="784" y="132" width="624" height="800" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="816" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Expanded Review + Intelligence</text>
+
+  <rect x="816" y="212" width="560" height="246" rx="22" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="840" y="244" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">ACTIVE SECTION: POSITIONING</text>
+  <rect x="840" y="264" width="512" height="92" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="860" y="294" fill="#8C88B7" font-family="Arial, sans-serif" font-size="12">Read-only content</text>
+  <text x="860" y="322" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">Neem Kosh positions neem-wood lids as the cleaner, more premium hospitality choice for preserving in-room snacks.</text>
+  <rect x="840" y="374" width="108" height="40" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/><text x="860" y="399" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Clarity 7</text>
+  <rect x="964" y="374" width="122" height="40" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/><text x="984" y="399" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Relevance 6</text>
+  <rect x="1102" y="374" width="176" height="40" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/><text x="1122" y="399" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Differentiation 5</text>
+  <rect x="1292" y="374" width="60" height="40" rx="20" fill="#FFF5E8" stroke="#F2D8A7"/><text x="1304" y="399" fill="#A46812" font-family="Arial, sans-serif" font-size="12" font-weight="700">Review</text>
+
+  <rect x="816" y="474" width="560" height="96" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="840" y="504" fill="#8C88B7" font-family="Arial, sans-serif" font-size="12">Comment</text>
+  <text x="840" y="532" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">This section feels premium, but it needs a sharper contrast against generic plastic or single-use alternatives.</text>
+
+  <rect x="1182" y="586" width="194" height="44" rx="14" fill="#5B55C8"/>
+  <text x="1226" y="614" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="14" font-weight="700">Improve Suggestion</text>
+
+  <rect x="816" y="654" width="560" height="114" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="840" y="686" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">TOP ISSUES</text>
+  <text x="840" y="718" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">Weakest parameter: differentiation</text>
+  <text x="840" y="742" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Cross-section pattern suggests the story is clear but not yet distinct enough.</text>
+
+  <rect x="816" y="786" width="268" height="114" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="840" y="818" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">CONFIDENCE</text>
+  <text x="840" y="870" fill="#2D2A72" font-family="Arial, sans-serif" font-size="46" font-weight="700">68</text>
+  <text x="908" y="870" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="18" font-weight="700">/ 100</text>
+
+  <rect x="1108" y="786" width="268" height="114" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1132" y="818" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">AI SUGGESTION</text>
+  <text x="1132" y="850" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">Add a direct contrast statement between neem lids and commodity alternatives.</text>
+</svg>

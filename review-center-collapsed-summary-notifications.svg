@@ -1,0 +1,81 @@
+<svg width="1500" height="820" viewBox="0 0 1500 820" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="820" fill="#F7F5FF"/>
+  <text x="60" y="70" fill="#29236A" font-family="Arial, sans-serif" font-size="32" font-weight="700">Collapsed Review Rows</text>
+  <text x="60" y="102" fill="#6B6691" font-family="Arial, sans-serif" font-size="17">Summary + notifications version · top cards with a clean collapsed grid below.</text>
+
+  <rect x="54" y="136" width="1392" height="128" rx="26" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <rect x="80" y="164" width="170" height="72" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="104" y="192" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700">ROWS IN REVIEW</text>
+  <text x="104" y="224" fill="#29236A" font-family="Arial, sans-serif" font-size="26" font-weight="700">12</text>
+
+  <rect x="270" y="164" width="170" height="72" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="294" y="192" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700">APPROVED</text>
+  <text x="294" y="224" fill="#29236A" font-family="Arial, sans-serif" font-size="26" font-weight="700">5</text>
+
+  <rect x="460" y="164" width="170" height="72" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="484" y="192" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700">IMPROVE</text>
+  <text x="484" y="224" fill="#29236A" font-family="Arial, sans-serif" font-size="26" font-weight="700">4</text>
+
+  <rect x="650" y="164" width="170" height="72" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="674" y="192" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700">CONFIDENCE</text>
+  <text x="674" y="224" fill="#29236A" font-family="Arial, sans-serif" font-size="26" font-weight="700">74 / 100</text>
+
+  <rect x="884" y="164" width="534" height="72" rx="18" fill="#FBFAFF" stroke="#DED8FF" stroke-width="2"/>
+  <circle cx="914" cy="200" r="12" fill="#D62839"/>
+  <text x="909" y="205" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="12" font-weight="700">3</text>
+  <text x="940" y="194" fill="#29236A" font-family="Arial, sans-serif" font-size="15" font-weight="700">Notifications</text>
+  <text x="940" y="220" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">Sales submitted review · Product received request · Feedback badge is active</text>
+
+  <rect x="54" y="288" width="1392" height="470" rx="26" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <rect x="82" y="314" width="1336" height="56" rx="16" fill="#F3F0FF"/>
+  <text x="102" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">SECTION</text>
+  <text x="512" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">TEAM</text>
+  <text x="620" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">CLARITY</text>
+  <text x="744" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">RELEVANCE</text>
+  <text x="882" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">DIFFERENTIATION</text>
+  <text x="1084" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">VALUE</text>
+  <text x="1188" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">OVERALL</text>
+  <text x="1288" y="348" fill="#4D46B5" font-family="Arial, sans-serif" font-size="10" font-weight="700">STATUS</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="82" y="388" width="1336" height="60" rx="16" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+    <text x="102" y="424" fill="#29236A" font-size="14" font-weight="700">Positioning Statement</text>
+    <text x="518" y="424" fill="#3E386F" font-size="13" font-weight="700">Sales</text>
+    <text x="636" y="424" fill="#3E386F" font-size="13" font-weight="700">7</text>
+    <text x="760" y="424" fill="#3E386F" font-size="13" font-weight="700">6</text>
+    <text x="900" y="424" fill="#3E386F" font-size="13" font-weight="700">5</text>
+    <text x="1096" y="424" fill="#3E386F" font-size="13" font-weight="700">6</text>
+    <text x="1198" y="424" fill="#3E386F" font-size="13" font-weight="700">6.0</text>
+    <text x="1292" y="424" fill="#AE7B10" font-size="12" font-weight="700">IN REVIEW</text>
+
+    <rect x="82" y="462" width="1336" height="60" rx="16" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+    <text x="102" y="498" fill="#29236A" font-size="14" font-weight="700">Value Proposition</text>
+    <text x="518" y="498" fill="#3E386F" font-size="13" font-weight="700">PMM</text>
+    <text x="636" y="498" fill="#3E386F" font-size="13" font-weight="700">8</text>
+    <text x="760" y="498" fill="#3E386F" font-size="13" font-weight="700">7</text>
+    <text x="900" y="498" fill="#3E386F" font-size="13" font-weight="700">7</text>
+    <text x="1096" y="498" fill="#3E386F" font-size="13" font-weight="700">8</text>
+    <text x="1198" y="498" fill="#3E386F" font-size="13" font-weight="700">7.5</text>
+    <text x="1298" y="498" fill="#177A51" font-size="12" font-weight="700">APPROVED</text>
+
+    <rect x="82" y="536" width="1336" height="60" rx="16" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+    <text x="102" y="572" fill="#29236A" font-size="14" font-weight="700">Messaging</text>
+    <text x="518" y="572" fill="#3E386F" font-size="13" font-weight="700">PMM</text>
+    <text x="636" y="572" fill="#3E386F" font-size="13" font-weight="700">7</text>
+    <text x="760" y="572" fill="#3E386F" font-size="13" font-weight="700">8</text>
+    <text x="900" y="572" fill="#3E386F" font-size="13" font-weight="700">6</text>
+    <text x="1096" y="572" fill="#3E386F" font-size="13" font-weight="700">7</text>
+    <text x="1198" y="572" fill="#3E386F" font-size="13" font-weight="700">7.0</text>
+    <text x="1292" y="572" fill="#AE7B10" font-size="12" font-weight="700">IN REVIEW</text>
+
+    <rect x="82" y="610" width="1336" height="60" rx="16" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+    <text x="102" y="646" fill="#29236A" font-size="14" font-weight="700">GTM Strategy</text>
+    <text x="518" y="646" fill="#3E386F" font-size="13" font-weight="700">Sales</text>
+    <text x="636" y="646" fill="#3E386F" font-size="13" font-weight="700">6</text>
+    <text x="760" y="646" fill="#3E386F" font-size="13" font-weight="700">7</text>
+    <text x="900" y="646" fill="#3E386F" font-size="13" font-weight="700">5</text>
+    <text x="1096" y="646" fill="#3E386F" font-size="13" font-weight="700">6</text>
+    <text x="1198" y="646" fill="#3E386F" font-size="13" font-weight="700">6.0</text>
+    <text x="1292" y="646" fill="#AE7B10" font-size="12" font-weight="700">IN REVIEW</text>
+  </g>
+</svg>

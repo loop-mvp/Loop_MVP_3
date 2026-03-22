@@ -1,0 +1,81 @@
+<svg width="1500" height="860" viewBox="0 0 1500 860" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="860" fill="#F7F5FF"/>
+  <text x="70" y="78" fill="#29236A" font-family="Arial, sans-serif" font-size="34" font-weight="700">Rahul User Journey</text>
+  <text x="70" y="112" fill="#6B6691" font-family="Arial, sans-serif" font-size="18">How Rahul moves through Loop from product input to review intelligence and next version.</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="76" y="160" width="220" height="100" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="110" y="198" fill="#4D46B5" font-size="16" font-weight="700">Rahul enters product info</text>
+    <text x="110" y="224" fill="#3E386F" font-size="14">Name, description, audience,</text>
+    <text x="110" y="243" fill="#3E386F" font-size="14">category, wow factor</text>
+
+    <rect x="346" y="160" width="220" height="100" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="378" y="198" fill="#4D46B5" font-size="16" font-weight="700">Rahul clicks Generate</text>
+    <text x="378" y="224" fill="#3E386F" font-size="14">Loop creates project and</text>
+    <text x="378" y="243" fill="#3E386F" font-size="14">AI infers context</text>
+
+    <rect x="616" y="160" width="220" height="100" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="657" y="198" fill="#4D46B5" font-size="16" font-weight="700">Rahul confirms context</text>
+    <text x="657" y="224" fill="#3E386F" font-size="14">Loop starts the narrative</text>
+    <text x="657" y="243" fill="#3E386F" font-size="14">generation pipeline</text>
+
+    <rect x="886" y="160" width="220" height="100" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="918" y="198" fill="#4D46B5" font-size="16" font-weight="700">Rahul refines workspace</text>
+    <text x="918" y="224" fill="#3E386F" font-size="14">Product Truth, Narrative,</text>
+    <text x="918" y="243" fill="#3E386F" font-size="14">GTM, Assets</text>
+
+    <rect x="1156" y="160" width="240" height="100" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="1190" y="198" fill="#4D46B5" font-size="16" font-weight="700">Rahul clicks Submit for Review</text>
+    <text x="1190" y="224" fill="#3E386F" font-size="14">Loop opens review routing</text>
+    <text x="1190" y="243" fill="#3E386F" font-size="14">with all sections available</text>
+
+    <rect x="176" y="398" width="240" height="106" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="214" y="438" fill="#4D46B5" font-size="16" font-weight="700">Rahul clicks AI Assign</text>
+    <text x="214" y="464" fill="#3E386F" font-size="14">Sections are routed to</text>
+    <text x="214" y="483" fill="#3E386F" font-size="14">Sales / Product / PMM</text>
+
+    <rect x="476" y="398" width="240" height="106" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="512" y="438" fill="#4D46B5" font-size="16" font-weight="700">Rahul clicks Send</text>
+    <text x="512" y="464" fill="#3E386F" font-size="14">Loop saves routing and opens</text>
+    <text x="512" y="483" fill="#3E386F" font-size="14">the review dashboard</text>
+
+    <rect x="776" y="398" width="240" height="106" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="806" y="438" fill="#4D46B5" font-size="16" font-weight="700">Rahul reviews sections</text>
+    <text x="806" y="464" fill="#3E386F" font-size="14">Scores rows, comments, and</text>
+    <text x="806" y="483" fill="#3E386F" font-size="14">marks Improve / Approve</text>
+
+    <rect x="1076" y="398" width="240" height="106" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="1106" y="438" fill="#4D46B5" font-size="16" font-weight="700">Rahul submits feedback</text>
+    <text x="1106" y="464" fill="#3E386F" font-size="14">Loop saves review data and</text>
+    <text x="1106" y="483" fill="#3E386F" font-size="14">runs AI intelligence</text>
+
+    <rect x="236" y="632" width="270" height="112" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="274" y="672" fill="#4D46B5" font-size="16" font-weight="700">Loop returns intelligence</text>
+    <text x="274" y="698" fill="#3E386F" font-size="14">Top issues, patterns, confidence,</text>
+    <text x="274" y="717" fill="#3E386F" font-size="14">analytics, PMM action queue</text>
+
+    <rect x="616" y="632" width="270" height="112" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="655" y="672" fill="#4D46B5" font-size="16" font-weight="700">Loop saves everything</text>
+    <text x="655" y="698" fill="#3E386F" font-size="14">Narrative, review data, insights,</text>
+    <text x="655" y="717" fill="#3E386F" font-size="14">and reports in Supabase</text>
+
+    <rect x="996" y="632" width="270" height="112" rx="22" fill="#FFFFFF" stroke="#D7D1FF" stroke-width="2"/>
+    <text x="1032" y="672" fill="#4D46B5" font-size="16" font-weight="700">Rahul reopens or versions</text>
+    <text x="1032" y="698" fill="#3E386F" font-size="14">Hub restores where he left off,</text>
+    <text x="1032" y="717" fill="#3E386F" font-size="14">or he starts the next version</text>
+  </g>
+
+  <g stroke="#867CE5" stroke-width="4" stroke-linecap="round">
+    <path d="M296 212H346"/>
+    <path d="M566 212H616"/>
+    <path d="M836 212H886"/>
+    <path d="M1106 212H1156"/>
+    <path d="M1276 260V318H296V398"/>
+    <path d="M416 451H476"/>
+    <path d="M716 451H776"/>
+    <path d="M1016 451H1076"/>
+    <path d="M1196 504V570H371V632"/>
+    <path d="M506 688H616"/>
+    <path d="M886 688H996"/>
+  </g>
+</svg>

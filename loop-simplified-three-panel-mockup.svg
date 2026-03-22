@@ -1,0 +1,80 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="980" fill="#F7F5FF"/>
+  <text x="70" y="72" fill="#29236A" font-family="Arial, sans-serif" font-size="34" font-weight="700">Simplified 3-Panel Loop Interface</text>
+  <text x="70" y="106" fill="#6B6691" font-family="Arial, sans-serif" font-size="18">Same core Loop capabilities, with a cleaner workflow and fewer competing controls.</text>
+
+  <rect x="56" y="142" width="270" height="784" rx="28" fill="#F1EEFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="96" y="192" fill="#4D46B5" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">WORKSPACE</text>
+  <rect x="82" y="226" width="220" height="66" rx="18" fill="#FFFFFF"/>
+  <text x="108" y="266" fill="#2C276B" font-family="Arial, sans-serif" font-size="18" font-weight="700">Product Truth</text>
+  <text x="110" y="330" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Product Overview</text>
+  <text x="110" y="372" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Problem</text>
+  <text x="110" y="414" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Solution</text>
+  <text x="110" y="456" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Primary Audience</text>
+  <text x="110" y="498" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Differentiation</text>
+  <text x="96" y="576" fill="#2C276B" font-family="Arial, sans-serif" font-size="18" font-weight="700">Core Narrative</text>
+  <text x="110" y="620" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Positioning Statement</text>
+  <text x="110" y="662" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Value Proposition</text>
+  <text x="110" y="704" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Messaging</text>
+  <text x="96" y="780" fill="#2C276B" font-family="Arial, sans-serif" font-size="18" font-weight="700">GTM / Feedback</text>
+  <text x="110" y="822" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">GTM, Assets, Feedback</text>
+
+  <rect x="346" y="142" width="906" height="784" rx="28" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <rect x="378" y="174" width="842" height="134" rx="24" fill="#FBFAFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="412" y="212" fill="#5A52C4" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.1">WORKFLOW</text>
+  <text x="412" y="252" fill="#29236A" font-family="Arial, sans-serif" font-size="28" font-weight="700">Launch Stage</text>
+  <text x="412" y="282" fill="#6B6691" font-family="Arial, sans-serif" font-size="16">Go live from one approved source of truth. Next up: Feedback.</text>
+  <rect x="412" y="296" width="520" height="10" rx="5" fill="#E7E1FF"/>
+  <rect x="412" y="296" width="394" height="10" rx="5" fill="#7F77DD"/>
+  <rect x="984" y="206" width="176" height="52" rx="16" fill="#5B52C4"/>
+  <text x="1021" y="239" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="17" font-weight="700">Save &amp; Continue</text>
+  <rect x="1172" y="206" width="150" height="52" rx="16" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="1210" y="239" fill="#29236A" font-family="Arial, sans-serif" font-size="17" font-weight="700">Projects</text>
+
+  <rect x="378" y="332" width="842" height="62" rx="20" fill="#F3F0FF" stroke="#E6E0FF" stroke-width="2"/>
+  <rect x="392" y="344" width="170" height="38" rx="14" fill="#FFFFFF"/>
+  <text x="431" y="369" fill="#4D46B5" font-family="Arial, sans-serif" font-size="15" font-weight="700">Product Truth</text>
+  <text x="608" y="369" fill="#6B6691" font-family="Arial, sans-serif" font-size="15" font-weight="700">Core Narrative</text>
+  <text x="792" y="369" fill="#6B6691" font-family="Arial, sans-serif" font-size="15" font-weight="700">GTM</text>
+  <text x="892" y="369" fill="#6B6691" font-family="Arial, sans-serif" font-size="15" font-weight="700">Assets</text>
+  <text x="998" y="369" fill="#6B6691" font-family="Arial, sans-serif" font-size="15" font-weight="700">Feedback</text>
+
+  <text x="396" y="436" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Product Truth</text>
+  <rect x="392" y="458" width="816" height="58" rx="18" fill="#F8F6FF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="420" y="494" fill="#4D46B5" font-family="Arial, sans-serif" font-size="16" font-weight="700">Draft generated — refine it, then move forward.</text>
+
+  <rect x="392" y="540" width="224" height="54" rx="16" fill="#5B52C4"/>
+  <text x="440" y="574" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="18" font-weight="700">Save &amp; Continue</text>
+  <rect x="632" y="540" width="150" height="54" rx="16" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="668" y="574" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Save Project</text>
+  <rect x="798" y="540" width="124" height="54" rx="16" fill="#FBFAFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="842" y="574" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">More</text>
+
+  <text x="396" y="650" fill="#29236A" font-family="Arial, sans-serif" font-size="16" font-weight="700">PRODUCT OVERVIEW</text>
+  <rect x="392" y="672" width="816" height="112" rx="20" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="420" y="714" fill="#3E386F" font-family="Arial, sans-serif" font-size="17">AI fills the critical sections first. Rahul refines the text and moves</text>
+  <text x="420" y="740" fill="#3E386F" font-family="Arial, sans-serif" font-size="17">forward with one clear CTA instead of many competing actions.</text>
+
+  <rect x="1272" y="142" width="272" height="784" rx="28" fill="#FCFBFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="1308" y="190" fill="#4D46B5" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.1">INTELLIGENCE</text>
+  <rect x="1300" y="220" width="216" height="118" rx="18" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="1324" y="252" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Current Focus</text>
+  <text x="1324" y="284" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Product Truth</text>
+  <text x="1324" y="308" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">AI guidance stays visible,</text>
+  <text x="1324" y="328" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">but does not overpower work.</text>
+
+  <rect x="1300" y="370" width="216" height="168" rx="18" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="1324" y="404" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Review Intelligence</text>
+  <text x="1324" y="438" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">Top Issues</text>
+  <text x="1324" y="462" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">• weak differentiation</text>
+  <text x="1324" y="486" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">• value needs proof</text>
+  <text x="1324" y="516" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">Confidence: 74/100</text>
+
+  <rect x="1300" y="568" width="216" height="214" rx="18" fill="#FFFFFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="1324" y="602" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">PMM Actions</text>
+  <text x="1324" y="636" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">• sharpen positioning</text>
+  <text x="1324" y="660" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">• clarify value proof</text>
+  <text x="1324" y="684" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">• update GTM angle</text>
+  <rect x="1324" y="722" width="170" height="48" rx="14" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="1360" y="752" fill="#29236A" font-family="Arial, sans-serif" font-size="16" font-weight="700">Download Report</text>
+</svg>

@@ -1,0 +1,111 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="980" fill="#F7F5FF"/>
+  <text x="64" y="70" fill="#29236A" font-family="Arial, sans-serif" font-size="34" font-weight="700">Review Center Grid</text>
+  <text x="64" y="104" fill="#6B6691" font-family="Arial, sans-serif" font-size="18">Single review dashboard with notification-first workflow and one flat airline-board style grid.</text>
+
+  <rect x="48" y="136" width="260" height="794" rx="28" fill="#F1EEFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="84" y="182" fill="#4D46B5" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.1">WORKSPACE</text>
+  <text x="84" y="228" fill="#2C276B" font-family="Arial, sans-serif" font-size="20" font-weight="700">Feedback</text>
+  <rect x="76" y="256" width="204" height="62" rx="18" fill="#FFFFFF"/>
+  <circle cx="253" cy="274" r="11" fill="#D62839"/>
+  <text x="248" y="279" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="12" font-weight="700">3</text>
+  <text x="110" y="294" fill="#2C276B" font-family="Arial, sans-serif" font-size="17" font-weight="700">Review Center</text>
+  <text x="94" y="368" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Launch Feedback</text>
+  <text x="94" y="410" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Next Version</text>
+
+  <rect x="76" y="500" width="204" height="164" rx="22" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="98" y="534" fill="#4D46B5" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.1">NOTIFICATIONS</text>
+  <text x="98" y="572" fill="#29236A" font-family="Arial, sans-serif" font-size="16" font-weight="700">Sales submitted review</text>
+  <text x="98" y="596" fill="#6B6691" font-family="Arial, sans-serif" font-size="13">2 sections marked Improve</text>
+  <text x="98" y="632" fill="#29236A" font-family="Arial, sans-serif" font-size="16" font-weight="700">Product received request</text>
+  <text x="98" y="656" fill="#6B6691" font-family="Arial, sans-serif" font-size="13">Email sent for 2 assigned rows</text>
+
+  <rect x="330" y="136" width="1222" height="794" rx="28" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <rect x="360" y="164" width="1162" height="108" rx="22" fill="#FBFAFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="392" y="198" fill="#5A52C4" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.1">REVIEW CENTER</text>
+  <text x="392" y="234" fill="#29236A" font-family="Arial, sans-serif" font-size="30" font-weight="700">One dashboard for review, approval, analytics, and feedback management</text>
+  <text x="392" y="260" fill="#6B6691" font-family="Arial, sans-serif" font-size="15">Notifications are sent by email. In Loop, Feedback shows a badge when review is submitted or received.</text>
+
+  <rect x="360" y="292" width="180" height="74" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="384" y="322" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">ROWS IN REVIEW</text>
+  <text x="384" y="350" fill="#29236A" font-family="Arial, sans-serif" font-size="24" font-weight="700">12</text>
+
+  <rect x="558" y="292" width="180" height="74" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="582" y="322" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">APPROVED</text>
+  <text x="582" y="350" fill="#29236A" font-family="Arial, sans-serif" font-size="24" font-weight="700">5</text>
+
+  <rect x="756" y="292" width="180" height="74" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="780" y="322" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">IMPROVE</text>
+  <text x="780" y="350" fill="#29236A" font-family="Arial, sans-serif" font-size="24" font-weight="700">4</text>
+
+  <rect x="954" y="292" width="180" height="74" rx="18" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="978" y="322" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">CONFIDENCE</text>
+  <text x="978" y="350" fill="#29236A" font-family="Arial, sans-serif" font-size="24" font-weight="700">74 / 100</text>
+
+  <rect x="1206" y="306" width="138" height="46" rx="14" fill="#5B52C4"/>
+  <text x="1242" y="335" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="15" font-weight="700">Send Review</text>
+  <rect x="1360" y="306" width="134" height="46" rx="14" fill="#FFFFFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="1392" y="335" fill="#29236A" font-family="Arial, sans-serif" font-size="15" font-weight="700">Download</text>
+
+  <rect x="360" y="392" width="1162" height="470" rx="24" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="392" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">SECTION</text>
+  <text x="714" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">TEAM</text>
+  <text x="822" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">CLARITY</text>
+  <text x="918" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">RELEVANCE</text>
+  <text x="1030" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">DIFFERENTIATION</text>
+  <text x="1198" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">VALUE</text>
+  <text x="1294" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">OVERALL</text>
+  <text x="1400" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">STATUS</text>
+
+  <rect x="380" y="446" width="1122" height="62" rx="18" fill="#FBFAFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="406" y="472" fill="#29236A" font-family="Arial, sans-serif" font-size="15" font-weight="700">Positioning Statement</text>
+  <text x="406" y="494" fill="#6B6691" font-family="Arial, sans-serif" font-size="12">Expand to review details</text>
+  <text x="724" y="484" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">Sales</text>
+  <text x="840" y="484" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <text x="940" y="484" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <text x="1082" y="484" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">5</text>
+  <text x="1216" y="484" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <text x="1314" y="484" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">6.0</text>
+  <rect x="1390" y="464" width="98" height="28" rx="999" fill="#FFF7E8"/>
+  <text x="1414" y="483" fill="#AE7B10" font-family="Arial, sans-serif" font-size="12" font-weight="700">In Review</text>
+
+  <rect x="380" y="520" width="1122" height="204" rx="22" fill="#FCFBFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="406" y="548" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">CONTENT</text>
+  <rect x="404" y="560" width="1074" height="52" rx="16" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="426" y="592" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">Neem Kosh positions neem-wood lids as the cleaner, more premium hospitality choice.</text>
+  <text x="406" y="644" fill="#4D46B5" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.1">SUGGEST IMPROVEMENT / COMMENT</text>
+  <rect x="404" y="656" width="1074" height="64" rx="16" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="426" y="694" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">Feels premium, but should contrast more clearly with generic plastic or single-use lids.</text>
+  <rect x="404" y="740" width="148" height="44" rx="14" fill="#F3F0FF" stroke="#D9D2FF" stroke-width="2"/>
+  <text x="448" y="768" fill="#4D46B5" font-family="Arial, sans-serif" font-size="15" font-weight="700">Improve</text>
+  <rect x="568" y="740" width="148" height="44" rx="14" fill="#FFFFFF" stroke="#BFE8CF" stroke-width="2"/>
+  <text x="614" y="768" fill="#177A51" font-family="Arial, sans-serif" font-size="15" font-weight="700">Approve</text>
+
+  <rect x="380" y="742" width="1122" height="62" rx="18" fill="#FBFAFF" stroke="#E6E0FF" stroke-width="2"/>
+  <text x="406" y="768" fill="#29236A" font-family="Arial, sans-serif" font-size="15" font-weight="700">Value Proposition</text>
+  <text x="724" y="780" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">PMM</text>
+  <text x="840" y="780" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">8</text>
+  <text x="940" y="780" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <text x="1082" y="780" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <text x="1216" y="780" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">8</text>
+  <text x="1314" y="780" fill="#3E386F" font-family="Arial, sans-serif" font-size="14" font-weight="700">7.5</text>
+  <rect x="1390" y="760" width="98" height="28" rx="999" fill="#ECFFF3"/>
+  <text x="1416" y="779" fill="#177A51" font-family="Arial, sans-serif" font-size="12" font-weight="700">Approved</text>
+
+  <rect x="1272" y="392" width="280" height="470" rx="24" fill="#FCFBFF" stroke="#DAD3FF" stroke-width="2"/>
+  <text x="1302" y="426" fill="#4D46B5" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.1">INTELLIGENCE + MANAGEMENT</text>
+  <rect x="1296" y="448" width="232" height="136" rx="20" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="1320" y="478" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Top Issues</text>
+  <text x="1320" y="512" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">• weak differentiation</text>
+  <text x="1320" y="536" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">• value lacks proof</text>
+  <text x="1320" y="566" fill="#6B6691" font-family="Arial, sans-serif" font-size="13">Confidence stays tied to review data.</text>
+
+  <rect x="1296" y="600" width="232" height="122" rx="20" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="1320" y="630" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Notifications</text>
+  <text x="1320" y="664" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">Email sent to Sales reviewers</text>
+  <text x="1320" y="690" fill="#3E386F" font-family="Arial, sans-serif" font-size="14">Feedback badge updates in Loop</text>
+
+  <rect x="1296" y="740" width="232" height="100" rx="20" fill="#FFFFFF" stroke="#DED8FF" stroke-width="2"/>
+  <text x="1320" y="770" fill="#29236A" font-family="Arial, sans-serif" font-size="18" font-weight="700">Download Report</text>
+  <text x="1320" y="804" fill="#6B6691" font-family="Arial, sans-serif" font-size="14">Sender manages exports and review progress from this same screen.</text>
+</svg>

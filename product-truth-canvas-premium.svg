@@ -1,0 +1,86 @@
+<svg width="1440" height="980" viewBox="0 0 1440 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1440" y2="980" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F5FF"/>
+      <stop offset="1" stop-color="#F2F7FF"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="820" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4F0FF"/>
+      <stop offset="1" stop-color="#EEF5FF"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1440" height="980" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#8C83D7" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="980" fill="url(#bg)"/>
+
+  <rect x="40" y="24" width="180" height="932" rx="28" fill="#EFEAFD"/>
+  <text x="72" y="92" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#2F2C73">LOOP</text>
+  <rect x="56" y="138" width="148" height="44" rx="16" fill="#FFFFFF"/>
+  <text x="78" y="166" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#2F2C73">Product Truth</text>
+  <text x="72" y="222" font-family="Arial, sans-serif" font-size="18" fill="#5D63B8">Narrative</text>
+  <text x="72" y="270" font-family="Arial, sans-serif" font-size="18" fill="#5D63B8">GTM Readiness</text>
+  <text x="72" y="318" font-family="Arial, sans-serif" font-size="18" fill="#5D63B8">Resources</text>
+
+  <rect x="1240" y="24" width="160" height="932" rx="28" fill="#F6F3FF"/>
+  <text x="1270" y="92" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#2F2C73">AI Notes</text>
+  <rect x="1262" y="126" width="116" height="86" rx="18" fill="#FFFFFF"/>
+  <text x="1278" y="154" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#5D63B8">Recommended</text>
+  <text x="1278" y="177" font-family="Arial, sans-serif" font-size="13" fill="#7774B7">Lead with the</text>
+  <text x="1278" y="196" font-family="Arial, sans-serif" font-size="13" fill="#7774B7">reading + work</text>
+  <text x="1278" y="215" font-family="Arial, sans-serif" font-size="13" fill="#7774B7">multitasking pain.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="244" y="24" width="972" height="932" rx="36" fill="#FFFFFF"/>
+  </g>
+
+  <rect x="284" y="56" width="892" height="132" rx="28" fill="url(#hero)"/>
+  <text x="320" y="98" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#5D63B8">PRODUCT TRUTH</text>
+  <text x="320" y="140" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#23206F">Shape the product story,</text>
+  <text x="320" y="182" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#23206F">not a workbook</text>
+  <rect x="930" y="94" width="212" height="54" rx="18" fill="#5B51D8"/>
+  <text x="974" y="127" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">Save &amp; Continue</text>
+
+  <rect x="284" y="218" width="892" height="74" rx="24" fill="#FBFAFF" stroke="#DFD9FF"/>
+  <text x="320" y="253" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2F2C73">1 AI draft + 2 guided sections + ghost prompts</text>
+  <text x="320" y="279" font-family="Arial, sans-serif" font-size="17" fill="#6B69A8">Enough AI to create momentum, enough blank space for PMM judgment.</text>
+
+  <rect x="284" y="326" width="892" height="186" rx="28" fill="#FFFFFF" stroke="#CFC7FF" stroke-width="2"/>
+  <rect x="308" y="350" width="118" height="34" rx="12" fill="#ECE9FF"/>
+  <text x="334" y="372" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#4D49B0">AI draft</text>
+  <text x="308" y="420" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#23206F">Problem</text>
+  <text x="308" y="456" font-family="Arial, sans-serif" font-size="18" fill="#3B387F">Power users who read, watch, and work on phones lose momentum because</text>
+  <text x="308" y="484" font-family="Arial, sans-serif" font-size="18" fill="#3B387F">screen space forces constant switching, cramped split views, and tradeoffs</text>
+  <text x="308" y="512" font-family="Arial, sans-serif" font-size="18" fill="#3B387F">between portability and true multi-tasking.</text>
+  <rect x="976" y="442" width="160" height="42" rx="14" fill="#F5F2FF"/>
+  <text x="1016" y="468" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#5D63B8">Refine AI draft</text>
+
+  <rect x="284" y="538" width="432" height="172" rx="28" fill="#FBFAFF" stroke="#D9D1FF"/>
+  <rect x="308" y="562" width="146" height="34" rx="12" fill="#EDF6FF"/>
+  <text x="334" y="584" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#3670C9">Bullet context</text>
+  <text x="308" y="630" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#23206F">Solution</text>
+  <circle cx="322" cy="664" r="5" fill="#5B51D8"/>
+  <circle cx="322" cy="692" r="5" fill="#5B51D8"/>
+  <text x="338" y="670" font-family="Arial, sans-serif" font-size="17" fill="#514E96">Three-screen foldable design with continuity across panels</text>
+  <text x="338" y="698" font-family="Arial, sans-serif" font-size="17" fill="#514E96">Tablet-like canvas without sacrificing pocketability</text>
+
+  <rect x="744" y="538" width="432" height="172" rx="28" fill="#FBFAFF" stroke="#D9D1FF"/>
+  <rect x="768" y="562" width="146" height="34" rx="12" fill="#EDF6FF"/>
+  <text x="794" y="584" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#3670C9">Bullet context</text>
+  <text x="768" y="630" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#23206F">Primary Audience</text>
+  <circle cx="782" cy="664" r="5" fill="#5B51D8"/>
+  <circle cx="782" cy="692" r="5" fill="#5B51D8"/>
+  <text x="798" y="670" font-family="Arial, sans-serif" font-size="17" fill="#514E96">Tech-forward professionals who multi-task on the go</text>
+  <text x="798" y="698" font-family="Arial, sans-serif" font-size="17" fill="#514E96">Media-heavy users wanting one device for work and leisure</text>
+
+  <rect x="284" y="736" width="892" height="176" rx="28" fill="#FFFFFF" stroke="#E4DEFF" stroke-dasharray="8 10"/>
+  <rect x="308" y="760" width="146" height="34" rx="12" fill="#F8F7FF"/>
+  <text x="336" y="782" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#7B78B5">Ghost guidance</text>
+  <text x="308" y="828" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#23206F">Differentiation</text>
+  <text x="308" y="864" font-family="Arial, sans-serif" font-size="18" fill="#9A97C6">What makes this meaningfully better than large phones, tablets, and other foldables?</text>
+  <text x="308" y="892" font-family="Arial, sans-serif" font-size="18" fill="#9A97C6">Focus on one contrast the buyer will remember.</text>
+
+  <rect x="978" y="836" width="158" height="44" rx="14" fill="#F5F2FF"/>
+  <text x="1027" y="863" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#5D63B8">Need help?</text>
+</svg>

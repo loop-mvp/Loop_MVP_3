@@ -1,0 +1,108 @@
+<svg width="1440" height="980" viewBox="0 0 1440 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="980" fill="#F7F6FF"/>
+  <rect x="28" y="26" width="1384" height="84" rx="24" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="60" y="68" fill="#2D2A72" font-family="Arial, sans-serif" font-size="30" font-weight="700">Send For Review</text>
+  <text x="60" y="94" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Choose which sections go to Sales, Product, or PMM. Drag rows into review lanes before sending.</text>
+  <rect x="1148" y="46" width="220" height="42" rx="14" fill="#5B55C8"/>
+  <text x="1188" y="73" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="14" font-weight="700">Send Selected For Review</text>
+
+  <rect x="28" y="132" width="352" height="812" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="56" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Section Library</text>
+  <text x="56" y="200" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">All current workspace sections, organized like a lightweight file browser.</text>
+
+  <rect x="56" y="224" width="296" height="44" rx="14" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="78" y="251" fill="#8C88B7" font-family="Arial, sans-serif" font-size="13">Search sections...</text>
+
+  <text x="56" y="300" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">PRODUCT TRUTH</text>
+  <rect x="56" y="314" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="342" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Problem</text>
+  <rect x="56" y="370" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="398" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Solution</text>
+  <rect x="56" y="426" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="454" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Primary Audience</text>
+  <rect x="56" y="482" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="510" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Differentiation</text>
+
+  <text x="56" y="562" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">CORE NARRATIVE</text>
+  <rect x="56" y="576" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="604" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Positioning Statement</text>
+  <rect x="56" y="632" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="660" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Value Proposition</text>
+  <rect x="56" y="688" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="716" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Messaging</text>
+  <rect x="56" y="744" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="772" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Headline Message</text>
+
+  <text x="56" y="824" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">GTM</text>
+  <rect x="56" y="838" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="866" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">GTM Strategy</text>
+  <rect x="56" y="894" width="296" height="46" rx="14" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="78" y="922" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">Key Channels</text>
+
+  <rect x="404" y="132" width="1008" height="812" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="436" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Review Routing Board</text>
+  <text x="436" y="200" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Assign sections to the right team. AI can pre-suggest routes, and you can drag to override them.</text>
+
+  <rect x="436" y="228" width="300" height="682" rx="24" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="462" y="266" fill="#2D2A72" font-family="Arial, sans-serif" font-size="22" font-weight="700">Sales</text>
+  <rect x="622" y="242" width="88" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="641" y="262" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">3 sections</text>
+
+  <rect x="462" y="296" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="486" y="326" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Positioning Statement</text>
+  <text x="486" y="350" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: buyer resonance + competitive clarity</text>
+
+  <rect x="462" y="386" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="486" y="416" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Messaging</text>
+  <text x="486" y="440" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: objection handling + pitch readiness</text>
+
+  <rect x="462" y="476" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="486" y="506" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Elevator Pitch</text>
+  <text x="486" y="530" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: direct use in calls and outreach</text>
+
+  <rect x="756" y="228" width="300" height="682" rx="24" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="782" y="266" fill="#2D2A72" font-family="Arial, sans-serif" font-size="22" font-weight="700">Product</text>
+  <rect x="942" y="242" width="88" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="961" y="262" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">4 sections</text>
+
+  <rect x="782" y="296" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="806" y="326" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Problem</text>
+  <text x="806" y="350" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: truth accuracy + problem framing</text>
+
+  <rect x="782" y="386" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="806" y="416" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Solution</text>
+  <text x="806" y="440" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: product truth + technical correctness</text>
+
+  <rect x="782" y="476" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="806" y="506" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Differentiation</text>
+  <text x="806" y="530" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: product advantage validation</text>
+
+  <rect x="782" y="566" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="806" y="596" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">GTM Strategy</text>
+  <text x="806" y="620" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: feasibility + launch dependency check</text>
+
+  <rect x="1076" y="228" width="300" height="682" rx="24" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="1102" y="266" fill="#2D2A72" font-family="Arial, sans-serif" font-size="22" font-weight="700">PMM</text>
+  <rect x="1262" y="242" width="88" height="32" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="1281" y="262" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">5 sections</text>
+
+  <rect x="1102" y="296" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1126" y="326" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Primary Audience</text>
+  <text x="1126" y="350" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: audience clarity + message fit</text>
+
+  <rect x="1102" y="386" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1126" y="416" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Value Proposition</text>
+  <text x="1126" y="440" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: strategic messaging ownership</text>
+
+  <rect x="1102" y="476" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1126" y="506" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Headline Message</text>
+  <text x="1126" y="530" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: launch message clarity</text>
+
+  <rect x="1102" y="566" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1126" y="596" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Key Channels</text>
+  <text x="1126" y="620" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: campaign and distribution planning</text>
+
+  <rect x="1102" y="656" width="248" height="74" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1126" y="686" fill="#2D2A72" font-family="Arial, sans-serif" font-size="15" font-weight="700">Launch Strategy</text>
+  <text x="1126" y="710" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="12">Reason: narrative-to-market execution ownership</text>
+</svg>

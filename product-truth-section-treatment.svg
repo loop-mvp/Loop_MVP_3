@@ -1,0 +1,51 @@
+<svg width="1440" height="920" viewBox="0 0 1440 920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1440" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8F5FF"/>
+      <stop offset="1" stop-color="#F4F8FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="920" fill="url(#bg2)"/>
+
+  <rect x="104" y="48" width="1232" height="824" rx="36" fill="#FFFFFF" stroke="#E4DEFF"/>
+
+  <text x="156" y="112" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#5D63B8">RECOMMENDED PRODUCT TRUTH TREATMENT</text>
+  <text x="156" y="164" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#23206F">Use AI for momentum, not completion</text>
+  <text x="156" y="204" font-family="Arial, sans-serif" font-size="20" fill="#6B69A8">One strong draft, two guided sections, and lighter prompts for the parts PMM should shape manually.</text>
+
+  <rect x="156" y="252" width="1128" height="74" rx="24" fill="#FBFAFF" stroke="#DDD5FF"/>
+  <text x="196" y="297" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2F2C73">Section</text>
+  <text x="472" y="297" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2F2C73">Recommended treatment</text>
+  <text x="952" y="297" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#2F2C73">Why</text>
+
+  <rect x="156" y="346" width="1128" height="98" rx="24" fill="#FFFFFF" stroke="#D5CCFF"/>
+  <rect x="184" y="372" width="170" height="44" rx="14" fill="#F3EFFF"/>
+  <text x="220" y="400" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#2F2C73">Product Overview</text>
+  <rect x="456" y="370" width="190" height="48" rx="16" fill="#F8F7FF"/>
+  <text x="502" y="400" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#7B78B5">Ghost prompt</text>
+  <text x="952" y="400" font-family="Arial, sans-serif" font-size="18" fill="#5A5798">Keep the founder voice here. AI can guide, but this should stay close to the user's own language.</text>
+
+  <rect x="156" y="460" width="1128" height="98" rx="24" fill="#FFFFFF" stroke="#CFC7FF"/>
+  <rect x="184" y="486" width="116" height="44" rx="14" fill="#EEE8FF"/>
+  <text x="212" y="514" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#2F2C73">Problem</text>
+  <rect x="456" y="484" width="170" height="48" rx="16" fill="#ECE9FF"/>
+  <text x="496" y="514" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#504CB7">Full AI draft</text>
+  <text x="952" y="514" font-family="Arial, sans-serif" font-size="18" fill="#5A5798">This is where AI adds the most value quickly. It can synthesize the pain clearly and give the canvas momentum.</text>
+
+  <rect x="156" y="574" width="1128" height="98" rx="24" fill="#FFFFFF" stroke="#D5CCFF"/>
+  <rect x="184" y="600" width="116" height="44" rx="14" fill="#EEE8FF"/>
+  <text x="208" y="628" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#2F2C73">Solution</text>
+  <rect x="456" y="598" width="192" height="48" rx="16" fill="#EDF6FF"/>
+  <text x="494" y="628" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#3670C9">Bullet context</text>
+  <text x="952" y="628" font-family="Arial, sans-serif" font-size="18" fill="#5A5798">Give useful structure, but let the team decide how boldly to frame the product promise.</text>
+
+  <rect x="156" y="688" width="1128" height="98" rx="24" fill="#FFFFFF" stroke="#D5CCFF"/>
+  <rect x="184" y="714" width="194" height="44" rx="14" fill="#EEE8FF"/>
+  <text x="212" y="742" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#2F2C73">Primary Audience</text>
+  <rect x="456" y="712" width="192" height="48" rx="16" fill="#EDF6FF"/>
+  <text x="494" y="742" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#3670C9">Bullet context</text>
+  <text x="952" y="742" font-family="Arial, sans-serif" font-size="18" fill="#5A5798">AI can propose a starting lens, but teams usually need to tune the audience themselves.</text>
+
+  <rect x="156" y="802" width="1128" height="48" rx="20" fill="#FBFAFF" stroke="#E5DFFF" stroke-dasharray="6 8"/>
+  <text x="184" y="833" font-family="Arial, sans-serif" font-size="18" fill="#7B78B5">Differentiation should stay as a lighter ghost-prompt section until the team sharpens the real market contrast.</text>
+</svg>

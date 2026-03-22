@@ -1,0 +1,82 @@
+<svg width="1440" height="980" viewBox="0 0 1440 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="980" fill="#F7F6FF"/>
+  <rect x="28" y="28" width="1384" height="86" rx="24" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="58" y="70" fill="#2D2A72" font-family="Arial, sans-serif" font-size="30" font-weight="700">Feedback Hub</text>
+  <text x="58" y="95" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Review narrative sections, convert feedback into signals, and act on the strongest AI patterns.</text>
+  <rect x="1156" y="48" width="208" height="42" rx="14" fill="#F3F0FF" stroke="#D9D4FF"/>
+  <text x="1178" y="74" fill="#5B55C8" font-family="Arial, sans-serif" font-size="14" font-weight="700">Reviewer: Sales</text>
+
+  <rect x="28" y="132" width="910" height="800" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="58" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Review Board</text>
+  <text x="58" y="200" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="14">Compact rows on top. Expanded review drawer anchored directly beneath the active section.</text>
+
+  <rect x="58" y="228" width="850" height="52" rx="16" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="80" y="259" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Section</text>
+  <text x="360" y="259" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Clarity</text>
+  <text x="492" y="259" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Relevance</text>
+  <text x="644" y="259" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Differentiation</text>
+  <text x="800" y="259" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Status</text>
+
+  <rect x="58" y="296" width="850" height="58" rx="18" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="82" y="331" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Positioning</text>
+  <rect x="348" y="310" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="376" y="330" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="480" y="310" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="508" y="330" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="632" y="310" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="660" y="330" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">5</text>
+  <rect x="770" y="308" width="118" height="34" rx="17" fill="#FFF5E8" stroke="#F2D8A7"/><text x="794" y="329" fill="#A46812" font-family="Arial, sans-serif" font-size="13" font-weight="700">In Review</text>
+
+  <rect x="58" y="370" width="850" height="246" rx="22" fill="#FBFAFF" stroke="#D9D4FF"/>
+  <text x="82" y="406" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">ACTIVE REVIEW DRAWER</text>
+  <rect x="82" y="428" width="800" height="88" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="102" y="457" fill="#8C88B7" font-family="Arial, sans-serif" font-size="12">Section Content</text>
+  <text x="102" y="484" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">For premium hospitality brands, Neem Kosh positions neem-wood lids as a cleaner, more premium alternative to generic snack-container covers.</text>
+
+  <rect x="82" y="534" width="116" height="40" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/><text x="102" y="559" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Clarity 7</text>
+  <rect x="214" y="534" width="132" height="40" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/><text x="236" y="559" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Relevance 6</text>
+  <rect x="362" y="534" width="178" height="40" rx="12" fill="#FFFFFF" stroke="#D9D4FF"/><text x="384" y="559" fill="#5B55C8" font-family="Arial, sans-serif" font-size="13" font-weight="700">Differentiation 5</text>
+  <rect x="742" y="534" width="140" height="40" rx="20" fill="#ECFDF3" stroke="#BFE9CF"/><text x="778" y="559" fill="#177A51" font-family="Arial, sans-serif" font-size="13" font-weight="700">Approved</text>
+
+  <rect x="82" y="590" width="800" height="90" rx="16" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="102" y="620" fill="#8C88B7" font-family="Arial, sans-serif" font-size="12">Comment</text>
+  <text x="102" y="648" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Strong premium angle, but it still needs a sharper contrast against generic lids and plastic alternatives.</text>
+
+  <rect x="704" y="694" width="178" height="44" rx="14" fill="#5B55C8"/>
+  <text x="744" y="722" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="14" font-weight="700">Improve Suggestion</text>
+
+  <rect x="58" y="634" width="850" height="58" rx="18" fill="#FFFFFF" stroke="#D9D4FF" opacity="0.6"/>
+  <text x="82" y="669" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Messaging</text>
+  <rect x="348" y="648" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="376" y="668" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">8</text>
+  <rect x="480" y="648" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="508" y="668" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="632" y="648" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="660" y="668" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="770" y="646" width="118" height="34" rx="17" fill="#ECFDF3" stroke="#BFE9CF"/><text x="800" y="667" fill="#177A51" font-family="Arial, sans-serif" font-size="13" font-weight="700">Approved</text>
+
+  <rect x="58" y="708" width="850" height="58" rx="18" fill="#FFFFFF" stroke="#D9D4FF" opacity="0.6"/>
+  <text x="82" y="743" fill="#2D2A72" font-family="Arial, sans-serif" font-size="16" font-weight="700">Value Proposition</text>
+  <rect x="348" y="722" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="376" y="742" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">6</text>
+  <rect x="480" y="722" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="508" y="742" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">7</text>
+  <rect x="632" y="722" width="70" height="30" rx="10" fill="#F3F0FF" stroke="#D9D4FF"/><text x="660" y="742" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14" font-weight="700">4</text>
+  <rect x="770" y="720" width="118" height="34" rx="17" fill="#FFF5E8" stroke="#F2D8A7"/><text x="794" y="741" fill="#A46812" font-family="Arial, sans-serif" font-size="13" font-weight="700">In Review</text>
+
+  <rect x="962" y="132" width="450" height="800" rx="28" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="994" y="176" fill="#2D2A72" font-family="Arial, sans-serif" font-size="24" font-weight="700">Narrative Intelligence</text>
+  <rect x="994" y="212" width="386" height="136" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1016" y="242" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">TOP ISSUES</text>
+  <text x="1016" y="274" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">Differentiation is the weakest pattern across reviewed sections.</text>
+  <text x="1016" y="300" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="13">Positioning and Value Proposition both signal weak contrast with alternatives.</text>
+
+  <rect x="994" y="366" width="386" height="224" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1016" y="396" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">AI SUGGESTIONS</text>
+  <text x="1016" y="430" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Add a direct “why neem vs generic lids” statement</text>
+  <text x="1016" y="458" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Make hygiene and premium experience more explicit</text>
+  <text x="1016" y="486" fill="#2D2A72" font-family="Arial, sans-serif" font-size="14">• Rework Value Proposition around guest-facing business impact</text>
+
+  <rect x="994" y="608" width="386" height="124" rx="20" fill="#F7F6FF" stroke="#D9D4FF"/>
+  <text x="1016" y="638" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">CONFIDENCE SCORE</text>
+  <text x="1016" y="690" fill="#2D2A72" font-family="Arial, sans-serif" font-size="48" font-weight="700">68</text>
+  <text x="1086" y="690" fill="#6E6AA8" font-family="Arial, sans-serif" font-size="18" font-weight="700">/ 100</text>
+
+  <rect x="994" y="750" width="386" height="134" rx="20" fill="#FFFFFF" stroke="#D9D4FF"/>
+  <text x="1016" y="780" fill="#5B55C8" font-family="Arial, sans-serif" font-size="12" font-weight="700">PIPELINE STATUS</text>
+  <text x="1016" y="812" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">Normalize feedback</text>
+  <text x="1016" y="836" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">Aggregate cross-section signals</text>
+  <text x="1016" y="860" fill="#2D2A72" font-family="Arial, sans-serif" font-size="13">Generate suggestions and update confidence</text>
+</svg>

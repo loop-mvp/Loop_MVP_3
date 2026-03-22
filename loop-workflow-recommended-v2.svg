@@ -1,0 +1,63 @@
+<svg width="1400" height="760" viewBox="0 0 1400 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1400" height="760" fill="#F6F4FF"/>
+  <text x="72" y="78" fill="#29236A" font-family="Arial, sans-serif" font-size="34" font-weight="700">Recommended Simpler Workflow</text>
+  <text x="72" y="112" fill="#6B6691" font-family="Arial, sans-serif" font-size="18">Keep the same intelligence, but reduce visible decisions and clicks.</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="82" y="170" width="195" height="92" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="118" y="208" fill="#4D46B5" font-size="16" font-weight="700">1. Product Setup</text>
+    <text x="118" y="234" fill="#3E386F" font-size="14">Fill info and click</text>
+    <text x="118" y="253" fill="#3E386F" font-size="14">Generate Narrative</text>
+
+    <rect x="332" y="170" width="195" height="92" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="370" y="208" fill="#4D46B5" font-size="16" font-weight="700">2. Confirm Context</text>
+    <text x="370" y="234" fill="#3E386F" font-size="14">Quick AI context check</text>
+    <text x="370" y="253" fill="#3E386F" font-size="14">then Continue</text>
+
+    <rect x="582" y="170" width="230" height="92" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="620" y="208" fill="#4D46B5" font-size="16" font-weight="700">3. Guided Workspace Flow</text>
+    <text x="620" y="234" fill="#3E386F" font-size="14">Product Truth -> Narrative -> GTM -> Assets</text>
+    <text x="620" y="253" fill="#3E386F" font-size="14">One main CTA: Save &amp; Continue</text>
+
+    <rect x="867" y="170" width="210" height="92" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="899" y="208" fill="#4D46B5" font-size="16" font-weight="700">4. Submit for Review</text>
+    <text x="899" y="234" fill="#3E386F" font-size="14">Enter review flow from</text>
+    <text x="899" y="253" fill="#3E386F" font-size="14">Feedback workspace</text>
+
+    <rect x="1132" y="170" width="196" height="92" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="1168" y="208" fill="#4D46B5" font-size="16" font-weight="700">5. AI Routing</text>
+    <text x="1168" y="234" fill="#3E386F" font-size="14">AI assigns sections first,</text>
+    <text x="1168" y="253" fill="#3E386F" font-size="14">user only adjusts if needed</text>
+
+    <rect x="180" y="390" width="220" height="98" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="225" y="430" fill="#4D46B5" font-size="16" font-weight="700">6. Review Center</text>
+    <text x="225" y="456" fill="#3E386F" font-size="14">Score sections, comment,</text>
+    <text x="225" y="475" fill="#3E386F" font-size="14">Improve / Approve, Submit</text>
+
+    <rect x="460" y="390" width="220" height="98" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="493" y="430" fill="#4D46B5" font-size="16" font-weight="700">7. AI Intelligence</text>
+    <text x="493" y="456" fill="#3E386F" font-size="14">Issues, patterns, PMM</text>
+    <text x="493" y="475" fill="#3E386F" font-size="14">actions, analytics, confidence</text>
+
+    <rect x="740" y="390" width="220" height="98" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="785" y="430" fill="#4D46B5" font-size="16" font-weight="700">8. Save + Report</text>
+    <text x="785" y="456" fill="#3E386F" font-size="14">Sync everything to</text>
+    <text x="785" y="475" fill="#3E386F" font-size="14">Supabase and export</text>
+
+    <rect x="1020" y="390" width="220" height="98" rx="22" fill="#FFFFFF" stroke="#CFC6FF" stroke-width="2"/>
+    <text x="1058" y="430" fill="#4D46B5" font-size="16" font-weight="700">9. Close the Loop</text>
+    <text x="1058" y="456" fill="#3E386F" font-size="14">Launch, capture signal,</text>
+    <text x="1058" y="475" fill="#3E386F" font-size="14">start next version</text>
+  </g>
+
+  <g stroke="#7F77DD" stroke-width="4" stroke-linecap="round">
+    <path d="M277 216H332"/>
+    <path d="M527 216H582"/>
+    <path d="M812 216H867"/>
+    <path d="M1077 216H1132"/>
+    <path d="M1230 262V320H290V390"/>
+    <path d="M400 439H460"/>
+    <path d="M680 439H740"/>
+    <path d="M960 439H1020"/>
+  </g>
+</svg>
