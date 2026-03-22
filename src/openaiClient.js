@@ -1,5 +1,5 @@
-const openAiKey = import.meta.env.VITE_OPENAI_API_KEY;
-const openAiModel = import.meta.env.VITE_OPENAI_MODEL || "gpt-5-mini";
+const localOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const localOpenAiModel = import.meta.env.VITE_OPENAI_MODEL || "gpt-5-mini";
 
 function extractResponseText(data) {
   if (typeof data?.output_text === "string" && data.output_text.trim()) {
@@ -26,19 +26,47 @@ function extractResponseText(data) {
   return parts.join("\n\n").trim();
 }
 
-async function openAiRequest(input) {
-  if (!openAiKey) {
-    throw new Error("Missing OpenAI API key");
+function extractJson(text) {
+  const fenced = text.match(/```json\s*([\s\S]*?)```/i);
+  const candidate = fenced ? fenced[1] : text;
+  return JSON.parse(candidate);
+}
+
+function shouldUseServerRoute() {
+  if (typeof window === "undefined") return true;
+  return window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+}
+
+async function requestViaServer(input) {
+  const response = await fetch("/api/openai", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ input }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(details || `OpenAI server request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function requestDirectly(input) {
+  if (!localOpenAiKey) {
+    throw new Error("Missing local OpenAI API key");
   }
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${openAiKey}`,
+      Authorization: `Bearer ${localOpenAiKey}`,
     },
     body: JSON.stringify({
-      model: openAiModel,
+      model: localOpenAiModel,
       reasoning: { effort: "medium" },
       text: {
         format: {
@@ -50,17 +78,18 @@ async function openAiRequest(input) {
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI request failed: ${response.status}`);
+    throw new Error(`OpenAI direct request failed: ${response.status}`);
   }
 
-  const data = await response.json();
-  return extractResponseText(data);
+  return response.json();
 }
 
-function extractJson(text) {
-  const fenced = text.match(/```json\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  return JSON.parse(candidate);
+async function openAiRequest(input) {
+  const data = shouldUseServerRoute()
+    ? await requestViaServer(input)
+    : await requestDirectly(input);
+
+  return extractResponseText(data);
 }
 
 export async function generateOpenAiText(prompt) {

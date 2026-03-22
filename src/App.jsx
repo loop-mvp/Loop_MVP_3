@@ -2155,9 +2155,7 @@ function buildLocalAiResponse(prompt = "") {
 
 async function callClaude(prompt) {
   try {
-    if (import.meta.env.VITE_OPENAI_API_KEY) {
-      return await generateOpenAiText(prompt);
-    }
+    return await generateOpenAiText(prompt);
   } catch {
     // Fall back to local AI helper for private MVP testing if the live request fails.
   }
