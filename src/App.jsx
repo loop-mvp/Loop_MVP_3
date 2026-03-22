@@ -5499,7 +5499,7 @@ function CompactWorkflowStrip({
 
 function AppTabsHeader({ screen, onChangeScreen }) {
   const tabs = [
-    { id: "landing", label: "Loop" },
+    { id: "home", label: "Loop" },
     { id: "intelligence", label: "Narrative Intelligence" },
     { id: "brand", label: "Brand Guideline" },
   ];
@@ -5526,7 +5526,7 @@ function AppTabsHeader({ screen, onChangeScreen }) {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 18, minWidth: 0 }}>
           <button
-            onClick={() => onChangeScreen("landing")}
+            onClick={() => onChangeScreen("home")}
             style={{ display: "flex", alignItems: "center", gap: 10, border: "none", background: "transparent", color: P[900], cursor: "pointer", fontFamily: "inherit", padding: 0 }}
           >
             <span style={{ width: 18, height: 18, borderRadius: 5, border: `3px solid ${P[900]}`, boxSizing: "border-box", display: "inline-block" }} />
@@ -5537,7 +5537,7 @@ function AppTabsHeader({ screen, onChangeScreen }) {
 
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             {tabs.map(tab => {
-              const active = ((screen === "workspace" || screen === "projectSetup") ? "landing" : screen) === tab.id;
+              const active = ((screen === "workspace" || screen === "projectSetup") ? "home" : screen) === tab.id;
               return (
                 <button
                   key={tab.id}
@@ -8467,8 +8467,8 @@ export default function App() {
         return;
       }
       const saved = JSON.parse(raw);
-      if (saved.screen) setScreen(saved.screen);
-      if (saved.platformMode) setPlatformMode(saved.platformMode);
+      setScreen("home");
+      setPlatformMode("original");
       if (saved.active) setActive(normalizeWorkspaceActive(saved.active));
       if (saved.workflowStage) setWorkflowStage(normalizeWorkflowStage(saved.workflowStage));
       if (saved.workflowEvents) setWorkflowEvents(saved.workflowEvents);
@@ -8538,6 +8538,12 @@ export default function App() {
   }, [screen]);
 
   useEffect(() => {
+    if (screen !== "landing") return;
+    setPlatformMode("original");
+    setScreen("home");
+  }, [screen]);
+
+  useEffect(() => {
     const brokenProjects = (testProjects || []).filter(shouldQuarantineProject);
     if (!brokenProjects.length) return;
 
@@ -8566,8 +8572,8 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined" || !hasHydratedRef.current) return;
     const snapshot = {
-      screen,
-      platformMode,
+      screen: "home",
+      platformMode: "original",
       active,
       workflowStage,
       workflowEvents,
@@ -9611,7 +9617,7 @@ If section is gtm return:
   const reviewReady = rawReviewItems.length === 0 && narrativeReady;
 
   const checklistStatusMap = {
-    login: [screen !== "landing", screen !== "landing"],
+    login: [screen !== "home", screen !== "home"],
     onboarding: [!!pd.name, !!pd.launchDate, onboardingReady || testScenarioLoaded],
     productTruth: [!!pd.problem, !!pd.solution, !!(pd.audience || aud.primary), !!(pd.diff || comp.differentiators)],
     narrative: [!!pos.statement, !!pos.valueProp, !!msg.pillars],
@@ -10814,9 +10820,9 @@ If section is gtm return:
         <AppTabsHeader
           screen={screen}
           onChangeScreen={nextScreen => {
-            if (nextScreen === "landing") {
+            if (nextScreen === "landing" || nextScreen === "home") {
               setPlatformMode("original");
-              setScreen("workspace");
+              setScreen("home");
               return;
             }
             setScreen(nextScreen);
@@ -10837,7 +10843,7 @@ If section is gtm return:
           onSaveProject={() => { setPlatformNotice(""); handleGenerateNarrativeReliable(); }}
           onBack={() => {
             setVersionDraft({ sourceProjectId: "", mode: "minor" });
-            setScreen("landing");
+            setScreen("home");
           }}
           platformMode={platformMode}
           versionDraft={versionDraft}
@@ -10922,18 +10928,18 @@ If section is gtm return:
                 <div style={{ width: 1, alignSelf: "stretch", background: S.border, minHeight: 28 }} />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   {[
-                    { id: "landing", label: "Loop" },
+                    { id: "home", label: "Loop" },
                     { id: "intelligence", label: "Narrative Intelligence" },
                     { id: "brand", label: "Brand Guideline" },
                   ].map(tab => {
-                    const activeTopTab = ((screen === "workspace" || screen === "projectSetup") ? "landing" : screen) === tab.id;
+                    const activeTopTab = ((screen === "workspace" || screen === "projectSetup") ? "home" : screen) === tab.id;
                     return (
                       <button
                         key={tab.id}
                         onClick={() => {
-                          if (tab.id === "landing") {
+                          if (tab.id === "landing" || tab.id === "home") {
                             setPlatformMode("original");
-                            setScreen("workspace");
+                            setScreen("home");
                             return;
                           }
                           setScreen(tab.id);
