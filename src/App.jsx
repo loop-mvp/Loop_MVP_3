@@ -3348,6 +3348,7 @@ function BuildNarrativeWorkspacePanel({
             value={pd.problem}
             onChange={value => onFieldChange("productTruth.problem", value)}
             rows={5}
+            placeholder="Describe the customer pain, friction, or business problem that makes this product necessary."
             helper={helperCopy.productTruth?.problem}
             treatment="draft"
           />
@@ -3421,6 +3422,7 @@ function BuildNarrativeWorkspacePanel({
             value={pos.statement}
             onChange={value => onFieldChange("narrative.positioning", value)}
             rows={5}
+            placeholder="Who is this for, what category does it belong to, and why is it a better choice?"
             helper={helperCopy.narrative?.positioning}
           />
           <SmartInput
@@ -3431,6 +3433,7 @@ function BuildNarrativeWorkspacePanel({
             value={pos.valueProp || ""}
             onChange={value => onFieldChange("narrative.valueProposition", value)}
             rows={4}
+            placeholder="State the clearest buyer value or business outcome this product delivers."
             helper={helperCopy.narrative?.valueProposition}
           />
           <SmartInput
@@ -3441,6 +3444,7 @@ function BuildNarrativeWorkspacePanel({
             value={msg.pillars}
             onChange={value => onFieldChange("narrative.messaging", value)}
             rows={5}
+            placeholder="List the 3 to 4 strongest messages the market should remember and repeat."
             helper={helperCopy.narrative?.messaging}
           />
           <SmartInput
@@ -3509,6 +3513,7 @@ function BuildNarrativeWorkspacePanel({
           value={strat.goal || ""}
           onChange={value => onFieldChange("gtm.strategy", value)}
           rows={4}
+          placeholder="Describe the first go-to-market objective this narrative needs to support."
           helper={helperCopy.gtm?.strategy}
         />
         <SmartInput
@@ -3519,6 +3524,7 @@ function BuildNarrativeWorkspacePanel({
           value={strat.channels}
           onChange={value => onFieldChange("gtm.channels", value)}
           rows={4}
+          placeholder="Which channels matter most for this launch, and why are they the best fit?"
           helper={helperCopy.gtm?.channels}
         />
         <SmartInput
@@ -3632,21 +3638,99 @@ function NarrativeGeneratingOverlay({ productName }) {
   );
 }
 
+function toSignalList(value) {
+  if (Array.isArray(value)) return value.map(item => String(item || "").trim()).filter(Boolean);
+  return String(value || "")
+    .split("\n")
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function buildContextReviewModel(productName, context = {}, websiteContext = null) {
+  const siteSummary = String(websiteContext?.siteSummary || websiteContext?.metaDescription || "").trim();
+  const audienceSignals = toSignalList(websiteContext?.audienceSignals);
+  const productSignals = toSignalList(websiteContext?.productSignals);
+  const proofSignals = toSignalList(websiteContext?.proofSignals);
+  const messagingSignals = toSignalList(websiteContext?.extractedMessaging);
+  const assumptions = Array.isArray(context?.assumptions) ? context.assumptions.filter(Boolean) : [];
+  const suggestedCategory = context?.productCategory || websiteContext?.recommendedContext?.productCategory || "the category still needs to be clarified";
+  const suggestedAudience = context?.targetAudience || websiteContext?.recommendedContext?.targetAudience || "the primary buyer still needs to be sharpened";
+  const suggestedUseCase = context?.coreUseCase || websiteContext?.recommendedContext?.coreUseCase || "the core use case still needs to be made clearer";
+  const evidenceScore = [
+    siteSummary,
+    audienceSignals.length ? "audience" : "",
+    productSignals.length ? "product" : "",
+    proofSignals.length ? "proof" : "",
+    messagingSignals.length ? "messaging" : "",
+  ].filter(Boolean).length;
+
+  const evidenceQuality = evidenceScore >= 4
+    ? { label: "Strong website signal", tint: "#E8F6EE", text: "#117A43" }
+    : evidenceScore >= 2
+      ? { label: "Partial website signal", tint: "#FFF5E8", text: "#B45309" }
+      : { label: "Weak website signal", tint: "#F6F3FF", text: P[700] };
+
+  const currentNarrativeParts = [
+    siteSummary,
+    messagingSignals[0] ? `The strongest public message right now seems to be "${messagingSignals[0]}".` : "",
+    audienceSignals[0] ? `It appears to speak most directly to ${audienceSignals[0].replace(/\.$/, "")}.` : "",
+  ].filter(Boolean);
+
+  const currentNarrative = currentNarrativeParts.length
+    ? currentNarrativeParts.join(" ")
+    : `${productName || "This product"} has limited clear public narrative signals right now, so Loop is leaning more heavily on the typed product information.`;
+
+  const improvementScope = [
+    !proofSignals.length ? "Add clearer proof, outcomes, or credibility signals so the narrative feels more believable." : "",
+    audienceSignals.length <= 1 ? "Make the buyer more explicit so the story feels focused instead of broad." : "",
+    messagingSignals.length <= 1 ? "Sharpen the top-line message so the value is easier to understand in one read." : "",
+    productSignals.length <= 1 ? "Explain what the product actually does in more concrete language, not just the promise." : "",
+    assumptions[0] ? `${assumptions[0].replace(/^Assumption:\s*/i, "Reduce ambiguity around ").replace(/\.*$/, "")}.` : "",
+  ].filter(Boolean).slice(0, 4);
+  const scopedImprovements = improvementScope.length
+    ? improvementScope
+    : [
+      "Tighten the public narrative so the product promise feels more specific and ownable.",
+      "Connect the story more clearly to the buyer outcome Loop should build around.",
+    ];
+
+  const subject = productName || "The product";
+  const normalizedUseCase = String(suggestedUseCase || "").replace(/\.$/, "");
+  const firstProof = proofSignals[0] ? ` Support it with proof like ${proofSignals[0].replace(/\.$/, "")}.` : "";
+  const suggestedDirection = {
+    positioning: `${subject} should be framed as a ${suggestedCategory} for ${suggestedAudience}, built to help them ${normalizedUseCase ? normalizedUseCase.toLowerCase() : "reach a clearer buyer outcome"}.`,
+    value: `Lead with the clearest buyer value: ${normalizedUseCase || "what the product helps people accomplish"}.${firstProof}`,
+    headline: messagingSignals[0]
+      ? `Turn the current message "${messagingSignals[0]}" into a sharper, more outcome-led headline.`
+      : "Write a clearer headline that makes the category, audience, and buyer outcome obvious in one line.",
+  };
+
+  return {
+    evidenceQuality,
+    currentNarrative,
+    improvementScope: scopedImprovements,
+    suggestedDirection,
+  };
+}
+
 function AiContextReviewPage({
   productName,
   context,
   websiteContext,
   isLoading,
   onUpdateContext,
-  onBack,
+  onRefresh,
   onConfirm,
+  onBuildManual,
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const contextRows = [
     ["Product Category", "productCategory", "What category best describes this product?"],
     ["Target Audience", "targetAudience", "Who is this primarily for?"],
     ["Core Use Case", "coreUseCase", "What does this product help someone do?"],
     ["Market Type", "marketType", "What kind of market or buying motion does this fit?"],
   ];
+  const reviewModel = buildContextReviewModel(productName, context, websiteContext);
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)", padding: "54px 24px" }}>
@@ -3654,52 +3738,14 @@ function AiContextReviewPage({
         <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 28, padding: "28px 30px", boxShadow: "0 18px 40px rgba(83, 74, 183, 0.08)" }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>AI Context Review</div>
           <div style={{ marginTop: 10, fontSize: 38, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>
-            Confirm the product context before Loop drafts the narrative
+            Confirm the website story before Loop drafts the narrative
           </div>
           <div style={{ marginTop: 12, maxWidth: 760, fontSize: 15, lineHeight: 1.7, color: S.muted }}>
             {productName
-              ? `Loop has interpreted the product information for ${productName}. Confirm or correct the context below so Product Truth, Core Narrative, and GTM are drafted from the right starting point.`
-              : "Loop has interpreted the product information. Confirm or correct the context below so Product Truth, Core Narrative, and GTM are drafted from the right starting point."}
+              ? `Loop analyzed the current public story for ${productName}. Keep only the critical takeaways here, then continue into Product Truth, Core Narrative, and GTM with the right starting point.`
+              : "Loop analyzed the current public story. Keep only the critical takeaways here, then continue into Product Truth, Core Narrative, and GTM with the right starting point."}
           </div>
         </div>
-
-        {!isLoading && websiteContext && (
-          <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 14px 34px rgba(83, 74, 183, 0.06)" }}>
-            <div style={{ display: "grid", gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Website Context</div>
-                <div style={{ marginTop: 8, fontSize: 24, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>AI grounded this draft using the live website</div>
-                <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
-                  Review what Loop extracted from the URL so the context, product truth, and narrative are based on the right public story.
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
-                <div style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: S.bg, padding: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>Source URL</div>
-                  <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: S.text, wordBreak: "break-word" }}>{websiteContext.url}</div>
-                </div>
-                <div style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: S.bg, padding: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>Page Summary</div>
-                  <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: S.text }}>{websiteContext.siteSummary || "Loop did not extract a summary from this page."}</div>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
-                {[
-                  ["Audience Signals", websiteContext.audienceSignals],
-                  ["Product Signals", websiteContext.productSignals],
-                  ["Messaging Signals", websiteContext.extractedMessaging],
-                ].map(([label, value]) => (
-                  <div key={label} style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: "white", padding: 16 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
-                    <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.65, color: S.text, whiteSpace: "pre-wrap" }}>{value || "No strong signal extracted yet."}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 14px 34px rgba(83, 74, 183, 0.06)" }}>
           {isLoading ? (
@@ -3708,47 +3754,117 @@ function AiContextReviewPage({
                 <div style={{ width: 74, height: 74, borderRadius: 22, background: "linear-gradient(135deg, #534AB7 0%, #8A80F1 100%)", color: "white", display: "grid", placeItems: "center", fontSize: 26, fontWeight: 900, boxShadow: "0 18px 34px rgba(83, 74, 183, 0.24)" }}>L</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Understanding your product</div>
                 <div style={{ maxWidth: 520, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
-                  Loop is generating context first so the rest of the narrative is based on the right audience, use case, and market interpretation.
+                  Loop is reading the website, interpreting the public story, and shaping a stronger narrative direction before you enter the workspace.
                 </div>
               </div>
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 }}>
-                {contextRows.map(([label, key, placeholder]) => (
-                  <label key={key} style={{ display: "grid", gap: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
-                    <textarea
-                      value={context?.[key] || ""}
-                      onChange={e => onUpdateContext(key, e.target.value)}
-                      placeholder={placeholder}
-                      rows={key === "coreUseCase" ? 4 : 3}
-                      style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.65 }}
-                    />
-                  </label>
-                ))}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 18 }}>
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Source</div>
+                  <div style={{ fontSize: 14, lineHeight: 1.6, color: S.text, wordBreak: "break-word" }}>{websiteContext?.url || "No website source provided"}</div>
+                </div>
+                <div style={{ padding: "8px 12px", borderRadius: 999, background: reviewModel.evidenceQuality.tint, color: reviewModel.evidenceQuality.text, fontSize: 12, fontWeight: 800 }}>
+                  {reviewModel.evidenceQuality.label}
+                </div>
               </div>
 
-              <label style={{ display: "grid", gap: 8, marginTop: 16 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>AI Assumptions</span>
-                <textarea
-                  value={Array.isArray(context?.assumptions) ? context.assumptions.join("\n") : ""}
-                  onChange={e => onUpdateContext("assumptions", e.target.value.split("\n").map(item => item.trim()).filter(Boolean))}
-                  placeholder="Assumption: ..."
-                  rows={5}
-                  style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.65 }}
-                />
-              </label>
+              <div style={{ display: "grid", gap: 16 }}>
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Current Website Narrative</div>
+                  <div style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: "linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%)", padding: 18, fontSize: 15, lineHeight: 1.7, color: S.text }}>
+                    {reviewModel.currentNarrative}
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Where Loop Can Improve It</div>
+                  <div style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: "#FCFBFF", padding: 18 }}>
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {reviewModel.improvementScope.map(item => (
+                        <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <div style={{ width: 8, height: 8, borderRadius: 999, background: P[600], marginTop: 7, flex: "0 0 auto" }} />
+                          <div style={{ fontSize: 14, lineHeight: 1.65, color: S.text }}>{item}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Suggested Narrative Direction</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                    {[
+                      ["Positioning Direction", reviewModel.suggestedDirection.positioning],
+                      ["Value Proposition Direction", reviewModel.suggestedDirection.value],
+                      ["Headline / Message Direction", reviewModel.suggestedDirection.headline],
+                    ].map(([label, value]) => (
+                      <div key={label} style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: "white", padding: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
+                        <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.65, color: S.text }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ borderTop: `1px solid ${S.border}`, paddingTop: 16 }}>
+                  <button
+                    onClick={() => setDetailsOpen(open => !open)}
+                    style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    {detailsOpen ? "Hide Analysis Details" : "View Analysis Details"}
+                  </button>
+
+                  {detailsOpen && (
+                    <div style={{ display: "grid", gap: 16, marginTop: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+                        {contextRows.map(([label, key, placeholder]) => (
+                          <label key={key} style={{ display: "grid", gap: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+                            <textarea
+                              value={context?.[key] || ""}
+                              onChange={e => onUpdateContext(key, e.target.value)}
+                              placeholder={placeholder}
+                              rows={key === "coreUseCase" ? 4 : 3}
+                              style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.65 }}
+                            />
+                          </label>
+                        ))}
+                      </div>
+
+                      <label style={{ display: "grid", gap: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>AI Assumptions</span>
+                        <textarea
+                          value={Array.isArray(context?.assumptions) ? context.assumptions.join("\n") : ""}
+                          onChange={e => onUpdateContext("assumptions", e.target.value.split("\n").map(item => item.trim()).filter(Boolean))}
+                          placeholder="Assumption: ..."
+                          rows={5}
+                          style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.65 }}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
             </>
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
           <button
-            onClick={onBack}
-            style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+            onClick={onRefresh}
+            disabled={isLoading}
+            style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 700, cursor: isLoading ? "default" : "pointer", opacity: isLoading ? 0.6 : 1, fontFamily: "inherit" }}
           >
-            Back to Product Info
+            Refresh
+          </button>
+          <button
+            onClick={onBuildManual}
+            disabled={isLoading}
+            style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 700, cursor: isLoading ? "default" : "pointer", opacity: isLoading ? 0.6 : 1, fontFamily: "inherit" }}
+          >
+            Build Narrative
           </button>
           <button
             onClick={onConfirm}
@@ -9193,6 +9309,29 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
     }
   }
 
+  async function handleRefreshAiContext() {
+    if (!(pd.name || "").trim() || !(pd.description || "").trim()) {
+      setPlatformNotice("Add a product name and product description before refreshing the AI context.");
+      return;
+    }
+
+    try {
+      setPlatformNotice("");
+      setNarrativeUiState(prev => ({ ...prev, isGenerating: true }));
+      const productInput = buildProductInput(pd);
+      const websiteContext = await getWebsiteNarrativeContext(productInput);
+      const context = await generateContext(productInput, websiteContext);
+      setAiDraft(prev => ({ ...prev, context, websiteContext }));
+      setPlatformNotice(productInput.websiteUrl
+        ? "Loop refreshed the website analysis and tightened the narrative direction."
+        : "Loop refreshed the product context from the information on the homepage.");
+    } catch {
+      setPlatformNotice("Loop could not refresh the AI context right now. Check the OpenAI setup and try again.");
+    } finally {
+      setNarrativeUiState(prev => ({ ...prev, isGenerating: false }));
+    }
+  }
+
   async function handleConfirmAiContext() {
     if (!(pd.name || "").trim() || !(pd.description || "").trim()) {
       setPlatformNotice("Add a product name and product description before generating a narrative.");
@@ -9386,6 +9525,86 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
         enhancingSection: "",
       });
       setPlatformNotice("Loop could not finish the AI draft. Your project was still created, so you can continue manually and retry generation.");
+    }
+  }
+
+  async function handleBuildNarrativeFromScratch() {
+    if (!(pd.name || "").trim() || !(pd.description || "").trim()) {
+      setPlatformNotice("Add a product name and product description before opening the workspace.");
+      return;
+    }
+
+    const productInput = buildProductInput(pd);
+    const reviewedContext = {
+      ...makeEmptyAiDraft().context,
+      ...(aiDraft.context || {}),
+    };
+
+    let reviewedWebsiteContext = aiDraft.websiteContext;
+    if (!reviewedWebsiteContext && productInput.websiteUrl) {
+      try {
+        reviewedWebsiteContext = await getWebsiteNarrativeContext(productInput);
+      } catch {
+        reviewedWebsiteContext = null;
+      }
+    }
+
+    const manualDraft = {
+      ...makeEmptyAiDraft(),
+      context: reviewedContext,
+      websiteContext: reviewedWebsiteContext,
+      sourceSummary: reviewedWebsiteContext?.siteSummary || productInput.description || "",
+    };
+    const nextProjectId = currentTestProjectId || `test-${Date.now()}`;
+    const nextProjectReview = {
+      ...projectReview,
+      status: "Draft",
+      lastAction: "Workspace opened for manual narrative build",
+    };
+    const nextNarrativeUiState = {
+      isGenerated: false,
+      improveMode: false,
+      isGenerating: false,
+      enhancingSection: "",
+    };
+    const baseSnapshot = buildTestProjectSnapshot(nextProjectId);
+    const projectSnapshot = {
+      ...baseSnapshot,
+      updatedAt: new Date().toISOString(),
+      snapshot: {
+        ...baseSnapshot.snapshot,
+        aiDraft: manualDraft,
+        userEdits: {},
+        narrativeUiState: nextNarrativeUiState,
+        projectReview: nextProjectReview,
+        active: "productTruth",
+        workflowStage: "productTruth",
+      },
+    };
+
+    setPlatformMode("test");
+    setCurrentTestProjectId(nextProjectId);
+    setAiDraft(manualDraft);
+    setUserEdits({});
+    setProjectReview(nextProjectReview);
+    setNarrativeUiState(nextNarrativeUiState);
+    setWorkflowStage("productTruth");
+    setActive("productTruth");
+    setVersionDraft({ sourceProjectId: "", mode: "minor" });
+    setScreen("workspace");
+    setTestProjects(prev => mergeProjectsById(prev, [projectSnapshot]));
+    setPlatformNotice("Workspace is ready. Build the narrative from scratch, or use Improve once you want AI help inside the canvas.");
+
+    if (isSupabaseConfigured()) {
+      try {
+        const savedProject = await saveLoopProject(projectSnapshot);
+        if (savedProject) {
+          setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+          refreshRemoteProjects(false);
+        }
+      } catch {
+        setPlatformNotice("Workspace opened, but Loop could not save the manual-start project to Supabase yet.");
+      }
     }
   }
 
@@ -10851,14 +11070,17 @@ If section is gtm return:
           websiteContext={aiDraft.websiteContext}
           isLoading={narrativeUiState.isGenerating}
           onUpdateContext={updateAiContextField}
-          onBack={() => {
+          onRefresh={() => {
             setPlatformNotice("");
-            setNarrativeUiState(prev => ({ ...prev, isGenerating: false }));
-            setScreen("home");
+            handleRefreshAiContext();
           }}
           onConfirm={() => {
             setPlatformNotice("");
             handleConfirmAiContext();
+          }}
+          onBuildManual={() => {
+            setPlatformNotice("");
+            handleBuildNarrativeFromScratch();
           }}
         />
       ) : screen === "projectsHub" ? (
