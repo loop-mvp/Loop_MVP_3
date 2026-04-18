@@ -8,7 +8,7 @@ import AlignmentScore from "./feedback/AlignmentScore";
 import ConfidenceScoreCard from "./feedback/ConfidenceScoreCard";
 import NarrativeIntelligence from "./feedback/NarrativeIntelligence";
 import AIInsights from "./feedback/AIInsights";
-import { generateOpenAiText } from "./openaiClient";
+import { analyzeWebsiteNarrative, generateOpenAiText } from "./openaiClient";
 import { deleteLoopProject as deleteRemoteLoopProject, isSupabaseConfigured, listLoopProjects, saveLoopProject } from "./projectStore";
 
 const LOOP_STORAGE_KEY = "loop-mvp-local-state-v1";
@@ -986,6 +986,7 @@ function makeEmptyAiDraft() {
       marketType: "",
       assumptions: [],
     },
+    websiteContext: null,
     productTruth: { problem: "", icp: "", value: "", solution: "", differentiation: "" },
     narrative: { positioning: "", messaging: "", valueProposition: "", topMessages: [] },
     gtm: { channels: "", hooks: "", strategy: "", launchApproach: "" },
@@ -1126,6 +1127,7 @@ function normalizePdState(pd = {}) {
   return {
     name: pd?.name || "",
     description: pd?.description || "",
+    websiteUrl: pd?.websiteUrl || "",
     wowFactor: pd?.wowFactor || "",
     whatChanged: pd?.whatChanged || "",
     previousVersionId: pd?.previousVersionId || "",
@@ -1224,6 +1226,7 @@ function buildProductInput(inputOrName, description = "") {
     return {
       name: (inputOrName.name || "").trim(),
       description: (inputOrName.description || "").trim(),
+      websiteUrl: (inputOrName.websiteUrl || "").trim(),
       audience: (inputOrName.audience || "").trim(),
       category: (inputOrName.category || "").trim(),
       wowFactor: (inputOrName.wowFactor || "").trim(),
@@ -1234,6 +1237,7 @@ function buildProductInput(inputOrName, description = "") {
   return {
     name: (inputOrName || "").trim(),
     description: (description || "").trim(),
+    websiteUrl: "",
     audience: "",
     category: "",
     wowFactor: "",
@@ -1245,6 +1249,7 @@ function buildGroundingBrief(productInput) {
   return [
     `Product name: ${productInput.name || "Not provided"}`,
     `Product description: ${productInput.description || "Not provided"}`,
+    `Website URL: ${productInput.websiteUrl || "Not provided"}`,
     `Audience: ${productInput.audience || "Not provided"}`,
     `Category: ${productInput.category || "Not provided"}`,
     `Wow factor: ${productInput.wowFactor || "Not provided"}`,
@@ -1373,6 +1378,7 @@ function buildLocalNarrativeDraft(inputOrName, productDescription = "") {
       assumptions: [
         `Assumption: ${trimmedName} is used in a B2B workflow where message clarity and launch readiness matter.`,
         `Assumption: the strongest hook is ${wowFactor.toLowerCase()}`,
+        ...(productInput.websiteUrl ? [`Assumption: the website ${productInput.websiteUrl} reflects the most current public narrative.`] : []),
         ...(whatChanged ? [`Assumption: this version should account for the following change: ${whatChanged}`] : []),
       ],
     },
@@ -1411,7 +1417,17 @@ function buildLocalNarrativeDraft(inputOrName, productDescription = "") {
   };
 }
 
-async function generateContext(productInput) {
+async function getWebsiteNarrativeContext(productInput) {
+  if (!productInput.websiteUrl) return null;
+
+  try {
+    return await analyzeWebsiteNarrative(productInput.websiteUrl);
+  } catch {
+    return null;
+  }
+}
+
+async function generateContext(productInput, websiteContext = null) {
   const fallback = buildLocalNarrativeDraft(productInput).context;
   try {
     const prompt = `You are a product marketing strategist building high-context product understanding.
@@ -1427,12 +1443,16 @@ Return ONLY valid JSON with this exact shape:
 Use this product brief as the primary source of truth:
 ${buildGroundingBrief(productInput)}
 
+Website analysis:
+${websiteContext ? JSON.stringify(websiteContext, null, 2) : "No website analysis available"}
+
 Rules:
 - Avoid generic SaaS language
 - Be specific and realistic
 - Clearly distinguish direct facts from inferred assumptions
 - Every assumption must begin with "Assumption:"
 - Reuse the product description's concrete nouns and verbs whenever possible
+- If website analysis is present, use it to ground the category, audience, and use case before making new assumptions
 - If audience or category is missing, infer it from the product description instead of guessing a generic PMM/B2B answer
 - coreUseCase should describe what the product actually helps someone do in plain language`;
     const text = await generateOpenAiText(prompt);
@@ -1447,7 +1467,7 @@ Rules:
   }
 }
 
-async function generateProductTruth(context, productInput) {
+async function generateProductTruth(context, productInput, websiteContext = null) {
   const fallback = buildLocalNarrativeDraft(productInput).productTruth;
   try {
     const prompt = `You are generating Product Truth for a product marketing workflow.
@@ -1466,10 +1486,14 @@ ${JSON.stringify(productInput, null, 2)}
 Context:
 ${JSON.stringify(context, null, 2)}
 
+Website analysis:
+${websiteContext ? JSON.stringify(websiteContext, null, 2) : "No website analysis available"}
+
 Rules:
 - be specific and concrete
 - describe the product the user actually entered, not Loop or a generic SaaS company
 - use the product description, audience, category, and wow factor directly
+- if the website analysis includes concrete claims or messaging, use that as grounding instead of inventing unrelated angles
 - keep differentiation grounded in the wow factor and actual use case
 - do not use phrases like "clearer narrative foundation", "aligned execution", or "launch-ready" unless the product is actually about those things
 - problem should describe the end-user pain
@@ -1482,7 +1506,7 @@ Rules:
   }
 }
 
-async function generateNarrative(productTruth, context, productInput) {
+async function generateNarrative(productTruth, context, productInput, websiteContext = null) {
   const fallback = buildLocalNarrativeDraft(productInput).narrative;
   try {
     const prompt = `You are generating a concise core narrative.
@@ -1500,9 +1524,13 @@ ${JSON.stringify(productTruth, null, 2)}
 Context:
 ${JSON.stringify(context, null, 2)}
 
+Website analysis:
+${websiteContext ? JSON.stringify(websiteContext, null, 2) : "No website analysis available"}
+
 Rules:
 - positioning should follow Geoffrey Moore style where possible
 - topMessages must be concise and differentiated
+- if the website already uses strong language, refine and sharpen it instead of discarding it
 - avoid bland category language
 - keep the wording specific to this product's audience and use case
 - do not repeat the same message in every field
@@ -1520,7 +1548,7 @@ Rules:
   }
 }
 
-async function generateGtm(narrative, productTruth, context, productInput) {
+async function generateGtm(narrative, productTruth, context, productInput, websiteContext = null) {
   const fallback = buildLocalNarrativeDraft(productInput).gtm;
   try {
     const prompt = `You are generating a lightweight GTM plan.
@@ -1541,6 +1569,9 @@ ${JSON.stringify(productTruth, null, 2)}
 Context:
 ${JSON.stringify(context, null, 2)}
 
+Website analysis:
+${websiteContext ? JSON.stringify(websiteContext, null, 2) : "No website analysis available"}
+
 Rules:
 - keep it launch-ready and practical
 - choose realistic channels
@@ -1555,7 +1586,7 @@ Rules:
   }
 }
 
-async function generateAssets(narrative, gtm, productTruth, context, productInput) {
+async function generateAssets(narrative, gtm, productTruth, context, productInput, websiteContext = null) {
   const fallback = buildLocalNarrativeDraft(productInput).assets;
   try {
     const prompt = `You are creating starter assets for a product marketing platform.
@@ -1578,6 +1609,9 @@ ${JSON.stringify(productTruth, null, 2)}
 
 Context:
 ${JSON.stringify(context, null, 2)}
+
+Website analysis:
+${websiteContext ? JSON.stringify(websiteContext, null, 2) : "No website analysis available"}
 
 Rules:
 - keep the headline concise
@@ -3223,6 +3257,8 @@ function SimplifiedSectionCard({ title, description, children, improveMode = fal
 function BuildNarrativeWorkspacePanel({
   section,
   pd,
+  cap,
+  comp,
   pos,
   msg,
   strat,
@@ -3235,7 +3271,6 @@ function BuildNarrativeWorkspacePanel({
 }) {
   const derivedProblem = aiDraft.productTruth.problem || pd.problem || pd.problemStatement || "";
   const derivedSolution = aiDraft.productTruth.solution || pd.solution || pd.solutionMechanism || "";
-  const derivedAudience = aiDraft.productTruth.icp || pd.audience || strat.icp || "";
   const derivedPositioning = aiDraft.narrative.positioning || pos.statement || "";
   const derivedValueProposition = aiDraft.narrative.valueProposition || pos.valueProp || "";
   const derivedMessaging = aiDraft.narrative.messaging || normalizeDraftText(aiDraft.narrative.topMessages) || msg.pillars || "";
@@ -3244,20 +3279,19 @@ function BuildNarrativeWorkspacePanel({
   const derivedGtmStrategy = aiDraft.gtm.strategy || strat.goal || "";
   const derivedChannels = aiDraft.gtm.channels || strat.channels || "";
   const derivedLaunchStrategy = aiDraft.gtm.launchApproach || strat.hooks || "";
+  const derivedTagline = [pos.tagline, pos.taglineOptions].filter(Boolean).join("\n");
+  const derivedKeyValue = pos.keyValue || "";
   const toGuidanceBullets = text => String(text || "")
     .split(/[\n.]/)
     .map(line => line.replace(/^[-*•\s]+/, "").trim())
     .filter(Boolean)
     .slice(0, 3);
   const solutionBullets = toGuidanceBullets(derivedSolution);
-  const audienceBullets = toGuidanceBullets(derivedAudience);
 
   const helperCopy = improveMode ? {
     productTruth: {
-      overview: "Summarize what the product does in plain language and what category it belongs to.",
       problem: "Describe the core customer pain and what breaks if the problem stays unresolved.",
       solution: "Explain how the product solves the problem in plain English.",
-      icp: "Describe the ideal customer by company type, team, role, and urgency.",
       differentiation: "Explain what feels uniquely valuable or meaningfully different about the product.",
     },
     narrative: {
@@ -3266,6 +3300,8 @@ function BuildNarrativeWorkspacePanel({
       messaging: "Keep messaging concise, repeatable, and easy for sales or founders to say out loud.",
       headline: "Write the one-line message a buyer should understand on first read.",
       elevator: "Turn the core story into a short spoken explanation a PMM or founder can say out loud.",
+      tagline: "Add concise tagline options only if they strengthen recall and clarity.",
+      keyValue: "List the strongest outcomes or benefits this narrative should reinforce.",
     },
     gtm: {
       strategy: "Describe the launch goal and how this product should enter the market first.",
@@ -3297,26 +3333,13 @@ function BuildNarrativeWorkspacePanel({
 
   if (section === "productTruth") {
     return (
-      <>
-        <SimplifiedSectionCard
+      <SimplifiedSectionCard
           title="Product Truth"
-          description="Use one strong AI draft for momentum, then shape the rest with guidance so the canvas feels strategic instead of fully pre-written."
+          description="Ground the story in problem, solution, proof, and competitive context without repeating the homepage inputs."
           improveMode={improveMode}
           enhancing={enhancingSection === "productTruth"}
           onEnhance={() => onEnhanceSection("productTruth")}
         >
-          <SmartInput
-            label="Product Overview"
-            fieldKey="productTruth.overview"
-            aiValue=""
-            userEdited={!!userEdits["productTruth.overview"]}
-            value={pd.whatItDoes || ""}
-            onChange={value => onFieldChange("productTruth.overview", value)}
-            rows={3}
-            placeholder="Describe what the product does, what category it belongs to, and who it serves."
-            helper={helperCopy.productTruth?.overview}
-            treatment="ghost"
-          />
           <SmartInput
             label="Problem"
             fieldKey="productTruth.problem"
@@ -3342,19 +3365,6 @@ function BuildNarrativeWorkspacePanel({
             insightBullets={solutionBullets}
           />
           <SmartInput
-            label="Primary Audience"
-            fieldKey="productTruth.icp"
-            aiValue=""
-            userEdited={!!userEdits["productTruth.icp"]}
-            value={pd.audience}
-            onChange={value => onFieldChange("productTruth.icp", value)}
-            rows={3}
-            placeholder="Describe who feels this problem most, what triggers urgency, and why they are the best early audience."
-            helper={helperCopy.productTruth?.icp}
-            treatment="bullets"
-            insightBullets={audienceBullets}
-          />
-          <SmartInput
             label="Differentiation"
             fieldKey="productTruth.differentiation"
             aiValue=""
@@ -3366,28 +3376,45 @@ function BuildNarrativeWorkspacePanel({
             helper={helperCopy.productTruth?.differentiation}
             treatment="ghost"
           />
+          <SmartInput
+            label="Capabilities"
+            fieldKey="productTruth.capabilities"
+            aiValue=""
+            userEdited={!!userEdits["productTruth.capabilities"]}
+            value={cap.features || ""}
+            onChange={value => onFieldChange("productTruth.capabilities", value)}
+            rows={4}
+            placeholder="List the capabilities or features that make the product promise believable."
+            helper="Show which capabilities make the solution real without repeating the homepage basics."
+            treatment="ghost"
+          />
+          <SmartInput
+            label="Competitive Context"
+            fieldKey="productTruth.competition"
+            aiValue=""
+            userEdited={!!userEdits["productTruth.competition"]}
+            value={comp.competitors || ""}
+            onChange={value => onFieldChange("productTruth.competition", value)}
+            rows={4}
+            placeholder="Which alternatives do buyers compare this against, and where should this product win?"
+            helper="Capture the competitive frame or default alternatives this product needs to beat."
+            treatment="ghost"
+          />
         </SimplifiedSectionCard>
-        <SectionSuggestionsPanel
-          title="AI-Suggested Sections for PMMs"
-          subtitle="Turn Product Truth into alignment-ready assets and sharper follow-on sections."
-          suggestions={workspaceSuggestions.productTruth}
-        />
-      </>
     );
   }
 
   if (section === "narrative") {
     return (
-      <>
-        <SimplifiedSectionCard
+      <SimplifiedSectionCard
           title="Core Narrative"
-          description="Refine the positioning and messaging until the story is clear enough to repeat across launch materials."
+          description="Keep the must-have narrative sections in one coherent canvas so the story stays connected."
           improveMode={improveMode}
           enhancing={enhancingSection === "narrative"}
           onEnhance={() => onEnhanceSection("narrative")}
         >
           <SmartInput
-            label="Positioning"
+            label="Positioning Statement"
             fieldKey="narrative.positioning"
             aiValue={derivedPositioning}
             userEdited={!!userEdits["narrative.positioning"]}
@@ -3407,7 +3434,7 @@ function BuildNarrativeWorkspacePanel({
             helper={helperCopy.narrative?.valueProposition}
           />
           <SmartInput
-            label="Messaging"
+            label="Messaging Pillars"
             fieldKey="narrative.messaging"
             aiValue={derivedMessaging}
             userEdited={!!userEdits["narrative.messaging"]}
@@ -3438,27 +3465,44 @@ function BuildNarrativeWorkspacePanel({
             placeholder="Turn the story into a short, spoken explanation a founder or PMM can use live."
             helper={helperCopy.narrative?.elevator}
           />
+          <SmartInput
+            label="Tagline + Options"
+            fieldKey="narrative.tagline"
+            aiValue=""
+            userEdited={!!userEdits["narrative.tagline"]}
+            value={derivedTagline}
+            onChange={value => onFieldChange("narrative.tagline", value)}
+            rows={4}
+            placeholder="Add concise tagline options only if they strengthen recall and clarity."
+            helper={helperCopy.narrative?.tagline}
+            treatment="ghost"
+          />
+          <SmartInput
+            label="Key Value"
+            fieldKey="narrative.keyValue"
+            aiValue=""
+            userEdited={!!userEdits["narrative.keyValue"]}
+            value={derivedKeyValue}
+            onChange={value => onFieldChange("narrative.keyValue", value)}
+            rows={4}
+            placeholder="List the strongest outcomes or benefits this narrative should reinforce."
+            helper={helperCopy.narrative?.keyValue}
+            treatment="ghost"
+          />
         </SimplifiedSectionCard>
-        <SectionSuggestionsPanel
-          title="AI-Suggested Sections for PMMs"
-          subtitle="Generate launch-ready assets directly from the live narrative you’re shaping."
-          suggestions={workspaceSuggestions.narrative}
-        />
-      </>
     );
   }
 
   return (
-    <>
-      <SimplifiedSectionCard
+    <SimplifiedSectionCard
         title="GTM"
-        description="Use the draft as a starting point for a focused go-to-market motion. Keep this light and execution-ready."
+        description="Translate the story into a practical first motion without adding extra workflow complexity."
         improveMode={improveMode}
         enhancing={enhancingSection === "gtm"}
         onEnhance={() => onEnhanceSection("gtm")}
       >
         <SmartInput
-          label="GTM Strategy"
+          label="GTM Goal"
           fieldKey="gtm.strategy"
           aiValue={derivedGtmStrategy}
           userEdited={!!userEdits["gtm.strategy"]}
@@ -3478,7 +3522,7 @@ function BuildNarrativeWorkspacePanel({
           helper={helperCopy.gtm?.channels}
         />
         <SmartInput
-          label="Launch Strategy"
+          label="Launch Story / Brief"
           fieldKey="gtm.launchStrategy"
           aiValue={derivedLaunchStrategy}
           userEdited={!!userEdits["gtm.launchStrategy"]}
@@ -3489,12 +3533,6 @@ function BuildNarrativeWorkspacePanel({
           helper={helperCopy.gtm?.launchStrategy}
         />
       </SimplifiedSectionCard>
-      <SectionSuggestionsPanel
-        title="AI-Suggested Sections for PMMs"
-        subtitle="Generate GTM assets and briefs directly from the strategy you’re building."
-        suggestions={workspaceSuggestions.gtm}
-      />
-    </>
   );
 }
 
@@ -3597,6 +3635,7 @@ function NarrativeGeneratingOverlay({ productName }) {
 function AiContextReviewPage({
   productName,
   context,
+  websiteContext,
   isLoading,
   onUpdateContext,
   onBack,
@@ -3623,6 +3662,44 @@ function AiContextReviewPage({
               : "Loop has interpreted the product information. Confirm or correct the context below so Product Truth, Core Narrative, and GTM are drafted from the right starting point."}
           </div>
         </div>
+
+        {!isLoading && websiteContext && (
+          <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 14px 34px rgba(83, 74, 183, 0.06)" }}>
+            <div style={{ display: "grid", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Website Context</div>
+                <div style={{ marginTop: 8, fontSize: 24, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>AI grounded this draft using the live website</div>
+                <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
+                  Review what Loop extracted from the URL so the context, product truth, and narrative are based on the right public story.
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
+                <div style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: S.bg, padding: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>Source URL</div>
+                  <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: S.text, wordBreak: "break-word" }}>{websiteContext.url}</div>
+                </div>
+                <div style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: S.bg, padding: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>Page Summary</div>
+                  <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: S.text }}>{websiteContext.siteSummary || "Loop did not extract a summary from this page."}</div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+                {[
+                  ["Audience Signals", websiteContext.audienceSignals],
+                  ["Product Signals", websiteContext.productSignals],
+                  ["Messaging Signals", websiteContext.extractedMessaging],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: "white", padding: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
+                    <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.65, color: S.text, whiteSpace: "pre-wrap" }}>{value || "No strong signal extracted yet."}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 14px 34px rgba(83, 74, 183, 0.06)" }}>
           {isLoading ? (
@@ -5136,8 +5213,8 @@ const WORKFLOW_STEPS = [
   { id: "login", label: "Login", workspace: "Product Truth", summary: "Create the workspace and collect basic launch context." },
   { id: "onboarding", label: "Onboarding", workspace: "Product Truth", summary: "Define the launch type, deadline, and starting materials." },
   { id: "productTruth", label: "Product Truth", workspace: "Product Truth", summary: "Build the factual source of truth section by section." },
-  { id: "narrative", label: "Narrative", workspace: "Narrative", summary: "Turn product truth into approved positioning and messaging." },
-  { id: "gtm", label: "GTM Readiness", workspace: "GTM Readiness", summary: "Translate the narrative into launch strategy and channel messaging." },
+  { id: "narrative", label: "Core Narrative", workspace: "Core Narrative", summary: "Turn product truth into approved positioning and messaging." },
+  { id: "gtm", label: "GTM", workspace: "GTM", summary: "Translate the narrative into launch strategy and channel messaging." },
   { id: "assets", label: "Assets", workspace: "Resources", summary: "Generate launch assets, validate them, and package approved kits." },
   { id: "review", label: "Internal Feedback", workspace: "Resources", summary: "Resolve flags, request approval, and manage review in one place." },
   { id: "launch", label: "Market Feedback", workspace: "Resources", summary: "Track launch outcomes and external signal from one operational view." },
@@ -5153,24 +5230,15 @@ const MVP_NAV = [
     ],
   },
   {
-    group: "Narrative",
+    group: "Core Narrative",
     items: [
-      { id: "narrative", label: "Narrative", icon: "CN" },
+      { id: "narrative", label: "Core Narrative", icon: "CN" },
     ],
   },
   {
-    group: "GTM Readiness",
+    group: "GTM",
     items: [
-      { id: "strategy", label: "GTM Readiness", icon: "GT" },
-    ],
-  },
-  {
-    group: "Resources",
-    items: [
-      { id: "assets", label: "Assets", icon: "AS" },
-      { id: "reviewCenter", label: "Internal Feedback", icon: "IF" },
-      { id: "analytics", label: "Market Feedback", icon: "MF" },
-      { id: "confidence", label: "Loop Readiness", icon: "LR" },
+      { id: "strategy", label: "GTM", icon: "GT" },
     ],
   },
 ];
@@ -6028,6 +6096,11 @@ function MainWebsitePageSimple({ onOpenLoop, pd, setPd, onSaveProject, onViewPro
               <label style={{ display: "grid", gap: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Product Description</span>
                 <textarea value={pd.description} onChange={e => setPd(prev => ({ ...prev, description: e.target.value }))} placeholder="Narrative operating system for launches" rows={6} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
+              </label>
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Website URL</span>
+                <input value={pd.websiteUrl || ""} onChange={e => setPd(prev => ({ ...prev, websiteUrl: e.target.value }))} placeholder="https://example.com" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+                <span style={{ fontSize: 12, lineHeight: 1.55, color: S.muted }}>Optional. If provided, Loop will analyze the live website narrative and use it to ground the AI draft.</span>
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
                 <label style={{ display: "grid", gap: 8 }}>
@@ -7934,7 +8007,6 @@ export default function App() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiRailCollapsed, setAiRailCollapsed] = useState(false);
   const [leftRailCollapsed, setLeftRailCollapsed] = useState(false);
-  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [askAiOpen, setAskAiOpen] = useState(false);
   const [aiTab, setAiTab] = useState("changes");
   const [aiPrompt, setAiPrompt] = useState("");
@@ -7952,6 +8024,7 @@ export default function App() {
   const [pd, setPd] = useState({
     name: "",
     description: "",
+    websiteUrl: "",
     wowFactor: "",
     whatChanged: "",
     previousVersionId: "",
@@ -8211,7 +8284,7 @@ export default function App() {
     confidence: safeConfidence.decisionNotes || safeConfidence.factors[0]?.note,
     assets: assets.notes,
   };
-  const sectionLabels = { productTruth: "Product Truth", narrative: "Narrative", ...Object.fromEntries(MVP_NAV.flatMap(group => group.items).map(item => [item.id, item.label])) };
+  const sectionLabels = { productTruth: "Product Truth", narrative: "Core Narrative", ...Object.fromEntries(MVP_NAV.flatMap(group => group.items).map(item => [item.id, item.label])) };
   const rawReviewItems = [
     !pos.statement && pd.problem ? {
       id: "positioning-needs-update",
@@ -8277,7 +8350,7 @@ export default function App() {
   const compressedCenterTables = showDesktopAiRail && !aiRailCollapsed && !leftRailCollapsed;
 
   const panelMap = {
-    productTruth: <BuildNarrativeWorkspacePanel section="productTruth" pd={pd} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
+    productTruth: <BuildNarrativeWorkspacePanel section="productTruth" pd={pd} cap={cap} comp={comp} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
     productOverview: <ProductOverviewSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={productOverviewLayout} setLayout={setProductOverviewLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="productOverview" />,
     problemStatementSection: <ProblemStatementSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={problemStatementLayout} setLayout={setProblemStatementLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="problemStatementSection" />,
     solutionSection: <SolutionSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={solutionSectionLayout} setLayout={setSolutionSectionLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="solutionSection" />,
@@ -8287,7 +8360,7 @@ export default function App() {
     capabilitiesTruth: <CapabilitiesTruthPanel d={cap} set={setCap} compact={!useCanvasColumns} layout={capabilitiesSectionLayout} setLayout={setCapabilitiesSectionLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="capabilitiesTruth" />,
     competitorsTruth: <CompetitorsTruthPanel d={comp} set={setComp} compact={!useCanvasColumns} layout={competitorsSectionLayout} setLayout={setCompetitorsSectionLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitorsTruth" />,
     addSection: <AddSectionPanel />,
-    narrative: <BuildNarrativeWorkspacePanel section="narrative" pd={pd} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
+    narrative: <BuildNarrativeWorkspacePanel section="narrative" pd={pd} cap={cap} comp={comp} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
     positioningStatementSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={positioningStatementLayout} setLayout={setPositioningStatementLayout} minHeight={360} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="positioningStatementSection" tile={{ id: "statement", title: "Positioning Statement", render: tile => <CanvasField label="Positioning Statement (Geoffrey Moore Style)" value={pos.statement} onChange={value => setPos(prev => ({ ...prev, statement: value }))} placeholder="For [target customer] who [statement of need or opportunity], [product name] is a [product category] that [key benefit]. Unlike [primary competitive alternative], [product name] [primary differentiation]." rows={6} minHeight={Math.max(190, (tile?.h || 190) - 34)} accent="#F8F7FF" /> }} suggestions={[{ type: "section", icon: "◔", title: "Value Proposition", description: "Capture the strongest promise that supports this positioning." }, { type: "section", icon: "◫", title: "Category Design", description: "Add category framing to make the positioning more ownable." }, { type: "asset", icon: "▤", title: "Positioning Brief", description: "Generate a concise positioning brief for internal alignment." }]} />,
     valuePropSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={valuePropLayout} setLayout={setValuePropLayout} minHeight={330} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="valuePropSection" tile={{ id: "valueProp", title: "Value Proposition", render: tile => <CanvasField label="Value Proposition" value={pos.valueProp} onChange={value => setPos(prev => ({ ...prev, valueProp: value }))} placeholder="Summarize the core promise and business value your product delivers..." rows={5} minHeight={Math.max(160, (tile?.h || 160) - 34)} /> }} suggestions={[{ type: "section", icon: "◌", title: "Key Value", description: "Break the value proposition into sharper value outcomes." }, { type: "section", icon: "▦", title: "Messaging Pillars", description: "Turn the value proposition into repeatable message themes." }, { type: "asset", icon: "▣", title: "Value Prop One-Pager", description: "Generate a short internal or investor-facing value summary." }]} />,
     headlineSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={headlineLayout} setLayout={setHeadlineLayout} minHeight={300} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="headlineSection" tile={{ id: "headline", title: "Headline Message", render: tile => <CanvasField label="Headline Message" value={msg.headline} onChange={value => setMsg(prev => ({ ...prev, headline: value }))} placeholder="Your primary hero message..." rows={3} minHeight={Math.max(140, (tile?.h || 140) - 34)} /> }} suggestions={[{ type: "section", icon: "▦", title: "Messaging Pillars", description: "Build support messages under this headline." }, { type: "section", icon: "◫", title: "Elevator Pitch", description: "Expand this headline into a short verbal story." }, { type: "asset", icon: "!", title: "Homepage Hero Copy", description: "Generate homepage hero copy from the headline." }]} />,
@@ -8299,7 +8372,7 @@ export default function App() {
     secondaryPersonaSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={secondaryPersonaLayout} setLayout={setSecondaryPersonaLayout} minHeight={300} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="secondaryPersonaSection" tile={{ id: "secondary", title: "Secondary Persona", render: tile => <CanvasField label="Secondary Persona" value={safeAud.secondary} onChange={value => setAud(prev => ({ ...prev, secondary: value }))} placeholder="Additional buyer or influencer persona..." rows={4} minHeight={Math.max(130, (tile?.h || 130) - 34)} accent="#F8F7FF" /> }} suggestions={[{ type: "section", icon: "⊙", title: "Primary Persona", description: "Clarify how this persona differs from the primary audience." }, { type: "section", icon: "◫", title: "Objection Handling", description: "Capture concerns this persona is likely to raise." }, { type: "asset", icon: "▤", title: "Influencer Brief", description: "Generate a short brief on how to message to this persona." }]} />,
     buyerPersonaSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={buyerPersonaLayout} setLayout={setBuyerPersonaLayout} minHeight={340} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="buyerPersonaSection" tile={{ id: "persona", title: "Detailed Buyer Persona", render: () => <GenBlock label="Detailed Buyer Persona" prompt={pd.audience ? `Create a buyer persona for: ${pd.audience}. Include: name/title, day-in-the-life challenge, what they care about (3 things), key objections, how they discover tools.` : ""} /> }} suggestions={[{ type: "section", icon: "▦", title: "Messaging Pillars", description: "Translate persona detail into stronger message framing." }, { type: "section", icon: "◫", title: "Sales Enablement Brief", description: "Give sales a more usable understanding of this buyer." }, { type: "asset", icon: "▣", title: "Buyer Persona Card", description: "Generate a polished buyer persona summary asset." }]} />,
     addNarrativeSection: <NarrativeAddSectionPanel />,
-    strategy: <BuildNarrativeWorkspacePanel section="gtm" pd={pd} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
+    strategy: <BuildNarrativeWorkspacePanel section="gtm" pd={pd} cap={cap} comp={comp} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
     story: <StoryPanel d={safeStory} set={setStory} pd={pd} compact={!useCanvasColumns} layout={storyLayout} setLayout={setStoryLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="story" />,
     alignment: <AlignmentPanel d={{
       ...feedbackDashboardData,
@@ -8323,9 +8396,9 @@ export default function App() {
 
   const groupOverviewMap = {
     "Product Truth": "productTruth",
-    Narrative: "narrative",
+    "Core Narrative": "narrative",
     Competition: "competitionOverview",
-    "GTM Readiness": "strategy",
+    GTM: "strategy",
     Resources: "assets",
   };
   const activeGroup = Object.entries(groupOverviewMap).find(([, id]) => id === active)?.[0] || MVP_NAV.find(g => g.items.some(i => i.id === active))?.group || "";
@@ -8333,9 +8406,9 @@ export default function App() {
     active === "productTruth"
       ? "Product Truth"
       : active === "narrative"
-        ? "Narrative"
+        ? "Core Narrative"
         : active === "strategy"
-          ? "GTM Readiness"
+          ? "GTM"
         : MVP_NAV.flatMap(g => g.items).find(i => i.id === active)?.label || "";
   const activeSummary = previewMap[active];
   const quickActions = [
@@ -8800,39 +8873,43 @@ export default function App() {
     }
   }
 
-async function generateNarrativeDraft(productInput, contextOverride = null) {
+async function generateNarrativeDraft(productInput, contextOverride = null, websiteContextOverride = null) {
   const fallback = buildLocalNarrativeDraft(productInput);
-  const context = contextOverride || await generateContext(productInput);
-    const productTruth = await generateProductTruth(context, productInput);
-    const narrative = await generateNarrative(productTruth, context, productInput);
-    const gtm = await generateGtm(narrative, productTruth, context, productInput);
-    const assetsDraft = await generateAssets(narrative, gtm, productTruth, context, productInput);
+  const websiteContext = websiteContextOverride ?? await getWebsiteNarrativeContext(productInput);
+  const context = contextOverride || await generateContext(productInput, websiteContext);
+    const productTruth = await generateProductTruth(context, productInput, websiteContext);
+    const narrative = await generateNarrative(productTruth, context, productInput, websiteContext);
+    const gtm = await generateGtm(narrative, productTruth, context, productInput, websiteContext);
+    const assetsDraft = await generateAssets(narrative, gtm, productTruth, context, productInput, websiteContext);
 
     return {
       ...fallback,
       context,
+      websiteContext,
       productTruth: { ...fallback.productTruth, ...productTruth },
       narrative: { ...fallback.narrative, ...narrative },
       gtm: { ...fallback.gtm, ...gtm },
       assets: { ...fallback.assets, ...assetsDraft },
-      sourceSummary: productInput.description || fallback.sourceSummary,
+      sourceSummary: websiteContext?.siteSummary || productInput.description || fallback.sourceSummary,
     };
   }
 
-async function generateCoreNarrativeDraft(productInput, contextOverride = null) {
+async function generateCoreNarrativeDraft(productInput, contextOverride = null, websiteContextOverride = null) {
   const fallback = buildLocalNarrativeDraft(productInput);
-  const context = contextOverride || await generateContext(productInput);
-  const productTruth = await generateProductTruth(context, productInput);
-  const narrative = await generateNarrative(productTruth, context, productInput);
+  const websiteContext = websiteContextOverride ?? await getWebsiteNarrativeContext(productInput);
+  const context = contextOverride || await generateContext(productInput, websiteContext);
+  const productTruth = await generateProductTruth(context, productInput, websiteContext);
+  const narrative = await generateNarrative(productTruth, context, productInput, websiteContext);
 
   return {
     ...fallback,
     context,
+    websiteContext,
     productTruth: { ...fallback.productTruth, ...productTruth },
     narrative: { ...fallback.narrative, ...narrative },
     gtm: fallback.gtm,
     assets: fallback.assets,
-    sourceSummary: productInput.description || fallback.sourceSummary,
+    sourceSummary: websiteContext?.siteSummary || productInput.description || fallback.sourceSummary,
   };
 }
 
@@ -8846,7 +8923,8 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null) 
     setNarrativeUiState(prev => ({ ...prev, isGenerating: true }));
     const nextProjectId = currentTestProjectId || `test-${Date.now()}`;
     const productInput = buildProductInput(pd);
-    const draft = await generateNarrativeDraft(productInput);
+    const websiteContext = await getWebsiteNarrativeContext(productInput);
+    const draft = await generateNarrativeDraft(productInput, null, websiteContext);
     const nextLaunchDate = pd.launchDate || addDays(new Date().toISOString().slice(0, 10), 21);
     const legacy = buildLegacyCanvasValues(productInput, draft);
 
@@ -9104,8 +9182,9 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null) 
 
     try {
       const productInput = buildProductInput(pd);
-      const context = await generateContext(productInput);
-      setAiDraft(prev => ({ ...prev, context }));
+      const websiteContext = await getWebsiteNarrativeContext(productInput);
+      const context = await generateContext(productInput, websiteContext);
+      setAiDraft(prev => ({ ...prev, context, websiteContext }));
       setNarrativeUiState(prev => ({ ...prev, isGenerating: false }));
       setPlatformNotice("AI context is ready. Confirm it, then Loop will draft Product Truth, Core Narrative, and GTM.");
     } catch {
@@ -9126,11 +9205,12 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null) 
       ...makeEmptyAiDraft().context,
       ...(aiDraft.context || {}),
     };
+    const reviewedWebsiteContext = aiDraft.websiteContext || await getWebsiteNarrativeContext(productInput);
     const baseProjectSnapshot = buildTestProjectSnapshot(currentTestProjectId || `test-${Date.now()}`);
 
     try {
       setNarrativeUiState(prev => ({ ...prev, isGenerating: true }));
-      const coreDraft = await generateCoreNarrativeDraft(productInput, reviewedContext);
+      const coreDraft = await generateCoreNarrativeDraft(productInput, reviewedContext, reviewedWebsiteContext);
       const legacy = buildLegacyCanvasValues(productInput, coreDraft);
       const fallbackAssetNotes = "Generating GTM channels and starter assets in the background.";
 
@@ -9248,7 +9328,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null) 
         }
       }
 
-      generateNarrativeDraft(productInput, reviewedContext)
+      generateNarrativeDraft(productInput, reviewedContext, reviewedWebsiteContext)
         .then(async fullDraft => {
           const fullAssetNotes = [
             fullDraft.assets.headline ? `Homepage headline: ${fullDraft.assets.headline}` : "",
@@ -9421,10 +9501,10 @@ If section is gtm return:
     }
   }
 
-  const workspaceTabs = ["Product Truth", "Narrative", "GTM Readiness", "Resources"];
+  const workspaceTabs = ["Product Truth", "Core Narrative", "GTM"];
   const activeWorkspace = workspaceTabs.includes(activeGroup) ? activeGroup : "Product Truth";
   const sidebarGroups = MVP_NAV.filter(group =>
-    ["Product Truth", "Narrative", "GTM Readiness", "Resources"].includes(group.group)
+    ["Product Truth", "Core Narrative", "GTM"].includes(group.group)
   );
   const askAiRightOffset = screen === "workspace" && showDesktopAiRail ? (aiRailCollapsed ? 92 : 354) : 24;
 
@@ -10469,6 +10549,7 @@ If section is gtm return:
     setPd({
       name: "",
       description: "",
+      websiteUrl: "",
       wowFactor: "",
       whatChanged: "",
       previousVersionId: "",
@@ -10709,9 +10790,9 @@ If section is gtm return:
   const workflowPrimaryActionMap = {
     login: { label: "Enter Loop Platform", onClick: handleAdvanceWorkflow },
     onboarding: { label: "Create Launch Workspace", onClick: handleAdvanceWorkflow },
-    productTruth: { label: "Move to Narrative", onClick: handleAdvanceWorkflow },
-    narrative: { label: "Move to GTM Readiness", onClick: handleAdvanceWorkflow },
-    competition: { label: "Move to GTM Readiness", onClick: () => { setWorkflowStage("narrative"); handleAdvanceWorkflow(); } },
+    productTruth: { label: "Move to Core Narrative", onClick: handleAdvanceWorkflow },
+    narrative: { label: "Move to GTM", onClick: handleAdvanceWorkflow },
+    competition: { label: "Move to GTM", onClick: () => { setWorkflowStage("narrative"); handleAdvanceWorkflow(); } },
     gtm: { label: "Generate GTM + Assets", onClick: handleAdvanceWorkflow },
     assets: { label: "Open Internal Feedback", onClick: handleAdvanceWorkflow },
     review: projectReview.required
@@ -10722,53 +10803,35 @@ If section is gtm return:
     complete: null,
   };
 
-  const workspacePrimaryAction = activeGroup === "Resources"
-    ? active === "assets"
-      ? {
-          label: "Save Resources",
-          onClick: () => {
-            saveWorkspace("Resources");
-            syncCurrentProjectSnapshot(true);
-            setPlatformNotice("Resources were saved.");
-          },
-        }
-      : workflowStage === "review"
-        ? { label: "Publish Version", onClick: handleAdvanceWorkflow }
-        : workflowStage === "launch"
-          ? { label: "Mark Launch Live", onClick: handleAdvanceWorkflow }
-          : workflowStage === "feedback"
-            ? {
-                label: "Generate Resources Report",
-                onClick: () => {
-                  downloadProjectReport();
-                  handleAdvanceWorkflow();
-                },
-              }
-            : { label: "Send for Review", onClick: requestProjectReview }
-    : { label: "Save & Continue", onClick: () => handleSaveWorkspaceAndAdvance(activeGroup || active) };
-
-  const workspaceMenuActions = [
-    { id: "saveProject", label: "Save Project", onClick: saveFullProject },
-    ...(activeGroup === "Resources"
-      ? [
-          { id: "downloadReport", label: "Download Report", onClick: downloadProjectReport },
-          { id: "sendReview", label: "Send Project for Review", onClick: requestProjectReview },
-          { id: "skipReview", label: "Mark Review Not Needed", onClick: skipProjectReview },
-          { id: "addFeedback", label: "Add Feedback", onClick: () => addFeedbackEntry("PMM") },
-        ]
-      : [
-          ...( ["Product Truth", "Narrative", "GTM Readiness", "Resources"].includes(activeGroup)
-            ? [{ id: "downloadSection", label: "Download Section", onClick: downloadCurrentWorkspace }]
-            : []),
-          ...(pd.previousVersionId ? [{ id: "downloadComparison", label: "Download Comparison", onClick: downloadVersionComparisonReport }] : []),
-          ...( ["Product Truth", "Narrative", "GTM Readiness"].includes(activeGroup)
-            ? [{
-                id: "improveNarrative",
-                label: narrativeUiState.improveMode ? "Exit Improve Mode" : "Improve Narrative",
-                onClick: () => setNarrativeUiState(prev => ({ ...prev, improveMode: !prev.improveMode })),
-              }]
-            : []),
-        ]),
+  const workspaceCanvasActions = [
+    {
+      id: "improve",
+      label: narrativeUiState.improveMode ? "Exit Improve" : "Improve",
+      onClick: () => setNarrativeUiState(prev => ({ ...prev, improveMode: !prev.improveMode })),
+      variant: "primary",
+    },
+    {
+      id: "feedback",
+      label: "Get Feedback",
+      onClick: () => {
+        const workspaceName = activeGroup || activeLabel || "Current canvas";
+        saveWorkspace(workspaceName);
+        syncCurrentProjectSnapshot(true);
+        requestProjectReview();
+      },
+      variant: "secondary",
+    },
+    {
+      id: "publish",
+      label: "Publish",
+      onClick: () => {
+        const workspaceName = activeGroup || activeLabel || "Current canvas";
+        saveWorkspace(workspaceName);
+        syncCurrentProjectSnapshot(true);
+        publishNarrativeVersion();
+      },
+      variant: "secondary",
+    },
   ];
 
   return (
@@ -10785,6 +10848,7 @@ If section is gtm return:
         <AiContextReviewPage
           productName={pd.name}
           context={aiDraft.context}
+          websiteContext={aiDraft.websiteContext}
           isLoading={narrativeUiState.isGenerating}
           onUpdateContext={updateAiContextField}
           onBack={() => {
@@ -11313,18 +11377,13 @@ If section is gtm return:
                       >
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                           <span>{tab}</span>
-                          {tab === "Resources" && resourcesNotificationCount > 0 && (
-                            <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: "#FFF7E8", color: "#D97706", fontSize: 10, fontWeight: 800, display: "grid", placeItems: "center", padding: "0 4px" }}>
-                              {resourcesNotificationCount}
-                            </span>
-                          )}
                         </span>
                       </button>
                     );
                   })}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 16, fontWeight: 700, color: S.text }}>{activeLabel}</span>
                     {!!itemNotificationCounts[active] && (
@@ -11333,58 +11392,37 @@ If section is gtm return:
                       </span>
                     )}
                   </div>
-                  <span style={{ fontSize: 18, color: S.light, cursor: "pointer" }}>···</span>
+                  <span style={{ fontSize: 12, color: S.muted, fontWeight: 700, textAlign: "right" }}>
+                    Improve, get feedback, or publish from this canvas.
+                  </span>
                 </div>
               </div>
               <div style={{ padding: "22px 20px 28px", minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
-                {narrativeUiState.isGenerated && !(activeWorkspace === "Resources" && active === "assets") && (
+                {narrativeUiState.isGenerated && (
                   <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "linear-gradient(135deg, #F8F6FF 0%, #F1EEFF 100%)", border: `1px solid ${P[200]}`, color: P[800], fontSize: 13, fontWeight: 700 }}>
-                    ✨ Draft generated — refine it, make it yours, then generate assets and feedback.
+                    Draft generated. Refine it, get feedback, and publish when the story feels right.
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16, alignItems: "center" }}>
-                  <button
-                    onClick={() => {
-                      setWorkspaceMenuOpen(false);
-                      workspacePrimaryAction.onClick();
-                    }}
-                    style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
-                  >
-                    {workspacePrimaryAction.label}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setWorkspaceMenuOpen(false);
-                      saveFullProject();
-                    }}
-                    style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                  >
-                    Save Project
-                  </button>
-                  <div style={{ position: "relative" }}>
+                  {workspaceCanvasActions.map(action => (
                     <button
-                      onClick={() => setWorkspaceMenuOpen(prev => !prev)}
-                      style={{ border: `1px solid ${S.border}`, background: "#FBFAFF", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                      key={action.id}
+                      onClick={action.onClick}
+                      style={{
+                        border: action.variant === "primary" ? "none" : `1px solid ${S.border}`,
+                        background: action.variant === "primary" ? P[600] : "white",
+                        color: action.variant === "primary" ? "white" : S.text,
+                        borderRadius: 12,
+                        padding: "11px 16px",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
                     >
-                      More
+                      {action.label}
                     </button>
-                    {workspaceMenuOpen && (
-                      <div style={{ position: "absolute", top: 50, left: 0, minWidth: 220, zIndex: 25, background: "white", border: `1px solid ${S.border}`, borderRadius: 16, boxShadow: "0 18px 36px rgba(83, 74, 183, 0.12)", padding: 8, display: "grid", gap: 6 }}>
-                        {workspaceMenuActions.map(action => (
-                          <button
-                            key={action.id}
-                            onClick={() => {
-                              setWorkspaceMenuOpen(false);
-                              action.onClick();
-                            }}
-                            style={{ textAlign: "left", border: "none", background: "transparent", color: S.text, borderRadius: 12, padding: "11px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                          >
-                            {action.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
                 <div style={{ minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
                   <WorkspaceAssetActionContext.Provider value={{ onGenerateAssetSuggestion: handleGenerateWorkspaceAssetSuggestion }}>

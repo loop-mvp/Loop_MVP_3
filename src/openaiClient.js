@@ -96,6 +96,23 @@ export async function generateOpenAiText(prompt) {
   return openAiRequest(prompt);
 }
 
+export async function analyzeWebsiteNarrative(url) {
+  const response = await fetch("/api/website-context", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(details || `Website analysis request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 export async function generateNarrativeInsights(context) {
   const prompt = `You are a B2B product marketing strategist. Analyze the following Loop project context and return ONLY valid JSON with this exact shape:
 {
