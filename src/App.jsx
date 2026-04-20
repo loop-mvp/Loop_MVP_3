@@ -3638,6 +3638,45 @@ function NarrativeGeneratingOverlay({ productName }) {
   );
 }
 
+function WorkspaceCategoryCanvas({
+  workspace,
+  category,
+  description,
+  sections,
+  improveMode = false,
+  enhancing = false,
+  onEnhance,
+  onFieldChange,
+  userEdits = {},
+}) {
+  return (
+    <SimplifiedSectionCard
+      title={`${workspace} / ${category}`}
+      description={description}
+      improveMode={improveMode}
+      enhancing={enhancing}
+      onEnhance={onEnhance}
+    >
+      {sections.map(section => (
+        <SmartInput
+          key={section.fieldKey}
+          label={section.label}
+          fieldKey={section.fieldKey}
+          aiValue={section.aiValue || ""}
+          userEdited={!!userEdits[section.fieldKey]}
+          value={section.value || ""}
+          onChange={value => onFieldChange(section.fieldKey, value)}
+          rows={section.rows || 4}
+          placeholder={section.placeholder}
+          helper={section.helper}
+          treatment={section.treatment || "draft"}
+          insightBullets={section.insightBullets || []}
+        />
+      ))}
+    </SimplifiedSectionCard>
+  );
+}
+
 function toSignalList(value) {
   if (Array.isArray(value)) return value.map(item => String(item || "").trim()).filter(Boolean);
   return String(value || "")
@@ -5342,22 +5381,82 @@ const MVP_NAV = [
   {
     group: "Product Truth",
     items: [
-      { id: "productTruth", label: "Product Truth", icon: "PT" },
+      { id: "context", label: "Context", icon: "CT" },
+      { id: "customer", label: "Customer", icon: "CU" },
+      { id: "product", label: "Product", icon: "PR" },
+      { id: "market", label: "Market", icon: "MK" },
     ],
   },
   {
     group: "Core Narrative",
     items: [
-      { id: "narrative", label: "Core Narrative", icon: "CN" },
+      { id: "positioning", label: "Positioning", icon: "PO" },
+      { id: "messaging", label: "Messaging", icon: "ME" },
+      { id: "value", label: "Value", icon: "VA" },
     ],
   },
   {
     group: "GTM",
     items: [
-      { id: "strategy", label: "GTM", icon: "GT" },
+      { id: "strategy", label: "Strategy", icon: "ST" },
+      { id: "story", label: "Story", icon: "SY" },
+      { id: "assets", label: "Assets", icon: "AS" },
     ],
   },
 ];
+
+const WORKSPACE_SECTION_GUIDANCE = {
+  context: {
+    summary: "Set the base frame for the product so the rest of the strategy starts from a clear, shared understanding.",
+    improveFocus: ["Define the product plainly", "Name the category clearly", "Avoid broad or vague framing"],
+    successSignal: "A teammate can quickly understand what the product is and where it fits.",
+  },
+  customer: {
+    summary: "Clarify who the story is for and what pain or trigger makes them care right now.",
+    improveFocus: ["Sharpen the audience", "Describe the problem precisely", "Connect pain to buying urgency"],
+    successSignal: "The team can point to a clear buyer and a specific problem worth solving.",
+  },
+  product: {
+    summary: "Explain how the solution works, what matters most in the product, and why the value is believable.",
+    improveFocus: ["Make the solution tangible", "Highlight the right features", "Tie features to value"],
+    successSignal: "The product story feels concrete, useful, and easy to defend.",
+  },
+  market: {
+    summary: "Position the product against alternatives so the market story feels distinctive instead of generic.",
+    improveFocus: ["Name the real alternatives", "Clarify the tradeoff", "State why this wins"],
+    successSignal: "The narrative makes a clear case for why this approach is different.",
+  },
+  positioning: {
+    summary: "Turn product truth into a sharp market position the team can repeat consistently.",
+    improveFocus: ["Tighten the statement", "Make the category useful", "Emphasize the differentiator"],
+    successSignal: "The positioning is crisp, repeatable, and easy to align around.",
+  },
+  messaging: {
+    summary: "Shape the key messages and tagline so the strongest ideas rise to the top.",
+    improveFocus: ["Elevate the main messages", "Reduce overlap", "Make the tagline memorable"],
+    successSignal: "The core message stack feels coherent and easy to carry across channels.",
+  },
+  value: {
+    summary: "Articulate the value proposition so the product promise lands quickly and credibly.",
+    improveFocus: ["State the outcome", "Keep it customer-centered", "Avoid abstract value claims"],
+    successSignal: "A buyer can quickly understand why the product matters to them.",
+  },
+  strategy: {
+    summary: "Define the GTM motion so the team knows how this narrative should move into market.",
+    improveFocus: ["Clarify the motion", "Name the first audience or wedge", "Keep the plan practical"],
+    successSignal: "The GTM direction feels specific enough to act on, not just discuss.",
+  },
+  story: {
+    summary: "Turn the strategy into a market-facing story the launch can actually carry.",
+    improveFocus: ["Shape the launch story", "Connect truth to narrative", "Keep the storyline focused"],
+    successSignal: "The market narrative feels launchable and consistent with the product truth.",
+  },
+  assets: {
+    summary: "List the practical assets the team should create so the narrative turns into execution.",
+    improveFocus: ["Prioritize the first asset set", "Map assets to the motion", "Keep the list realistic"],
+    successSignal: "The team leaves with a clear asset plan, not just ideas.",
+  },
+};
 
 const LEGACY_ACTIVE_SECTION_MAP = {
   feedback: "confidence",
@@ -5367,7 +5466,29 @@ const LEGACY_ACTIVE_SECTION_MAP = {
 };
 
 function normalizeWorkspaceActive(activeId) {
-  if (!activeId) return "productTruth";
+  const legacyMap = {
+    productTruth: "context",
+    productOverview: "context",
+    problemStatementSection: "customer",
+    audienceTruth: "customer",
+    solutionSection: "product",
+    featuresTruth: "product",
+    capabilitiesTruth: "product",
+    differentiationTruth: "market",
+    competitorsTruth: "market",
+    competitionOverview: "market",
+    competitionComparison: "market",
+    competitionSales: "market",
+    narrative: "positioning",
+    positioningStatementSection: "positioning",
+    messagingPillarsSection: "messaging",
+    headlineSection: "messaging",
+    taglineSection: "messaging",
+    valuePropSection: "value",
+    keyValueSection: "value",
+  };
+  if (!activeId) return "context";
+  if (legacyMap[activeId]) return legacyMap[activeId];
   if (LEGACY_ACTIVE_SECTION_MAP[activeId]) return LEGACY_ACTIVE_SECTION_MAP[activeId];
   return activeId;
 }
@@ -7329,8 +7450,11 @@ function InfoPage({ title, eyebrow, description }) {
 function WorkspaceAIPanel({
   collapsed,
   onToggle,
+  activeGroup,
   activeLabel,
+  activePath,
   activeSummary,
+  activeGuidance,
   aiTab,
   setAiTab,
   quickActions,
@@ -7347,6 +7471,11 @@ function WorkspaceAIPanel({
   showChat = true,
 }) {
   const [contextCollapsed, setContextCollapsed] = useState(false);
+  const resolvedGuidance = activeGuidance || {
+    summary: "Select a section to see AI guidance, review flags, and suggested updates.",
+    improveFocus: [],
+    successSignal: "Loop will highlight what to strengthen once a section is active.",
+  };
   const tabs = [
     { id: "changes", label: "Changes", count: reviewItems.length },
     { id: "review", label: "Review", count: reviewItems.filter(item => item.severity === "review").length },
@@ -7449,7 +7578,7 @@ function WorkspaceAIPanel({
         <div style={{ padding: "18px 18px 16px", borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBFF 100%)" }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: P[900] }}>AI Assistant</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: S.muted }}>Selection-aware guidance for the current workspace.</div>
+            <div style={{ marginTop: 4, fontSize: 12, color: S.muted }}>{activePath || "Selection-aware guidance for the current workspace."}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: P[50], color: P[600], fontSize: 12, fontWeight: 700 }}>
@@ -7524,8 +7653,32 @@ function WorkspaceAIPanel({
               <div style={{ padding: 16, display: "grid", gap: 14, maxHeight: "38vh", overflowY: "auto" }}>
                 <div style={{ padding: "14px 14px", borderRadius: 16, background: "linear-gradient(135deg, #F7F4FF 0%, #FFF9FC 100%)", border: `1px solid ${S.border}` }}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Current Focus</div>
-                  <div style={{ marginTop: 8, fontSize: 16, fontWeight: 700, color: P[900] }}>{activeLabel}</div>
-                  <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.6, color: S.muted }}>{activeSummary || "Select a section to see AI guidance, review flags, and suggested updates."}</div>
+                  <div style={{ marginTop: 8, fontSize: 16, fontWeight: 700, color: P[900] }}>{activePath || activeLabel}</div>
+                  {activeGroup && (
+                    <div style={{ marginTop: 6, fontSize: 11, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                      {activeGroup}
+                    </div>
+                  )}
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: S.muted }}>{resolvedGuidance.summary}</div>
+                  {!!activeSummary && (
+                    <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 14, background: "rgba(255,255,255,0.72)", border: `1px solid ${S.border}`, fontSize: 12, lineHeight: 1.6, color: S.text }}>
+                      <span style={{ fontWeight: 700, color: P[700] }}>Current draft:</span> {activeSummary}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ padding: "14px 14px", borderRadius: 16, background: "white", border: `1px solid ${S.border}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>What strong work looks like</div>
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.65, color: S.text }}>{resolvedGuidance.successSignal}</div>
+                  {!!resolvedGuidance.improveFocus?.length && (
+                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {resolvedGuidance.improveFocus.map(item => (
+                        <span key={item} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 999, background: P[50], border: `1px solid ${S.border}`, color: P[700], fontSize: 11, fontWeight: 800 }}>
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ padding: "14px 14px", borderRadius: 16, background: "white", border: `1px solid ${S.border}` }}>
@@ -8112,7 +8265,7 @@ export default function App() {
   const deletedBrokenProjectsRef = useRef(new Set());
   const [screen, setScreen] = useState("home");
   const [platformMode, setPlatformMode] = useState("original");
-  const [active, setActive] = useState("productTruth");
+  const [active, setActive] = useState("context");
   const [workflowStage, setWorkflowStage] = useState("login");
   const [workflowEvents, setWorkflowEvents] = useState([]);
   const [launchComplete, setLaunchComplete] = useState(false);
@@ -8369,6 +8522,10 @@ export default function App() {
 
   const previewMap = {
     productTruth: [safePd.problem, safePd.solution, safeComp.differentiators].filter(Boolean).join(" | "),
+    context: [safePd.whatItDoes || safePd.description, safePd.category].filter(Boolean).join(" | "),
+    customer: [safePd.audience || safeStrat.icp, safePd.problem || safePd.problemStatement].filter(Boolean).join(" | "),
+    product: [safePd.solution, safeCap.features, safePos.valueProp].filter(Boolean).join(" | "),
+    market: [safeComp.competitors, safePd.diff || safeComp.differentiators].filter(Boolean).join(" | "),
     productOverview: [safePd.category, safePd.whatItDoes, safePd.builtFor].filter(Boolean).join(" | "),
     problemStatementSection: [safePd.problem, safePd.problemImpact, safePd.currentSolutionGaps].filter(Boolean).join(" | "),
     solutionSection: [safePd.solution, safePd.solutionMechanism, safePd.whyNow].filter(Boolean).join(" | "),
@@ -8379,6 +8536,9 @@ export default function App() {
     competitorsTruth: [safeComp.competitors, safeComp.winLose].filter(Boolean).join(" | "),
     addSection: "Upgrade to unlock Proof Points, Integrations, and Competitive Comparison.",
     narrative: [safePos.statement, safeMsg.headline, safeAud.primary].filter(Boolean).join(" | "),
+    positioning: [safePos.statement, safePd.category].filter(Boolean).join(" | "),
+    messaging: [safeMsg.pillars, safePos.tagline].filter(Boolean).join(" | "),
+    value: safePos.valueProp,
     positioningStatementSection: safePos.statement,
     valuePropSection: [safePos.valueProp, safePos.keyValue].filter(Boolean).join(" | "),
     headlineSection: safeMsg.headline,
@@ -8393,12 +8553,12 @@ export default function App() {
     competitionOverview: [safeComp.competitors, safeComp.alternativeGaps].filter(Boolean).join(" | "),
     competitionComparison: [safeComp.alternativeGaps, safeComp.proofMetrics].filter(Boolean).join(" | "),
     competitionSales: [comp.differentiators, comp.winLose].filter(Boolean).join(" | "),
-    strategy: strat.goal,
-    story: story.origin,
+    strategy: safeStrat.goal,
+    story: safeStory.origin,
     reviewCenter: projectReview.lastAction || "Review the full project before launch.",
     analytics: feedbackSignals[1]?.text || safeAnalytics.signals[0]?.note,
     confidence: safeConfidence.decisionNotes || safeConfidence.factors[0]?.note,
-    assets: assets.notes,
+    assets: safeAssets.notes,
   };
   const sectionLabels = { productTruth: "Product Truth", narrative: "Core Narrative", ...Object.fromEntries(MVP_NAV.flatMap(group => group.items).map(item => [item.id, item.label])) };
   const rawReviewItems = [
@@ -8466,6 +8626,220 @@ export default function App() {
   const compressedCenterTables = showDesktopAiRail && !aiRailCollapsed && !leftRailCollapsed;
 
   const panelMap = {
+    context: <WorkspaceCategoryCanvas
+      workspace="Product Truth"
+      category="Context"
+      description="Capture the essential product context before the deeper narrative work starts."
+      sections={[
+        {
+          label: "Product Overview",
+          fieldKey: "productTruth.overview",
+          aiValue: aiDraft.sourceSummary || safePd.description || "",
+          value: safePd.whatItDoes || "",
+          rows: 5,
+          placeholder: "Describe what the product is, what it does, and why it matters in plain language.",
+          helper: "Set the foundation of the product story without drifting into messaging or GTM yet.",
+        },
+        {
+          label: "Category",
+          fieldKey: "productTruth.category",
+          aiValue: aiDraft.context.productCategory || "",
+          value: safePd.category || "",
+          rows: 3,
+          placeholder: "Name the clearest category this product belongs to so the rest of the narrative has the right frame.",
+          helper: "This category should help buyers orient quickly, not create confusion.",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "productTruth"}
+      onEnhance={() => handleEnhanceSection("productTruth")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
+    customer: <WorkspaceCategoryCanvas
+      workspace="Product Truth"
+      category="Customer"
+      description="Clarify who this is for and what core pain or pressure makes the product relevant."
+      sections={[
+        {
+          label: "Audience",
+          fieldKey: "productTruth.audience",
+          aiValue: aiDraft.productTruth.icp || aiDraft.context.targetAudience || "",
+          value: safePd.audience || "",
+          rows: 4,
+          placeholder: "Describe the primary audience, buyer, or team this product is built for.",
+          helper: "Be specific about who feels the problem most and why they are the right ICP.",
+        },
+        {
+          label: "Problem",
+          fieldKey: "productTruth.problem",
+          aiValue: aiDraft.productTruth.problem || "",
+          value: safePd.problem || "",
+          rows: 5,
+          placeholder: "Describe the core problem, friction, or unmet need this audience is dealing with.",
+          helper: "Focus on the real pain or constraint, not the product pitch.",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "productTruth"}
+      onEnhance={() => handleEnhanceSection("productTruth")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
+    product: <WorkspaceCategoryCanvas
+      workspace="Product Truth"
+      category="Product"
+      description="Explain how the product solves the problem, what capabilities matter most, and what value it creates."
+      sections={[
+        {
+          label: "Solution",
+          fieldKey: "productTruth.solution",
+          aiValue: aiDraft.productTruth.solution || "",
+          value: safePd.solution || "",
+          rows: 5,
+          placeholder: "Describe how the product solves the problem in a clear and believable way.",
+          helper: "Keep this grounded in what the product actually enables or changes for the customer.",
+        },
+        {
+          label: "Features",
+          fieldKey: "productTruth.features",
+          aiValue: safeCap.features || "",
+          value: safeCap.features || "",
+          rows: 4,
+          placeholder: "List the capabilities or functional strengths that make the solution real.",
+          helper: "These should support the solution, not read like a feature dump.",
+          treatment: "ghost",
+        },
+        {
+          label: "Value",
+          fieldKey: "productTruth.value",
+          aiValue: aiDraft.productTruth.value || aiDraft.narrative.valueProposition || "",
+          value: safePos.valueProp || "",
+          rows: 4,
+          placeholder: "Explain the strongest user or business value this product creates.",
+          helper: "This is the product-level value before it becomes polished Core Narrative language.",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "productTruth"}
+      onEnhance={() => handleEnhanceSection("productTruth")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
+    market: <WorkspaceCategoryCanvas
+      workspace="Product Truth"
+      category="Market"
+      description="Capture the alternatives buyers compare against and how this product should stand apart."
+      sections={[
+        {
+          label: "Alternatives",
+          fieldKey: "productTruth.alternatives",
+          aiValue: safeComp.competitors || "",
+          value: safeComp.competitors || "",
+          rows: 4,
+          placeholder: "List the alternatives, incumbent tools, or workarounds buyers are comparing this against.",
+          helper: "Think beyond named competitors if the real competition is status quo or internal effort.",
+          treatment: "ghost",
+        },
+        {
+          label: "Differentiation",
+          fieldKey: "productTruth.differentiation",
+          aiValue: aiDraft.productTruth.differentiation || "",
+          value: safePd.diff || "",
+          rows: 4,
+          placeholder: "Explain why this product should win versus those alternatives.",
+          helper: "Name the strongest difference that matters to the buyer, not just the team.",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "productTruth"}
+      onEnhance={() => handleEnhanceSection("productTruth")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
+    positioning: <WorkspaceCategoryCanvas
+      workspace="Core Narrative"
+      category="Positioning"
+      description="Turn Product Truth into the strategic market framing Loop wants the user to build from."
+      sections={[
+        {
+          label: "Positioning Statement",
+          fieldKey: "narrative.positioningStatement",
+          aiValue: aiDraft.narrative.positioning || "",
+          value: safePos.statement || "",
+          rows: 5,
+          placeholder: "Write the clearest positioning statement for who this is for, what category it fits, and why it wins.",
+          helper: "This should connect audience, category, and differentiated value in one coherent statement.",
+        },
+        {
+          label: "Category",
+          fieldKey: "narrative.category",
+          aiValue: aiDraft.context.productCategory || "",
+          value: safePd.category || "",
+          rows: 3,
+          placeholder: "Name the category framing that supports this positioning most clearly.",
+          helper: "Use category language that helps buyers orient fast and believe the claim.",
+          treatment: "ghost",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "narrative"}
+      onEnhance={() => handleEnhanceSection("narrative")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
+    messaging: <WorkspaceCategoryCanvas
+      workspace="Core Narrative"
+      category="Messaging"
+      description="Shape the message architecture that will carry the positioning into the market."
+      sections={[
+        {
+          label: "Key Messages",
+          fieldKey: "narrative.keyMessages",
+          aiValue: aiDraft.narrative.messaging || normalizeDraftText(aiDraft.narrative.topMessages) || "",
+          value: safeMsg.pillars || "",
+          rows: 5,
+          placeholder: "List the most important messages the market should remember, repeat, and believe.",
+          helper: "These messages should support the positioning and create a consistent story across channels.",
+        },
+        {
+          label: "Tagline",
+          fieldKey: "narrative.tagline",
+          aiValue: safePos.tagline || "",
+          value: safePos.tagline || "",
+          rows: 3,
+          placeholder: "Optional: add a short tagline that makes the narrative more memorable and ownable.",
+          helper: "Only keep a tagline if it sharpens recall and does not oversimplify the story.",
+          treatment: "ghost",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "narrative"}
+      onEnhance={() => handleEnhanceSection("narrative")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
+    value: <WorkspaceCategoryCanvas
+      workspace="Core Narrative"
+      category="Value"
+      description="Capture the most important value proposition the market should understand and repeat."
+      sections={[
+        {
+          label: "Value Proposition",
+          fieldKey: "narrative.valueProposition",
+          aiValue: aiDraft.narrative.valueProposition || aiDraft.productTruth.value || "",
+          value: safePos.valueProp || "",
+          rows: 5,
+          placeholder: "Summarize the clearest buyer value or business outcome the product delivers.",
+          helper: "This is the strategic value claim that should power messaging, GTM, and assets.",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "narrative"}
+      onEnhance={() => handleEnhanceSection("narrative")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
     productTruth: <BuildNarrativeWorkspacePanel section="productTruth" pd={pd} cap={cap} comp={comp} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
     productOverview: <ProductOverviewSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={productOverviewLayout} setLayout={setProductOverviewLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="productOverview" />,
     problemStatementSection: <ProblemStatementSectionPanel d={pd} set={setPd} compact={!useCanvasColumns} layout={problemStatementLayout} setLayout={setProblemStatementLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="problemStatementSection" />,
@@ -8488,8 +8862,48 @@ export default function App() {
     secondaryPersonaSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={secondaryPersonaLayout} setLayout={setSecondaryPersonaLayout} minHeight={300} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="secondaryPersonaSection" tile={{ id: "secondary", title: "Secondary Persona", render: tile => <CanvasField label="Secondary Persona" value={safeAud.secondary} onChange={value => setAud(prev => ({ ...prev, secondary: value }))} placeholder="Additional buyer or influencer persona..." rows={4} minHeight={Math.max(130, (tile?.h || 130) - 34)} accent="#F8F7FF" /> }} suggestions={[{ type: "section", icon: "⊙", title: "Primary Persona", description: "Clarify how this persona differs from the primary audience." }, { type: "section", icon: "◫", title: "Objection Handling", description: "Capture concerns this persona is likely to raise." }, { type: "asset", icon: "▤", title: "Influencer Brief", description: "Generate a short brief on how to message to this persona." }]} />,
     buyerPersonaSection: <SingleNarrativeSectionPanel compact={!useCanvasColumns} layout={buyerPersonaLayout} setLayout={setBuyerPersonaLayout} minHeight={340} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="buyerPersonaSection" tile={{ id: "persona", title: "Detailed Buyer Persona", render: () => <GenBlock label="Detailed Buyer Persona" prompt={pd.audience ? `Create a buyer persona for: ${pd.audience}. Include: name/title, day-in-the-life challenge, what they care about (3 things), key objections, how they discover tools.` : ""} /> }} suggestions={[{ type: "section", icon: "▦", title: "Messaging Pillars", description: "Translate persona detail into stronger message framing." }, { type: "section", icon: "◫", title: "Sales Enablement Brief", description: "Give sales a more usable understanding of this buyer." }, { type: "asset", icon: "▣", title: "Buyer Persona Card", description: "Generate a polished buyer persona summary asset." }]} />,
     addNarrativeSection: <NarrativeAddSectionPanel />,
-    strategy: <BuildNarrativeWorkspacePanel section="gtm" pd={pd} cap={cap} comp={comp} pos={pos} msg={msg} strat={strat} aiDraft={aiDraft} userEdits={userEdits} improveMode={narrativeUiState.improveMode} enhancingSection={narrativeUiState.enhancingSection} onEnhanceSection={handleEnhanceSection} onFieldChange={updateNarrativeField} />,
-    story: <StoryPanel d={safeStory} set={setStory} pd={pd} compact={!useCanvasColumns} layout={storyLayout} setLayout={setStoryLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="story" />,
+    strategy: <WorkspaceCategoryCanvas
+      workspace="GTM"
+      category="Strategy"
+      description="Define the primary go-to-market motion this narrative should support first."
+      sections={[
+        {
+          label: "GTM Motion",
+          fieldKey: "gtm.motion",
+          aiValue: aiDraft.gtm.strategy || "",
+          value: safeStrat.goal || "",
+          rows: 5,
+          placeholder: "Describe the first GTM motion, objective, or launch approach this narrative needs to power.",
+          helper: "Keep the focus on the first motion that matters most for this version of the product.",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "gtm"}
+      onEnhance={() => handleEnhanceSection("gtm")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
+    story: <WorkspaceCategoryCanvas
+      workspace="GTM"
+      category="Story"
+      description="Translate the narrative into the market-facing story the launch motion should carry."
+      sections={[
+        {
+          label: "Market Narrative",
+          fieldKey: "gtm.marketNarrative",
+          aiValue: aiDraft.gtm.launchApproach || "",
+          value: safeStory.origin || "",
+          rows: 5,
+          placeholder: "Describe the market-facing story or launch narrative you want this GTM motion to tell.",
+          helper: "This should connect why now, why this audience, and why the story deserves attention.",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "gtm"}
+      onEnhance={() => handleEnhanceSection("gtm")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
     alignment: <AlignmentPanel d={{
       ...feedbackDashboardData,
       reviewItems: rawReviewItems,
@@ -8507,25 +8921,41 @@ export default function App() {
     competitionComparison: <CompetitionComparisonPanel comp={comp} setComp={setComp} compact={!useCanvasColumns} layout={competitionComparisonLayout} setLayout={setCompetitionComparisonLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitionComparison" />,
     competitionSales: <CompetitionSalesPanel comp={comp} setComp={setComp} compact={!useCanvasColumns} layout={competitionSalesLayout} setLayout={setCompetitionSalesLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitionSales" />,
     reviewCenter: <ProjectReviewCenter reviewState={projectReview.status} reviewTeams={projectReview.teams} reviewSections={reviewSections} reviewRouting={currentReviewRouting} assignedSections={assignedReviewSections} sectionReviews={currentSectionReviews} reviewInsights={reviewInsights} confidenceScore={feedbackConfidenceScore} reviewAnalytics={reviewAnalytics} pmmActionQueue={pmmActionQueue} onAssignTeam={assignSectionToReviewTeam} onUpdateScore={updateSectionReviewScore} onUpdateComment={updateSectionReviewComment} onChooseImprove={markSectionReviewForImprove} onChooseApprove={approveSectionReview} onSubmitFeedback={submitCurrentTeamReview} onSendReview={sendReviewRouting} feedbackCount={feedbackEntries.length} compactView={compressedCenterTables} />,
-    assets: <AssetsPanel d={assets} set={setAssets} pd={pd} msg={msg} strat={strat} aiDraft={aiDraft} compactView={compressedCenterTables} />,
+    assets: <WorkspaceCategoryCanvas
+      workspace="GTM"
+      category="Assets"
+      description="Track the asset list or planning notes that should come out of the GTM strategy and market story."
+      sections={[
+        {
+          label: "Asset List",
+          fieldKey: "gtm.assetList",
+          aiValue: [
+            aiDraft.assets.headline ? `Headline: ${aiDraft.assets.headline}` : "",
+            aiDraft.assets.elevatorPitch ? `Elevator Pitch: ${aiDraft.assets.elevatorPitch}` : "",
+            aiDraft.assets.emailPitch ? `Email Pitch: ${aiDraft.assets.emailPitch}` : "",
+            aiDraft.assets.messagingAsset ? `Messaging Asset: ${aiDraft.assets.messagingAsset}` : "",
+          ].filter(Boolean).join("\n"),
+          value: safeAssets.notes || "",
+          rows: 6,
+          placeholder: "List the core launch or GTM assets the team should create from this narrative.",
+          helper: "Use this as a practical planning canvas for the first asset set, not a final asset table.",
+          treatment: "ghost",
+        },
+      ]}
+      improveMode={narrativeUiState.improveMode}
+      enhancing={narrativeUiState.enhancingSection === "gtm"}
+      onEnhance={() => handleEnhanceSection("gtm")}
+      onFieldChange={updateNarrativeField}
+      userEdits={userEdits}
+    />,
   };
 
-  const groupOverviewMap = {
-    "Product Truth": "productTruth",
-    "Core Narrative": "narrative",
-    Competition: "competitionOverview",
-    GTM: "strategy",
-    Resources: "assets",
-  };
+  const groupOverviewMap = {};
   const activeGroup = Object.entries(groupOverviewMap).find(([, id]) => id === active)?.[0] || MVP_NAV.find(g => g.items.some(i => i.id === active))?.group || "";
-  const activeLabel =
-    active === "productTruth"
-      ? "Product Truth"
-      : active === "narrative"
-        ? "Core Narrative"
-        : active === "strategy"
-          ? "GTM"
-        : MVP_NAV.flatMap(g => g.items).find(i => i.id === active)?.label || "";
+  const activeItem = MVP_NAV.flatMap(g => g.items).find(i => i.id === active) || null;
+  const activeLabel = activeItem?.label || "";
+  const activePath = activeGroup && activeLabel ? `${activeGroup} / ${activeLabel}` : activeLabel || activeGroup || "Workspace";
+  const activeGuidance = WORKSPACE_SECTION_GUIDANCE[active] || null;
   const activeSummary = previewMap[active];
   const quickActions = [
     { id: "summarize", label: `Summarize ${activeLabel}` },
@@ -9068,7 +9498,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
     }));
     setProjectReview(prev => ({ ...prev, status: "Draft", lastAction: "AI narrative draft generated" }));
     setWorkflowStage("productTruth");
-    setActive("productTruth");
+    setActive("context");
     setScreen("workspace");
     setNarrativeUiState({
       isGenerated: true,
@@ -9159,7 +9589,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
           isGenerating: false,
           enhancingSection: "",
         },
-        active: "productTruth",
+        active: "context",
         workflowStage: "productTruth",
         launchComplete: false,
         feedbackCaptured: false,
@@ -9216,7 +9646,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
     setCurrentTestProjectId(nextProjectId);
     setUserEdits({});
     setWorkflowStage("productTruth");
-    setActive("productTruth");
+    setActive("context");
     setScreen("contextReview");
     setTestScenarioLoaded(false);
     setPd(prev => ({
@@ -9273,7 +9703,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
           isGenerating: true,
           enhancingSection: "",
         },
-        active: "productTruth",
+        active: "context",
         workflowStage: "productTruth",
         launchComplete: false,
         feedbackCaptured: false,
@@ -9577,7 +10007,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
         userEdits: {},
         narrativeUiState: nextNarrativeUiState,
         projectReview: nextProjectReview,
-        active: "productTruth",
+        active: "context",
         workflowStage: "productTruth",
       },
     };
@@ -9589,7 +10019,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
     setProjectReview(nextProjectReview);
     setNarrativeUiState(nextNarrativeUiState);
     setWorkflowStage("productTruth");
-    setActive("productTruth");
+    setActive("context");
     setVersionDraft({ sourceProjectId: "", mode: "minor" });
     setScreen("workspace");
     setTestProjects(prev => mergeProjectsById(prev, [projectSnapshot]));
@@ -9625,6 +10055,15 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
       setPd(prev => ({ ...prev, whatItDoes: value }));
       return;
     }
+    if (fieldKey === "productTruth.category" || fieldKey === "narrative.category") {
+      setPd(prev => ({ ...prev, category: value }));
+      return;
+    }
+    if (fieldKey === "productTruth.audience" || fieldKey === "productTruth.icp") {
+      setPd(prev => ({ ...prev, audience: value }));
+      setStrat(prev => ({ ...prev, icp: value }));
+      return;
+    }
     if (fieldKey === "productTruth.problem") {
       setPd(prev => ({ ...prev, problem: value, problemStatement: value }));
       return;
@@ -9633,13 +10072,24 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
       setPd(prev => ({ ...prev, solution: value }));
       return;
     }
-    if (fieldKey === "productTruth.icp") {
-      setPd(prev => ({ ...prev, audience: value }));
-      setStrat(prev => ({ ...prev, icp: value }));
+    if (fieldKey === "productTruth.features") {
+      setCap(prev => ({ ...prev, features: value }));
+      return;
+    }
+    if (fieldKey === "productTruth.value") {
+      setPos(prev => ({ ...prev, valueProp: value }));
+      return;
+    }
+    if (fieldKey === "productTruth.alternatives") {
+      setComp(prev => ({ ...prev, competitors: value }));
       return;
     }
     if (fieldKey === "productTruth.differentiation") {
       setPd(prev => ({ ...prev, diff: value }));
+      return;
+    }
+    if (fieldKey === "narrative.positioningStatement" || fieldKey === "narrative.positioning") {
+      setPos(prev => ({ ...prev, statement: value }));
       return;
     }
     if (fieldKey === "narrative.positioning") {
@@ -9648,6 +10098,14 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
     }
     if (fieldKey === "narrative.valueProposition") {
       setPos(prev => ({ ...prev, valueProp: value }));
+      return;
+    }
+    if (fieldKey === "narrative.keyMessages" || fieldKey === "narrative.messaging") {
+      setMsg(prev => ({ ...prev, pillars: value }));
+      return;
+    }
+    if (fieldKey === "narrative.tagline") {
+      setPos(prev => ({ ...prev, tagline: value }));
       return;
     }
     if (fieldKey === "narrative.messaging") {
@@ -9664,6 +10122,18 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
     }
     if (fieldKey === "gtm.strategy") {
       setStrat(prev => ({ ...prev, goal: value }));
+      return;
+    }
+    if (fieldKey === "gtm.motion") {
+      setStrat(prev => ({ ...prev, goal: value }));
+      return;
+    }
+    if (fieldKey === "gtm.marketNarrative") {
+      setStory(prev => ({ ...prev, origin: value }));
+      return;
+    }
+    if (fieldKey === "gtm.assetList") {
+      setAssets(prev => ({ ...prev, notes: value }));
       return;
     }
     if (fieldKey === "gtm.channels") {
@@ -9738,6 +10208,85 @@ If section is gtm return:
     if (firstItem) {
       setActive(firstItem.id);
     }
+  }
+
+  function renderSidebarGroup({ group, icon, items }) {
+    return (
+      <div key={group} style={{ padding: "0 10px 10px" }}>
+        <button
+          onClick={() => {
+            if (groupOverviewMap[group]) {
+              setActive(groupOverviewMap[group]);
+              return;
+            }
+            setCollapsed(c => ({ ...c, [group]: !c[group] }));
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: "11px 14px",
+            background: activeGroup === group ? "linear-gradient(180deg, #F4F0FF 0%, #EEE8FF 100%)" : "transparent",
+            border: activeGroup === group ? `1px solid ${P[200]}` : "1px solid transparent",
+            borderRadius: 16,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            boxShadow: activeGroup === group ? "0 10px 24px rgba(83, 74, 183, 0.07)" : "none",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+            <span style={{ width: 24, height: 24, borderRadius: 999, display: "grid", placeItems: "center", background: activeGroup === group ? "rgba(255,255,255,0.9)" : "transparent", fontSize: 11, color: activeGroup === group ? P[600] : P[400], fontWeight: 800 }}>
+              {icon}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: activeGroup === group ? P[800] : S.text }}>{group}</span>
+          </div>
+          {!groupOverviewMap[group] && (
+            <span style={{ fontSize: 10, color: S.muted, transform: collapsed[group] ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>â–¾</span>
+          )}
+        </button>
+
+        {(groupOverviewMap[group] || !collapsed[group]) && (
+          <div style={{ margin: "6px 0 0 22px", paddingLeft: 12, borderLeft: `1px solid ${P[100]}`, display: "grid", gap: 4 }}>
+            {items.map(item => (
+              <button
+                key={item.id}
+                title={item.label}
+                onClick={() => setActive(item.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: active === item.id ? "rgba(147, 120, 255, 0.12)" : "transparent",
+                  border: "none",
+                  borderRadius: 14,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  justifyContent: "flex-start",
+                  textAlign: "left",
+                  position: "relative",
+                }}
+              >
+                <span style={{ position: "absolute", left: -19, width: 8, height: 8, borderRadius: 999, background: active === item.id ? P[500] : "#D8D1F6", boxShadow: active === item.id ? `0 0 0 4px ${P[100]}` : "none" }} />
+                <span style={{ width: 22, height: 22, borderRadius: 999, display: "grid", placeItems: "center", background: active === item.id ? "rgba(255,255,255,0.92)" : "transparent", fontSize: 10, color: active === item.id ? P[600] : S.light, fontWeight: 800 }}>
+                  {item.icon}
+                </span>
+                <span style={{ fontSize: 13, color: active === item.id ? P[800] : S.muted, fontWeight: active === item.id ? 700 : 500, textAlign: "left" }}>
+                  {item.label}
+                </span>
+                {!!itemNotificationCounts[item.id] && (
+                  <span style={{ marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 999, background: "#FFF7E8", color: "#D97706", fontSize: 10, fontWeight: 800, display: "grid", placeItems: "center" }}>
+                    {itemNotificationCounts[item.id]}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   function buildTestProjectSnapshot(projectId = currentTestProjectId || `test-${Date.now()}`) {
@@ -9838,7 +10387,7 @@ If section is gtm return:
       updatedAt: "",
     });
     setFeedbackEntries(s.feedbackEntries || []);
-    setActive(normalizeWorkspaceActive(s.active || "productTruth"));
+    setActive(normalizeWorkspaceActive(s.active || "context"));
     setWorkflowStage(normalizeWorkflowStage(s.workflowStage || "productTruth"));
     setLaunchComplete(!!s.launchComplete);
     setFeedbackCaptured(!!s.feedbackCaptured);
@@ -9880,7 +10429,7 @@ If section is gtm return:
 
     setPlatformMode("test");
     setScreen("workspace");
-    setActive("productTruth");
+    setActive("context");
     setWorkflowStage("productTruth");
     setLaunchComplete(false);
     setFeedbackCaptured(false);
@@ -10630,7 +11179,7 @@ If section is gtm return:
   function handleOpenLoopPlatform() {
     setPlatformMode("original");
     setScreen("workspace");
-    setActive("productTruth");
+    setActive("context");
   }
 
   async function createMinorVersionFromSource() {
@@ -10665,7 +11214,7 @@ If section is gtm return:
         status: "Draft",
         lastAction: "Minor version created from previous narrative",
       },
-      active: "productTruth",
+      active: "context",
       workflowStage: "productTruth",
       launchComplete: false,
       feedbackCaptured: false,
@@ -10923,7 +11472,7 @@ If section is gtm return:
     seedProductTruth(false);
     setScreen("workspace");
     setWorkflowStage("productTruth");
-    setActive("productTruth");
+    setActive("context");
     setLaunchComplete(false);
     setFeedbackCaptured(false);
     logWorkflowEvent("Launch workspace created", "Loop created a starter workspace with product context, timeline, and recommended next steps.");
@@ -11409,7 +11958,8 @@ If section is gtm return:
               <div style={{ padding: "14px 18px 8px" }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: S.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>Workspace</span>
               </div>
-              {sidebarGroups.map(({ group, icon, items }) => (
+              {sidebarGroups.map(renderSidebarGroup)}
+              {false && sidebarGroups.map(({ group, icon, items }) => (
                 <div key={group}>
                   <button onClick={() => {
                     if (groupOverviewMap[group]) {
@@ -11431,7 +11981,7 @@ If section is gtm return:
                   {(groupOverviewMap[group] || !collapsed[group]) && items.map(item => (
                     <button key={item.id} title={item.label} onClick={() => setActive(item.id)} style={{
                       display: "flex", alignItems: "center", gap: 8,
-                      width: "100%", padding: groupOverviewMap[group] ? "8px 18px 8px 42px" : "8px 18px 8px 30px",
+                      width: "100%", padding: groupOverviewMap[group] ? "8px 18px 8px 42px" : "8px 18px 8px 42px",
                       background: active === item.id ? P[200] + "88" : "transparent",
                       border: "none", cursor: "pointer", fontFamily: "inherit",
                       borderLeft: active === item.id ? `3px solid ${P[600]}` : "3px solid transparent",
@@ -11507,7 +12057,8 @@ If section is gtm return:
               </div>
 
               <div style={{ overflowY: "auto", paddingBottom: 16 }}>
-                {sidebarGroups.map(({ group, icon, items }) => (
+                {sidebarGroups.map(renderSidebarGroup)}
+                {false && sidebarGroups.map(({ group, icon, items }) => (
                   <div key={group}>
                     <button onClick={() => {
                       if (groupOverviewMap[group]) {
@@ -11529,7 +12080,7 @@ If section is gtm return:
                     {(groupOverviewMap[group] || !collapsed[group]) && items.map(item => (
                       <button key={item.id} title={item.label} onClick={() => setActive(item.id)} style={{
                         display: "flex", alignItems: "center", gap: 8,
-                        width: "100%", padding: groupOverviewMap[group] ? "8px 18px 8px 42px" : "8px 18px 8px 30px",
+                        width: "100%", padding: groupOverviewMap[group] ? "8px 18px 8px 42px" : "8px 18px 8px 42px",
                         background: active === item.id ? P[200] + "88" : "transparent",
                         border: "none", cursor: "pointer", fontFamily: "inherit",
                         borderLeft: active === item.id ? `3px solid ${P[600]}` : "3px solid transparent",
@@ -11662,8 +12213,11 @@ If section is gtm return:
               <WorkspaceAIPanel
                 collapsed={false}
                 onToggle={() => setAiOpen(v => !v)}
+                activeGroup={activeGroup}
                 activeLabel={activeLabel}
+                activePath={activePath}
                 activeSummary={activeSummary}
+                activeGuidance={activeGuidance}
                 aiTab={aiTab}
                 setAiTab={setAiTab}
                 quickActions={quickActions}
@@ -11690,8 +12244,11 @@ If section is gtm return:
             <WorkspaceAIPanel
               collapsed={aiRailCollapsed}
               onToggle={() => setAiRailCollapsed(v => !v)}
+              activeGroup={activeGroup}
               activeLabel={activeLabel}
+              activePath={activePath}
               activeSummary={activeSummary}
+              activeGuidance={activeGuidance}
               aiTab={aiTab}
               setAiTab={setAiTab}
               quickActions={quickActions}
