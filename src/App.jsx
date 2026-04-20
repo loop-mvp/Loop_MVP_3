@@ -7480,6 +7480,13 @@ function WorkspaceAIPanel({
     { id: "changes", label: "Changes", count: reviewItems.length },
     { id: "review", label: "Review", count: reviewItems.filter(item => item.severity === "review").length },
   ];
+  const reviewOnlyItems = reviewItems.filter(item => item.severity === "review");
+  const activeDraftSummary = typeof activeSummary === "string" ? activeSummary.trim() : activeSummary;
+  const railSummaryStats = [
+    { label: "Open", value: reviewItems.length, tone: "neutral" },
+    { label: "Review", value: reviewOnlyItems.length, tone: "warning" },
+    { label: "Actions", value: quickActions.length, tone: "accent" },
+  ];
   const panelBodyPadding = chatDocked ? 16 : 0;
   const conversationCard = (
     <div
@@ -7553,7 +7560,7 @@ function WorkspaceAIPanel({
 
   if (collapsed) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, height: "100%", padding: "18px 10px", background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBFF 100%)", borderLeft: `1px solid ${S.border}` }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, height: "100%", padding: "16px 10px", background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBFF 100%)" }}>
         <button
           onClick={onToggle}
           aria-label="Expand AI assistant"
@@ -7561,6 +7568,15 @@ function WorkspaceAIPanel({
         >
           ✦
         </button>
+        <div style={{ width: 40, minHeight: 52, padding: "10px 6px", borderRadius: 16, background: "white", border: `1px solid ${S.border}`, display: "grid", gap: 6, justifyItems: "center", boxShadow: "0 10px 24px rgba(83, 74, 183, 0.06)" }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: P[700], lineHeight: 1.2, textAlign: "center" }}>
+            {activeLabel.split(" ").slice(0, 2).map(word => word[0]).join("").toUpperCase() || "AI"}
+          </div>
+          <div style={{ width: 24, height: 1, background: S.border }} />
+          <div style={{ fontSize: 10, color: S.muted, writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+            {reviewItems.length ? `${reviewItems.length} open` : "ready"}
+          </div>
+        </div>
         <div style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: P[700], textTransform: "uppercase" }}>
           AI Assistant
         </div>
@@ -7572,13 +7588,13 @@ function WorkspaceAIPanel({
   }
 
   return (
-    <>
-    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, height: chatDocked ? "100%" : "auto", minHeight: 0, background: "white", borderLeft: chatDocked ? `1px solid ${S.border}` : "none", overflow: "hidden" }}>
-      <div style={{ background: "white", overflow: "hidden", flexShrink: 0 }}>
-        <div style={{ padding: "18px 18px 16px", borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBFF 100%)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, height: "100%", minHeight: 0, background: "linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%)", overflow: "hidden" }}>
+      <div style={{ background: "transparent", overflow: "hidden", flexShrink: 0 }}>
+        <div style={{ padding: "18px 18px 16px", borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBFF 100%)" }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: P[900] }}>AI Assistant</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: S.muted }}>{activePath || "Selection-aware guidance for the current workspace."}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Right Panel</div>
+            <div style={{ marginTop: 6, fontSize: 16, fontWeight: 800, color: P[900] }}>AI Assistant</div>
+            <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.5, color: S.muted }}>{activePath || "Selection-aware guidance for the current workspace."}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: P[50], color: P[600], fontSize: 12, fontWeight: 700 }}>
@@ -7595,22 +7611,19 @@ function WorkspaceAIPanel({
         </div>
       </div>
 
-      <div style={{ padding: panelBodyPadding, minHeight: 0, flex: 1, overflow: chatDocked ? "hidden" : "visible", background: chatDocked ? "transparent" : S.bg }}>
+      <div style={{ padding: panelBodyPadding, minHeight: 0, flex: 1, overflow: "hidden", background: "transparent" }}>
         <div
           style={{
             display: "grid",
             gridTemplateRows: showChat ? (chatDocked ? "auto minmax(280px, 1fr)" : "auto auto") : "auto",
             minHeight: 0,
             height: chatDocked ? "100%" : "auto",
-            border: `1px solid ${S.border}`,
-            borderRadius: 18,
             overflow: "hidden",
-            background: "white",
-            boxShadow: "0 14px 40px rgba(38, 33, 92, 0.08)",
+            background: "transparent",
             gap: chatDocked ? 0 : 14,
           }}
         >
-          <div style={{ overflow: "hidden", borderBottom: `1px solid ${S.border}` }}>
+          <div style={{ overflow: "hidden", margin: "14px 14px 0", border: `1px solid ${S.border}`, borderRadius: 20, background: "white", boxShadow: "0 18px 36px rgba(38, 33, 92, 0.08)" }}>
             <button
               onClick={() => setContextCollapsed(v => !v)}
               style={{
@@ -7650,7 +7663,23 @@ function WorkspaceAIPanel({
             </button>
 
             {!contextCollapsed && (
-              <div style={{ padding: 16, display: "grid", gap: 14, maxHeight: "38vh", overflowY: "auto" }}>
+              <div style={{ padding: 16, display: "grid", gap: 14, maxHeight: "44vh", overflowY: "auto", background: "linear-gradient(180deg, #FFFFFF 0%, #FCFBFF 100%)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+                  {railSummaryStats.map(stat => (
+                    <div
+                      key={stat.label}
+                      style={{
+                        padding: "12px 10px",
+                        borderRadius: 14,
+                        border: `1px solid ${stat.tone === "warning" ? "#F3D48C" : S.border}`,
+                        background: stat.tone === "warning" ? "#FFF9EF" : stat.tone === "accent" ? P[50] : S.bg,
+                      }}
+                    >
+                      <div style={{ fontSize: 10, fontWeight: 800, color: stat.tone === "warning" ? "#B45309" : stat.tone === "accent" ? P[700] : S.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{stat.label}</div>
+                      <div style={{ marginTop: 6, fontSize: 20, fontWeight: 800, color: P[900], lineHeight: 1 }}>{stat.value}</div>
+                    </div>
+                  ))}
+                </div>
                 <div style={{ padding: "14px 14px", borderRadius: 16, background: "linear-gradient(135deg, #F7F4FF 0%, #FFF9FC 100%)", border: `1px solid ${S.border}` }}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Current Focus</div>
                   <div style={{ marginTop: 8, fontSize: 16, fontWeight: 700, color: P[900] }}>{activePath || activeLabel}</div>
@@ -7660,9 +7689,9 @@ function WorkspaceAIPanel({
                     </div>
                   )}
                   <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: S.muted }}>{resolvedGuidance.summary}</div>
-                  {!!activeSummary && (
+                  {!!activeDraftSummary && (
                     <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 14, background: "rgba(255,255,255,0.72)", border: `1px solid ${S.border}`, fontSize: 12, lineHeight: 1.6, color: S.text }}>
-                      <span style={{ fontWeight: 700, color: P[700] }}>Current draft:</span> {activeSummary}
+                      <span style={{ fontWeight: 700, color: P[700] }}>Current draft:</span> {activeDraftSummary}
                     </div>
                   )}
                 </div>
@@ -7718,7 +7747,7 @@ function WorkspaceAIPanel({
                             </div>
                           )}
                           {reviewItems.map(item => (
-                            <div key={item.id} style={{ padding: "14px 14px", borderRadius: 16, background: "white", border: `1px solid ${S.border}` }}>
+                            <div key={item.id} style={{ padding: "14px 14px", borderRadius: 16, background: "white", border: `1px solid ${item.severity === "review" ? "#F3D48C" : S.border}` }}>
                               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                                 <div>
                                   <div style={{ fontSize: 14, fontWeight: 700, color: P[900] }}>{item.title}</div>
@@ -7771,12 +7800,12 @@ function WorkspaceAIPanel({
 
                   {aiTab === "review" && (
                     <div style={{ display: "grid", gap: 10 }}>
-                      {reviewItems.filter(item => item.severity === "review").length === 0 && (
+                      {reviewOnlyItems.length === 0 && (
                         <div style={{ padding: "14px 14px", borderRadius: 16, background: S.bg, border: `1px solid ${S.border}`, fontSize: 13, color: S.muted }}>
                           Nothing urgent needs review right now.
                         </div>
                       )}
-                      {reviewItems.filter(item => item.severity === "review").map(item => (
+                      {reviewOnlyItems.map(item => (
                         <div key={item.id} style={{ padding: "14px 14px", borderRadius: 16, background: "#FFF9EF", border: "1px solid #F3D48C" }}>
                           <div style={{ fontSize: 14, fontWeight: 700, color: P[900] }}>{item.title}</div>
                           <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.6, color: S.muted }}>{item.body}</div>
@@ -7793,14 +7822,13 @@ function WorkspaceAIPanel({
           </div>
 
           {showChat && (
-            <div style={{ minHeight: 0, borderTop: chatDocked ? "none" : `1px solid ${S.border}` }}>
+            <div style={{ minHeight: 0, margin: chatDocked ? 0 : "0 14px 14px", border: chatDocked ? "none" : `1px solid ${S.border}`, borderRadius: chatDocked ? 0 : 20, overflow: "hidden", background: "white", boxShadow: chatDocked ? "none" : "0 18px 36px rgba(38, 33, 92, 0.08)" }}>
               {conversationCard}
             </div>
           )}
         </div>
       </div>
     </div>
-    </>
   );
 }
 
@@ -12241,8 +12269,8 @@ If section is gtm return:
       </div>
 
       {showDesktopAiRail && (
-        <div style={{ width: aiRailCollapsed ? 74 : 320, flexShrink: 0, background: S.bg, transition: "width 180ms ease", padding: isCompact ? "18px 18px 24px 0" : "18px 20px 24px 0", minHeight: 0, overflow: "hidden", borderLeft: `1px solid ${S.border}`, display: "flex", flexDirection: "column" }}>
-          <div style={{ flex: 1, minHeight: 0, overflow: "hidden", border: `1px solid ${S.border}`, borderRadius: 22, background: "white", boxShadow: aiRailCollapsed ? "none" : "0 18px 40px rgba(83, 74, 183, 0.06)" }}>
+        <div style={{ width: aiRailCollapsed ? 74 : 336, flexShrink: 0, background: "linear-gradient(180deg, #F8F7FF 0%, #F4F2FF 100%)", transition: "width 180ms ease", minHeight: 0, overflow: "hidden", borderLeft: `1px solid ${S.border}`, display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
             <WorkspaceAIPanel
               collapsed={aiRailCollapsed}
               onToggle={() => setAiRailCollapsed(v => !v)}
