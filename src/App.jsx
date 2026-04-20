@@ -3691,6 +3691,9 @@ function buildContextReviewModel(productName, context = {}, websiteContext = nul
   const productSignals = toSignalList(websiteContext?.productSignals);
   const proofSignals = toSignalList(websiteContext?.proofSignals);
   const messagingSignals = toSignalList(websiteContext?.extractedMessaging);
+  const structuredContext = websiteContext?.structuredContext || {};
+  const review = websiteContext?.review || {};
+  const crawlSummary = websiteContext?.crawlSummary || {};
   const assumptions = Array.isArray(context?.assumptions) ? context.assumptions.filter(Boolean) : [];
   const suggestedCategory = context?.productCategory || websiteContext?.recommendedContext?.productCategory || "the category still needs to be clarified";
   const suggestedAudience = context?.targetAudience || websiteContext?.recommendedContext?.targetAudience || "the primary buyer still needs to be sharpened";
@@ -3732,6 +3735,18 @@ function buildContextReviewModel(productName, context = {}, websiteContext = nul
       "Tighten the public narrative so the product promise feels more specific and ownable.",
       "Connect the story more clearly to the buyer outcome Loop should build around.",
     ];
+  const fieldConfidence = [
+    structuredContext.productCategory?.confidence,
+    structuredContext.targetAudience?.confidence,
+    structuredContext.coreUseCase?.confidence,
+    structuredContext.marketType?.confidence,
+  ].filter(Boolean);
+  const confidenceScore = fieldConfidence.reduce((total, value) => (
+    total + (value === "high" ? 3 : value === "medium" ? 2 : 1)
+  ), 0);
+  const normalizedConfidence = review.overallConfidence
+    || (confidenceScore >= 10 ? "high" : confidenceScore >= 6 ? "medium" : "low");
+  const analyzedPages = Array.isArray(crawlSummary?.analyzedPages) ? crawlSummary.analyzedPages : [];
 
   const subject = productName || "The product";
   const normalizedUseCase = String(suggestedUseCase || "").replace(/\.$/, "");
@@ -3749,6 +3764,13 @@ function buildContextReviewModel(productName, context = {}, websiteContext = nul
     currentNarrative,
     improvementScope: scopedImprovements,
     suggestedDirection,
+    confidenceLabel: normalizedConfidence === "high"
+      ? "High confidence grounding"
+      : normalizedConfidence === "medium"
+        ? "Medium confidence grounding"
+        : "Low confidence grounding",
+    analyzedPagesCount: analyzedPages.length || crawlSummary?.pageCount || 0,
+    narrativeRisks: Array.isArray(review?.narrativeRisks) ? review.narrativeRisks.slice(0, 3) : [],
   };
 }
 
@@ -3803,9 +3825,19 @@ function AiContextReviewPage({
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Source</div>
                   <div style={{ fontSize: 14, lineHeight: 1.6, color: S.text, wordBreak: "break-word" }}>{websiteContext?.url || "No website source provided"}</div>
+                  {reviewModel.analyzedPagesCount > 0 && (
+                    <div style={{ fontSize: 12, color: S.muted }}>
+                      Analyzed {reviewModel.analyzedPagesCount} page{reviewModel.analyzedPagesCount === 1 ? "" : "s"} for grounding.
+                    </div>
+                  )}
                 </div>
-                <div style={{ padding: "8px 12px", borderRadius: 999, background: reviewModel.evidenceQuality.tint, color: reviewModel.evidenceQuality.text, fontSize: 12, fontWeight: 800 }}>
-                  {reviewModel.evidenceQuality.label}
+                <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
+                  <div style={{ padding: "8px 12px", borderRadius: 999, background: reviewModel.evidenceQuality.tint, color: reviewModel.evidenceQuality.text, fontSize: 12, fontWeight: 800 }}>
+                    {reviewModel.evidenceQuality.label}
+                  </div>
+                  <div style={{ padding: "8px 12px", borderRadius: 999, background: "#F6F3FF", color: P[700], fontSize: 12, fontWeight: 800 }}>
+                    {reviewModel.confidenceLabel}
+                  </div>
                 </div>
               </div>
 
@@ -3830,6 +3862,19 @@ function AiContextReviewPage({
                     </div>
                   </div>
                 </div>
+
+                {!!reviewModel.narrativeRisks.length && (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Narrative Risks Found</div>
+                    <div style={{ border: `1px solid ${S.border}`, borderRadius: 18, background: "white", padding: 18, display: "grid", gap: 10 }}>
+                      {reviewModel.narrativeRisks.map(item => (
+                        <div key={item} style={{ fontSize: 14, lineHeight: 1.65, color: S.text }}>
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ display: "grid", gap: 12 }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Suggested Narrative Direction</div>
@@ -5404,6 +5449,22 @@ const MVP_NAV = [
     ],
   },
 ];
+
+const WORKSPACE_NAV_ICONS = {
+  "Product Truth": "◫",
+  "Core Narrative": "✦",
+  GTM: "↗",
+  context: "◎",
+  customer: "◔",
+  product: "▣",
+  market: "◇",
+  positioning: "◈",
+  messaging: "✦",
+  value: "⬡",
+  strategy: "↗",
+  story: "✳",
+  assets: "▤",
+};
 
 const WORKSPACE_SECTION_GUIDANCE = {
   context: {
@@ -10239,6 +10300,7 @@ If section is gtm return:
   }
 
   function renderSidebarGroup({ group, icon, items }) {
+    const groupIcon = WORKSPACE_NAV_ICONS[group] || icon || "•";
     return (
       <div key={group} style={{ padding: "0 10px 10px" }}>
         <button
@@ -10264,8 +10326,8 @@ If section is gtm return:
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
-            <span style={{ width: 24, height: 24, borderRadius: 999, display: "grid", placeItems: "center", background: activeGroup === group ? "rgba(255,255,255,0.9)" : "transparent", fontSize: 11, color: activeGroup === group ? P[600] : P[400], fontWeight: 800 }}>
-              {icon}
+            <span style={{ width: 24, height: 24, borderRadius: 8, display: "grid", placeItems: "center", background: activeGroup === group ? "rgba(255,255,255,0.9)" : "#F5F1FF", fontSize: 13, color: activeGroup === group ? P[600] : P[500], fontWeight: 800, flexShrink: 0 }}>
+              {groupIcon}
             </span>
             <span style={{ fontSize: 13, fontWeight: 700, color: activeGroup === group ? P[800] : S.text }}>{group}</span>
           </div>
@@ -10277,7 +10339,7 @@ If section is gtm return:
         </button>
 
         {(groupOverviewMap[group] || !collapsed[group]) && (
-          <div style={{ margin: "6px 0 0 22px", paddingLeft: 12, borderLeft: `1px solid ${P[100]}`, display: "grid", gap: 4 }}>
+          <div style={{ marginTop: 6, display: "grid", gap: 4 }}>
             {items.map(item => (
               <button
                 key={item.id}
@@ -10296,12 +10358,10 @@ If section is gtm return:
                   fontFamily: "inherit",
                   justifyContent: "flex-start",
                   textAlign: "left",
-                  position: "relative",
                 }}
               >
-                <span style={{ position: "absolute", left: -19, width: 8, height: 8, borderRadius: 999, background: active === item.id ? P[500] : "#D8D1F6", boxShadow: active === item.id ? `0 0 0 4px ${P[100]}` : "none" }} />
-                <span style={{ width: 22, height: 22, borderRadius: 999, display: "grid", placeItems: "center", background: active === item.id ? "rgba(255,255,255,0.92)" : "transparent", fontSize: 10, color: active === item.id ? P[600] : S.light, fontWeight: 800 }}>
-                  {item.icon}
+                <span style={{ width: 22, height: 22, borderRadius: 8, display: "grid", placeItems: "center", background: active === item.id ? "white" : "#F5F1FF", fontSize: 12, color: active === item.id ? P[600] : P[500], fontWeight: 800, flexShrink: 0, boxShadow: active === item.id ? "0 6px 16px rgba(83, 74, 183, 0.10)" : "none" }}>
+                  {WORKSPACE_NAV_ICONS[item.id] || item.icon}
                 </span>
                 <span style={{ fontSize: 13, color: active === item.id ? P[800] : S.muted, fontWeight: active === item.id ? 700 : 500, textAlign: "left" }}>
                   {item.label}
