@@ -10242,7 +10242,9 @@ If section is gtm return:
             <span style={{ fontSize: 13, fontWeight: 700, color: activeGroup === group ? P[800] : S.text }}>{group}</span>
           </div>
           {!groupOverviewMap[group] && (
-            <span style={{ fontSize: 10, color: S.muted, transform: collapsed[group] ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>â–¾</span>
+            <span style={{ fontSize: 11, color: S.muted, display: "inline-block", fontWeight: 800 }}>
+              {collapsed[group] ? "+" : "-"}
+            </span>
           )}
         </button>
 
