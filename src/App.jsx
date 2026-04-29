@@ -21,7 +21,7 @@ const S = {
   bg: "#F4F3FF", sidebar: "#EBE9FC", card: "#FFFFFF",
   border: "#D6D3F7", text: "#26215C", muted: "#6B63B5", light: "#AFA9EC",
 };
-const WorkspaceAssetActionContext = createContext({ onGenerateAssetSuggestion: null });
+const WorkspaceAssetActionContext = createContext({ onGenerateAssetSuggestion: null, onPreviewAssetSuggestion: null });
 
 const DEFAULT_CAP_LAYOUT = {
   features: { x: 0, y: 0, w: 48, h: 250 },
@@ -213,6 +213,13 @@ function nextVersionLabel(version) {
 }
 
 const REVIEW_TEAMS = ["Sales", "Product", "PMM"];
+const VERSION_CONTEXT_OPTIONS = {
+  audienceUser: ["Enterprise Buyer", "Mid-market Buyer", "SMB Buyer", "Founder", "PMM Team", "Sales Team", "Technical Buyer", "Executive Buyer"],
+  marketSegment: ["Enterprise", "Mid-market", "SMB", "PLG / Self-Serve", "New Market", "Vertical Expansion", "Existing Expansion"],
+  primaryChannel: ["Website", "Sales Conversation", "Launch Campaign", "Email", "Social", "Partner / Ecosystem", "Community", "Customer Expansion"],
+  competitiveLens: ["Competitive Replacement", "Category Creation", "New Product Launch", "Expansion Story", "New Use Case", "Differentiation Push"],
+  versionPurpose: ["New Audience Narrative", "New Market Narrative", "Channel Narrative", "Competitive Repositioning", "Refresh After Feedback", "Launch Variant"],
+};
 
 function makeEmptyReviewRouting() {
   return {
@@ -231,6 +238,191 @@ function getReviewTeamForSection(section) {
   if (["problem", "solution"].includes(section.id)) return "Product";
   if (["positioning", "messaging", "elevator"].includes(section.id)) return "Sales";
   return "PMM";
+}
+
+function getReadinessStatusMeta(status = "") {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized.includes("approved")) return { label: "Approved", bg: "#EAF7EE", color: "#177A51" };
+  if (normalized.includes("requested") || normalized.includes("sent")) return { label: "Sent for Review", bg: "#EEF4FF", color: "#1D4ED8" };
+  if (normalized.includes("review")) return { label: "In Review", bg: "#FFF7E8", color: "#A05A00" };
+  if (normalized.includes("need")) return { label: "Needs Work", bg: "#FFF1F0", color: "#B44332" };
+  if (normalized.includes("delay")) return { label: "Delayed", bg: "#FFF7E8", color: "#C2410C" };
+  if (normalized.includes("drop")) return { label: "Dropped", bg: "#F3F4F6", color: "#4B5563" };
+  if (normalized.includes("ready")) return { label: "Ready for Review", bg: "#F6F3FF", color: P[700] };
+  return { label: "Draft", bg: "#F6F3FF", color: P[700] };
+}
+
+function makeEmptyReadinessBoard() {
+  return {
+    items: {
+      productTruth: { id: "productTruth", label: "Product Truth", type: "Workspace", status: "Draft", lastAction: "", lastMovedAt: "", dropped: false },
+      narrative: { id: "narrative", label: "Core Narrative", type: "Workspace", status: "Draft", lastAction: "", lastMovedAt: "", dropped: false },
+      gtm: { id: "gtm", label: "GTM", type: "Workspace", status: "Draft", lastAction: "", lastMovedAt: "", dropped: false },
+      ...Object.fromEntries(ASSET_WORKSPACE_CONFIG.map(config => [
+        config.id,
+        { id: config.id, label: config.label, type: "Asset Group", status: "Draft", lastAction: "", lastMovedAt: "", dropped: false },
+      ])),
+    },
+  };
+}
+
+function normalizeReadinessBoard(board = {}) {
+  const fallback = makeEmptyReadinessBoard();
+  return {
+    ...fallback,
+    ...board,
+    items: {
+      ...fallback.items,
+      ...(board.items || {}),
+    },
+  };
+}
+
+function getReadinessItemIdForWorkspace(workspace = "") {
+  if (workspace === "Product Truth") return "productTruth";
+  if (workspace === "Core Narrative" || workspace === "Narrative") return "narrative";
+  if (workspace === "GTM" || workspace === "GTM Readiness") return "gtm";
+  return "";
+}
+
+function getWorkspaceTargetForReadinessItem(itemId = "") {
+  if (itemId === "productTruth") return "context";
+  if (itemId === "narrative") return "positioning";
+  if (itemId === "gtm") return "strategy";
+  if (ASSET_WORKSPACE_CONFIG.some(config => config.id === itemId)) return itemId;
+  if (itemId === "reviewCenter") return "reviewCenter";
+  if (itemId === "analytics") return "analytics";
+  return "context";
+}
+
+function getReadinessItemIdsForWorkspace(workspace = "") {
+  if (workspace === "Assets") {
+    return ASSET_WORKSPACE_CONFIG.map(config => config.id);
+  }
+  const itemId = getReadinessItemIdForWorkspace(workspace);
+  return itemId ? [itemId] : [];
+}
+
+function buildVersionContextSummary(pd = {}) {
+  const items = [
+    { key: "audienceUser", label: "Audience / User", value: pd.versionAudienceUser || "" },
+    { key: "marketSegment", label: "Market / Segment", value: pd.versionMarketSegment || "" },
+    { key: "primaryChannel", label: "Primary Channel", value: pd.versionPrimaryChannel || "" },
+    { key: "competitiveLens", label: "Competitive Lens", value: pd.versionCompetitiveLens || "" },
+    { key: "versionPurpose", label: "Version Purpose", value: pd.versionPurpose || "" },
+  ];
+  return items.filter(item => String(item.value || "").trim());
+}
+
+function buildAssetTemplatePreview(suggestion = {}, source = {}) {
+  const { pd = {}, msg = {}, strat = {}, aiDraft = {}, brand = {} } = source;
+  const useBrandTemplate = !!String(brand.tagline || "").trim();
+  const heroHeadline = aiDraft.assets?.headline || msg.headline || pd.name || suggestion.title || "Asset headline";
+  const heroSupport = msg.pillars || aiDraft.assets?.emailPitch || pd.description || "Add the clearest supporting message for this asset.";
+  const proofLine = aiDraft.assets?.messagingAsset || pd.diff || "Add proof, differentiation, or outcome language here.";
+  const ctaLine = strat.channels || strat.goal || "Define the best next action for this audience.";
+
+  return {
+    template: useBrandTemplate ? "Brand Template" : "Generic Template",
+    assetName: suggestion.assetName || suggestion.title || "Asset Preview",
+    category: suggestion.category || "General",
+    headline: heroHeadline,
+    support: heroSupport,
+    proof: proofLine,
+    cta: ctaLine,
+  };
+}
+
+function computeReadinessGate(board = {}, assetState = {}, reviewAnalytics = {}) {
+  const normalizedBoard = normalizeReadinessBoard(board);
+  const normalizedAssets = normalizeAssetsState(assetState);
+  const items = normalizedBoard.items || {};
+  const blockers = [];
+  const requiredWorkspaceIds = ["productTruth", "narrative", "gtm"];
+
+  requiredWorkspaceIds.forEach(itemId => {
+    const item = items[itemId];
+    const label = item?.label || itemId;
+    if (!item || item.status === "Draft") {
+      blockers.push(`${label} has not been moved into Readiness yet.`);
+      return;
+    }
+    if (item.status !== "Approved") {
+      blockers.push(`${label} must be approved before Go Live.`);
+    }
+  });
+
+  const activeAssetConfigs = ASSET_WORKSPACE_CONFIG.filter(config =>
+    !!String(normalizedAssets.sections?.[config.noteKey] || "").trim() ||
+    normalizedAssets.rows.some(row => normalizeAssetWorkspaceCategory(row.category) === config.category)
+  );
+
+  if (!activeAssetConfigs.length) {
+    blockers.push("At least one asset group must be prepared before Go Live.");
+  }
+
+  activeAssetConfigs.forEach(config => {
+    const item = items[config.id];
+    const matchingAssets = normalizedAssets.rows.filter(row => normalizeAssetWorkspaceCategory(row.category) === config.category);
+    let inferredStatus = "Draft";
+    if (matchingAssets.some(asset => asset.status === "Needs Work")) inferredStatus = "Needs Work";
+    else if (matchingAssets.some(asset => asset.status === "In Review")) inferredStatus = "In Review";
+    else if (matchingAssets.length && matchingAssets.every(asset => asset.status === "Approved")) inferredStatus = "Approved";
+    else if (matchingAssets.length || String(normalizedAssets.sections?.[config.noteKey] || "").trim()) inferredStatus = "Ready for Review";
+    const effectiveStatus = resolveReadinessStatus(item?.status, inferredStatus, !!item?.dropped);
+    if (!item || effectiveStatus === "Draft") {
+      blockers.push(`${config.label} assets have not been moved into Readiness yet.`);
+      return;
+    }
+    if (!["Approved", "Dropped"].includes(effectiveStatus)) {
+      blockers.push(`${config.label} assets must be approved or dropped before Go Live.`);
+    }
+  });
+
+  if ((reviewAnalytics?.totals?.pending || 0) > 0) {
+    blockers.push("Some routed review sections are still pending.");
+  }
+
+  const uniqueBlockers = Array.from(new Set(blockers));
+  return {
+    ready: uniqueBlockers.length === 0,
+    blockers: uniqueBlockers,
+    activeAssetGroupCount: activeAssetConfigs.length,
+  };
+}
+
+function resolveReadinessStatus(boardStatus = "", inferredStatus = "", dropped = false) {
+  if (dropped) return "Dropped";
+  if (!boardStatus) return inferredStatus || "Draft";
+  if (["Approved", "Needs Work", "Delayed", "Dropped"].includes(inferredStatus)) return inferredStatus;
+  if (["Approved", "Needs Work", "Delayed", "Dropped"].includes(boardStatus)) return boardStatus;
+  return boardStatus || inferredStatus || "Draft";
+}
+
+function buildReadinessBoardForWorkspaceMove(board = {}, workspace = "", assetsState = {}) {
+  const normalized = normalizeReadinessBoard(board);
+  const normalizedAssets = normalizeAssetsState(assetsState);
+  const movedAt = new Date().toISOString();
+  const nextItems = { ...normalized.items };
+  getReadinessItemIdsForWorkspace(workspace).forEach(itemId => {
+    const item = nextItems[itemId];
+    if (!item) return;
+    const assetConfig = ASSET_WORKSPACE_CONFIG.find(config => config.id === itemId);
+    const hasAssetContent = assetConfig
+      ? !!String(normalizedAssets.sections?.[assetConfig.noteKey] || "").trim() || normalizedAssets.rows.some(row => normalizeAssetWorkspaceCategory(row.category) === assetConfig.category)
+      : true;
+    nextItems[itemId] = {
+      ...item,
+      dropped: false,
+      lastMovedAt: movedAt,
+      lastAction: `${workspace} moved to Readiness`,
+      status: assetConfig ? (hasAssetContent ? "Ready for Review" : item.status || "Draft") : "Ready for Review",
+    };
+  });
+  return {
+    ...normalized,
+    items: nextItems,
+  };
 }
 
 function buildReviewableSections(source = {}) {
@@ -263,6 +455,25 @@ function normalizeResourceCategoryLabel(workspace = "") {
   return workspace || "General";
 }
 
+function makeDefaultAssetSections() {
+  return {
+    productMarketing: "",
+    sales: "",
+    marketing: "",
+    social: "",
+    general: "",
+  };
+}
+
+function normalizeAssetWorkspaceCategory(category = "") {
+  const normalized = String(category || "").trim().toLowerCase();
+  if (normalized === "product marketing") return "Product Marketing";
+  if (normalized === "sales") return "Sales";
+  if (normalized === "marketing") return "Marketing";
+  if (normalized === "social") return "Social";
+  return "General";
+}
+
 function slugifyValue(value = "") {
   return String(value || "")
     .toLowerCase()
@@ -275,11 +486,15 @@ function buildWorkspaceAssetSuggestion(suggestion, sourceSection = "Workspace") 
   const lowerTitle = title.toLowerCase();
   const lowerSource = String(sourceSection || "").toLowerCase();
 
-  let category = "Marketing";
-  let type = "Messaging";
-  let kit = "Marketing Kit";
+  let category = suggestion?.category || "Marketing";
+  let type = suggestion?.type || "Messaging";
+  let kit = suggestion?.kit || "Marketing Kit";
 
-  if (
+  if (suggestion?.category && suggestion?.type && suggestion?.kit) {
+    category = suggestion.category;
+    type = suggestion.type;
+    kit = suggestion.kit;
+  } else if (
     lowerTitle.includes("sales") ||
     lowerTitle.includes("battlecard") ||
     lowerTitle.includes("talk track") ||
@@ -322,6 +537,7 @@ function buildWorkspaceAssetSuggestion(suggestion, sourceSection = "Workspace") 
     description: suggestion?.description || `AI-generated asset created from ${sourceSection}.`,
     why: `Generated from the ${sourceSection} workspace so the asset stays tied to the active narrative context.`,
     priority: 1,
+    team: suggestion?.team || normalizeAssetWorkspaceCategory(category),
   };
 }
 
@@ -566,6 +782,10 @@ function buildAssetSuggestionCatalog(source = {}) {
 
 function normalizeAssetsState(assets = {}) {
   const existingRows = Array.isArray(assets.rows) ? assets.rows : [];
+  const existingSections = {
+    ...makeDefaultAssetSections(),
+    ...(assets.sections || {}),
+  };
   const rows = existingRows.map(existing => {
     const scores = {
       clarity: Number(existing.scores?.clarity ?? 0),
@@ -586,8 +806,8 @@ function normalizeAssetsState(assets = {}) {
       ...existing,
       assetName: existing.assetName || "Generated Asset",
       type: existing.type || "Messaging",
-      category: existing.category || "Marketing",
-      kit: existing.kit || (existing.category === "Sales" ? "Sales Kit" : "Marketing Kit"),
+      category: normalizeAssetWorkspaceCategory(existing.category || "Marketing"),
+      kit: existing.kit || (normalizeAssetWorkspaceCategory(existing.category || "Marketing") === "Sales" ? "Sales Kit" : "Marketing Kit"),
       content,
       scores,
       score,
@@ -606,8 +826,31 @@ function normalizeAssetsState(assets = {}) {
   return {
     ...assets,
     notes: assets.notes || "",
+    sections: existingSections,
     rows,
   };
+}
+
+function buildAssetSectionsFromDraft(aiAssets = {}) {
+  const nextSections = makeDefaultAssetSections();
+  nextSections.productMarketing = [
+    aiAssets.headline ? `Launch brief anchor: ${aiAssets.headline}` : "",
+    aiAssets.messagingAsset ? `Messaging asset: ${aiAssets.messagingAsset}` : "",
+  ].filter(Boolean).join("\n\n");
+  nextSections.sales = [
+    aiAssets.elevatorPitch ? `Pitch direction: ${aiAssets.elevatorPitch}` : "",
+    aiAssets.messagingAsset ? `Proof/support angle: ${aiAssets.messagingAsset}` : "",
+  ].filter(Boolean).join("\n\n");
+  nextSections.marketing = [
+    aiAssets.headline ? `Homepage hero: ${aiAssets.headline}` : "",
+    aiAssets.emailPitch ? `Launch email: ${aiAssets.emailPitch}` : "",
+  ].filter(Boolean).join("\n\n");
+  nextSections.social = aiAssets.headline ? `Launch hook: ${aiAssets.headline}` : "";
+  nextSections.general = [
+    aiAssets.elevatorPitch ? `Reusable elevator pitch: ${aiAssets.elevatorPitch}` : "",
+    aiAssets.messagingAsset ? `Message bank seed: ${aiAssets.messagingAsset}` : "",
+  ].filter(Boolean).join("\n\n");
+  return nextSections;
 }
 
 async function generateSuggestedAssetContent(suggestion, source = {}) {
@@ -977,6 +1220,42 @@ function getProjectLifecycle(project = {}) {
   return { key: "progress", label: "In Progress" };
 }
 
+function getSupabaseProjectsErrorMessage(error, fallback = "Loop could not reach Supabase right now.") {
+  const code = String(error?.code || "").trim();
+  const message = String(error?.message || "").trim();
+  const details = String(error?.details || "").trim();
+  const hint = String(error?.hint || "").trim();
+  const combined = [message, details, hint].filter(Boolean).join(" ").toLowerCase();
+
+  if (
+    code === "42P01" ||
+    combined.includes("relation") && combined.includes("loop_projects") ||
+    combined.includes("does not exist") && combined.includes("loop_projects")
+  ) {
+    return "Supabase is connected, but the loop_projects table is missing. Run supabase/loop_mvp_schema.sql in Supabase SQL Editor to enable live project saves.";
+  }
+
+  if (
+    code === "42501" ||
+    combined.includes("row-level security") ||
+    combined.includes("permission denied") ||
+    combined.includes("not allowed")
+  ) {
+    return "Supabase is connected, but Loop does not have permission to read or write loop_projects yet. Check the RLS policies in supabase/loop_mvp_schema.sql.";
+  }
+
+  if (
+    combined.includes("failed to fetch") ||
+    combined.includes("network") ||
+    combined.includes("fetch") ||
+    combined.includes("timeout")
+  ) {
+    return "Loop could not reach Supabase right now. Check the network connection and Supabase URL/key, then try again.";
+  }
+
+  return fallback || "Loop could not reach Supabase right now.";
+}
+
 function makeEmptyAiDraft() {
   return {
     context: {
@@ -1133,6 +1412,11 @@ function normalizePdState(pd = {}) {
     previousVersionId: pd?.previousVersionId || "",
     previousVersionName: pd?.previousVersionName || "",
     changeType: pd?.changeType || "",
+    versionAudienceUser: pd?.versionAudienceUser || "",
+    versionMarketSegment: pd?.versionMarketSegment || "",
+    versionPrimaryChannel: pd?.versionPrimaryChannel || "",
+    versionCompetitiveLens: pd?.versionCompetitiveLens || "",
+    versionPurpose: pd?.versionPurpose || "",
     launchDate: pd?.launchDate || "",
     version: pd?.version || "",
     status: pd?.status || "Planned",
@@ -1231,6 +1515,11 @@ function buildProductInput(inputOrName, description = "") {
       category: (inputOrName.category || "").trim(),
       wowFactor: (inputOrName.wowFactor || "").trim(),
       whatChanged: (inputOrName.whatChanged || "").trim(),
+      versionAudienceUser: (inputOrName.versionAudienceUser || "").trim(),
+      versionMarketSegment: (inputOrName.versionMarketSegment || "").trim(),
+      versionPrimaryChannel: (inputOrName.versionPrimaryChannel || "").trim(),
+      versionCompetitiveLens: (inputOrName.versionCompetitiveLens || "").trim(),
+      versionPurpose: (inputOrName.versionPurpose || "").trim(),
     };
   }
 
@@ -1242,6 +1531,11 @@ function buildProductInput(inputOrName, description = "") {
     category: "",
     wowFactor: "",
     whatChanged: "",
+    versionAudienceUser: "",
+    versionMarketSegment: "",
+    versionPrimaryChannel: "",
+    versionCompetitiveLens: "",
+    versionPurpose: "",
   };
 }
 
@@ -1254,6 +1548,11 @@ function buildGroundingBrief(productInput) {
     `Category: ${productInput.category || "Not provided"}`,
     `Wow factor: ${productInput.wowFactor || "Not provided"}`,
     `What changed: ${productInput.whatChanged || "Not provided"}`,
+    `Version audience / user: ${productInput.versionAudienceUser || "Not provided"}`,
+    `Version market / segment: ${productInput.versionMarketSegment || "Not provided"}`,
+    `Version primary channel: ${productInput.versionPrimaryChannel || "Not provided"}`,
+    `Version competitive lens: ${productInput.versionCompetitiveLens || "Not provided"}`,
+    `Version purpose: ${productInput.versionPurpose || "Not provided"}`,
   ].join("\n");
 }
 
@@ -3677,6 +3976,100 @@ function WorkspaceCategoryCanvas({
   );
 }
 
+function WorkspaceAssetCategoryPanel({
+  category,
+  noteLabel,
+  description,
+  fieldKey,
+  value,
+  aiValue,
+  placeholder,
+  helper,
+  suggestions = [],
+  assetsState,
+  improveMode = false,
+  enhancing = false,
+  onEnhance,
+  onFieldChange,
+  userEdits = {},
+}) {
+  const normalizedAssets = normalizeAssetsState(assetsState);
+  const matchingAssets = (normalizedAssets.rows || []).filter(row => normalizeAssetWorkspaceCategory(row.category) === category);
+  const approvedCount = matchingAssets.filter(row => row.status === "Approved").length;
+  const reviewCount = matchingAssets.filter(row => row.status === "In Review").length;
+  const needsWorkCount = matchingAssets.filter(row => row.status === "Needs Work").length;
+
+  return (
+    <>
+      <SimplifiedSectionCard
+        title={`Assets / ${category}`}
+        description={description}
+        improveMode={improveMode}
+        enhancing={enhancing}
+        onEnhance={onEnhance}
+      >
+        <SmartInput
+          label={noteLabel}
+          fieldKey={fieldKey}
+          aiValue={aiValue || ""}
+          userEdited={!!userEdits[fieldKey]}
+          value={value || ""}
+          onChange={nextValue => onFieldChange(fieldKey, nextValue)}
+          rows={5}
+          placeholder={placeholder}
+          helper={helper}
+          treatment="ghost"
+        />
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+          <div style={{ padding: "8px 12px", borderRadius: 999, background: "#FBFAFF", border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700, color: S.text }}>
+            Assets {matchingAssets.length}
+          </div>
+          <div style={{ padding: "8px 12px", borderRadius: 999, background: "#FBFAFF", border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700, color: S.text }}>
+            Approved {approvedCount}
+          </div>
+          <div style={{ padding: "8px 12px", borderRadius: 999, background: "#FBFAFF", border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700, color: S.text }}>
+            In Review {reviewCount}
+          </div>
+          <div style={{ padding: "8px 12px", borderRadius: 999, background: "#FBFAFF", border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700, color: S.text }}>
+            Needs Work {needsWorkCount}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+          {matchingAssets.length ? matchingAssets.slice(0, 3).map(asset => (
+            <div key={asset.id} style={{ borderRadius: 16, border: `1px solid ${S.border}`, background: "white", padding: 16, display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: P[900] }}>{asset.assetName}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: S.muted }}>{asset.type}</div>
+                </div>
+                <div style={{ padding: "6px 10px", borderRadius: 999, background: asset.status === "Approved" ? "#EAF7EE" : asset.status === "Needs Work" ? "#FFF1F0" : "#F6F3FF", color: asset.status === "Approved" ? "#177A51" : asset.status === "Needs Work" ? "#B44332" : P[700], fontSize: 11, fontWeight: 800 }}>
+                  {asset.status}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.65, color: S.text, whiteSpace: "pre-wrap" }}>
+                {String(asset.content || "").trim().slice(0, 240) || "No content generated yet."}
+                {String(asset.content || "").trim().length > 240 ? "..." : ""}
+              </div>
+            </div>
+          )) : (
+            <div style={{ borderRadius: 16, border: `1px dashed ${P[200]}`, background: "linear-gradient(180deg, rgba(248, 246, 255, 0.92) 0%, rgba(241, 238, 255, 0.8) 100%)", padding: 18, fontSize: 13, lineHeight: 1.65, color: S.muted }}>
+              No {category.toLowerCase()} assets have been generated yet. Use the AI suggestions below to create the first draft for this team.
+            </div>
+          )}
+        </div>
+      </SimplifiedSectionCard>
+
+      <SectionSuggestionsPanel
+        title={`AI Suggestions for ${category}`}
+        subtitle={`Generate the first ${category.toLowerCase()} outputs directly from the current narrative and GTM context.`}
+        suggestions={suggestions}
+      />
+    </>
+  );
+}
+
 function toSignalList(value) {
   if (Array.isArray(value)) return value.map(item => String(item || "").trim()).filter(Boolean);
   return String(value || "")
@@ -4166,6 +4559,8 @@ function ProjectReviewCenter({
   confidenceScore,
   reviewAnalytics,
   pmmActionQueue,
+  assetState,
+  readinessBoard,
   onAssignTeam,
   onUpdateScore,
   onUpdateComment,
@@ -4173,6 +4568,9 @@ function ProjectReviewCenter({
   onChooseApprove,
   onSubmitFeedback,
   onSendReview,
+  onOpenReadinessItem,
+  onSendReadinessItem,
+  onDropReadinessItem,
   feedbackCount,
   compactView = false,
 }) {
@@ -4207,6 +4605,81 @@ function ProjectReviewCenter({
       reviewerTeams.map(team => [team, assignedSections.filter(section => section.reviewerTeam === team).map(section => section.sectionId)])
     ),
   });
+  const normalizedReadinessBoard = normalizeReadinessBoard(readinessBoard);
+  const readinessItems = normalizedReadinessBoard.items || {};
+  const normalizedAssets = normalizeAssetsState(assetState);
+  const routedIds = new Set(REVIEW_TEAMS.flatMap(team => reviewRouting.assignments?.[team] || []));
+  const readinessWorkspaceRows = ["Product Truth", "Core Narrative", "GTM"].map(workspace => {
+    const matchingSections = reviewSections.filter(section => section.workspace === workspace);
+    const matchingReviews = matchingSections
+      .filter(section => routedIds.has(section.id))
+      .map(section => sectionReviews?.[section.id])
+      .filter(Boolean);
+    const hasContent = matchingSections.some(section => String(section.content || "").trim());
+    let status = "Draft";
+    if (hasContent) status = "Ready for Review";
+    if (matchingReviews.length && reviewRouting.sentAt) status = "In Review";
+    if (matchingReviews.some(review => review.decision === "improve")) status = "Needs Work";
+    if (matchingReviews.length && matchingReviews.every(review => review.status === "approved")) status = "Approved";
+    const boardItemId = getReadinessItemIdForWorkspace(workspace);
+    const boardItem = readinessItems[boardItemId] || {};
+    const resolvedStatus = resolveReadinessStatus(boardItem.status, status, !!boardItem.dropped);
+    return {
+      id: boardItemId || workspace,
+      label: workspace,
+      type: "Workspace",
+      owner: workspace === "Product Truth" ? "Product" : workspace === "Core Narrative" ? "PMM" : "Marketing",
+      feedbackCount: matchingReviews.filter(review => review.comment).length,
+      blockers: matchingReviews.filter(review => review.decision === "improve").length,
+      status: resolvedStatus,
+      lastAction: boardItem.lastAction || "",
+      lastMovedAt: boardItem.lastMovedAt || "",
+      dropped: !!boardItem.dropped,
+      children: matchingSections.map(section => ({
+        id: section.id,
+        label: section.label,
+        status: sectionReviews?.[section.id]?.status === "approved"
+          ? "Approved"
+          : sectionReviews?.[section.id]?.decision === "improve"
+            ? "Needs Work"
+            : routedIds.has(section.id) && reviewRouting.sentAt
+              ? "In Review"
+              : String(section.content || "").trim()
+                ? "Ready for Review"
+                : "Draft",
+      })),
+    };
+  });
+  const readinessAssetRows = ASSET_WORKSPACE_CONFIG.map(config => {
+    const matchingAssets = (normalizedAssets.rows || []).filter(row => normalizeAssetWorkspaceCategory(row.category) === config.category);
+    const hasPlanning = String(normalizedAssets.sections?.[config.noteKey] || "").trim();
+    let status = "Draft";
+    if (hasPlanning || matchingAssets.length) status = "Ready for Review";
+    if (matchingAssets.some(asset => asset.status === "Needs Work")) status = "Needs Work";
+    else if (matchingAssets.some(asset => asset.status === "In Review")) status = "In Review";
+    else if (matchingAssets.length && matchingAssets.every(asset => asset.status === "Approved")) status = "Approved";
+    const boardItem = readinessItems[config.id] || {};
+    const resolvedStatus = resolveReadinessStatus(boardItem.status, status, !!boardItem.dropped);
+    return {
+      id: config.id,
+      label: config.label,
+      type: "Asset Group",
+      owner: config.label,
+      feedbackCount: matchingAssets.filter(asset => asset.feedbackSummary).length,
+      blockers: matchingAssets.filter(asset => asset.status === "Needs Work").length,
+      status: resolvedStatus,
+      lastAction: boardItem.lastAction || "",
+      lastMovedAt: boardItem.lastMovedAt || "",
+      dropped: !!boardItem.dropped,
+      children: matchingAssets.map(asset => ({
+        id: asset.id,
+        label: asset.assetName,
+        status: asset.status || "Draft",
+      })),
+    };
+  });
+  const readinessRows = [...readinessWorkspaceRows, ...readinessAssetRows];
+  const [expandedReadinessRowId, setExpandedReadinessRowId] = useState("");
   const gridTemplate = compactView
     ? "minmax(0, 1.7fr) minmax(0, 0.9fr) minmax(0, 0.95fr) repeat(4, minmax(0, 0.72fr)) minmax(0, 0.72fr) minmax(0, 0.9fr)"
     : "minmax(240px, 1.5fr) minmax(120px, 0.8fr) minmax(110px, 0.8fr) repeat(4, minmax(84px, 0.55fr)) minmax(96px, 0.65fr) minmax(120px, 0.8fr)";
@@ -4215,10 +4688,10 @@ function ProjectReviewCenter({
   return (
     <div style={sharedShellStyle}>
       <div style={{ borderRadius: 24, border: `1px solid ${S.border}`, background: "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,243,255,0.96) 100%)", padding: 22 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Internal Feedback</div>
-        <div style={{ marginTop: 8, fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Review every narrative section in one sleek operating board</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Readiness</div>
+        <div style={{ marginTop: 8, fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Manage launch review and approvals from one control board</div>
         <div style={{ marginTop: 10, maxWidth: 820, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
-          Internal Feedback now mirrors the Assets dashboard style. Every section from Product, Narrative, and GTM shows up in one contained board with ownership, scoring, approvals, and AI review support.
+          Readiness keeps launch control centralized. Product Truth, Core Narrative, GTM, and Assets can all be tracked here with ownership, scoring, approvals, and review support.
         </div>
       </div>
 
@@ -4235,6 +4708,105 @@ function ProjectReviewCenter({
             <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: S.muted }}>{card.note}</div>
           </div>
         ))}
+      </div>
+
+      <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, overflow: "hidden" }}>
+        <div style={{ padding: 18, borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Readiness Board</span>
+            <span style={{ fontSize: 14, color: S.muted }}>Track which workspaces and asset groups are drafted, in review, approved, or blocked before go-live.</span>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              onClick={onSendReview}
+              style={{ border: `1px solid ${S.border}`, background: "white", color: P[700], borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Send for Review
+            </button>
+            <button
+              onClick={onSubmitFeedback}
+              style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Update Board Status
+            </button>
+          </div>
+        </div>
+        <div style={{ padding: 18, background: "linear-gradient(180deg, #FCFBFF 0%, #F7F5FF 100%)", display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: compactView ? "minmax(0, 1.6fr) repeat(4, minmax(0, 0.8fr))" : "minmax(260px, 1.7fr) minmax(120px, 0.9fr) minmax(120px, 0.8fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr)", gap: 12, padding: "0 10px", fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <div>Item</div>
+            <div>Type</div>
+            <div>Owner</div>
+            <div>Feedback</div>
+            <div>Status</div>
+          </div>
+          {readinessRows.map(row => {
+            const meta = getReadinessStatusMeta(row.status);
+            const isExpanded = expandedReadinessRowId === row.id;
+            return (
+              <div key={row.id} style={{ borderRadius: 18, border: `1px solid ${S.border}`, background: "white", overflow: "hidden", boxShadow: "0 10px 24px rgba(38, 33, 92, 0.04)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: compactView ? "minmax(0, 1.6fr) repeat(4, minmax(0, 0.8fr))" : "minmax(260px, 1.7fr) minmax(120px, 0.9fr) minmax(120px, 0.8fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr)", gap: 12, alignItems: "center", padding: "16px 18px" }}>
+                  <button
+                    onClick={() => setExpandedReadinessRowId(prev => (prev === row.id ? "" : row.id))}
+                    style={{ textAlign: "left", border: "none", background: "transparent", padding: 0, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    <div style={{ fontSize: 15, fontWeight: 800, color: S.text }}>{row.label}</div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: S.muted }}>{row.children?.length ? `${row.children.length} linked item${row.children.length === 1 ? "" : "s"}` : "No linked items yet"}</div>
+                  </button>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: S.text }}>{row.type}</div>
+                  <div style={{ fontSize: 13, color: S.text }}>{row.owner}</div>
+                  <div style={{ fontSize: 13, color: S.text }}>{row.feedbackCount} feedback / {row.blockers} blockers</div>
+                  <div style={{ justifySelf: "stretch", padding: "10px 12px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 12, fontWeight: 800, textAlign: "center" }}>{meta.label}</div>
+                </div>
+                {isExpanded && (
+                  <div style={{ borderTop: `1px solid ${S.border}`, background: "#FCFBFF", padding: 16, display: "grid", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", borderRadius: 14, border: `1px solid ${S.border}`, background: "white", padding: "12px 14px" }}>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: P[900] }}>{row.label}</div>
+                        <div style={{ fontSize: 12, lineHeight: 1.6, color: S.muted }}>
+                          {row.lastAction || "Move this item into Readiness, send it for review, or drop it from the launch scope here."}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => onOpenReadinessItem?.(row.id)}
+                          style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                        >
+                          Open Workspace
+                        </button>
+                        <button
+                          onClick={() => onSendReadinessItem?.(row.id)}
+                          style={{ border: "none", background: P[600], color: "white", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", opacity: row.dropped ? 0.55 : 1 }}
+                          disabled={row.dropped}
+                        >
+                          Send for Review
+                        </button>
+                        <button
+                          onClick={() => onDropReadinessItem?.(row.id)}
+                          style={{ border: `1px solid #E5E7EB`, background: "#F9FAFB", color: "#4B5563", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                        >
+                          Mark Dropped
+                        </button>
+                      </div>
+                    </div>
+                    {(row.children || []).length ? row.children.map(child => {
+                      const childMeta = getReadinessStatusMeta(child.status);
+                      return (
+                        <div key={child.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", borderRadius: 14, border: `1px solid ${S.border}`, background: "white", padding: "12px 14px" }}>
+                          <div style={{ fontSize: 13, color: S.text }}>{child.label}</div>
+                          <div style={{ padding: "6px 10px", borderRadius: 999, background: childMeta.bg, color: childMeta.color, fontSize: 11, fontWeight: 800 }}>{childMeta.label}</div>
+                        </div>
+                      );
+                    }) : (
+                      <div style={{ borderRadius: 14, border: `1px dashed ${S.border}`, background: "white", padding: "12px 14px", fontSize: 13, color: S.muted }}>
+                        Nothing is linked yet. Continue refining this area in the workspace, then move it into Readiness.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, overflow: "hidden" }}>
@@ -4586,7 +5158,7 @@ function SingleNarrativeSectionPanel({ compact = false, layout, setLayout, tile,
 }
 
 function SectionSuggestionsPanel({ title = "AI-Suggested Sections", subtitle, suggestions = [] }) {
-  const { onGenerateAssetSuggestion } = useContext(WorkspaceAssetActionContext);
+  const { onGenerateAssetSuggestion, onPreviewAssetSuggestion } = useContext(WorkspaceAssetActionContext);
   const [generatingTitle, setGeneratingTitle] = useState("");
   if (!suggestions.length) return null;
 
@@ -4611,23 +5183,102 @@ function SectionSuggestionsPanel({ title = "AI-Suggested Sections", subtitle, su
             <div style={{ marginTop: 14, fontSize: 18, fontWeight: 700, color: P[900], lineHeight: 1.2 }}>+ {suggestion.title}</div>
             <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.55, color: S.muted }}>{suggestion.description}</div>
             {suggestion.type === "asset" && onGenerateAssetSuggestion && (
-              <button
-                onClick={async () => {
-                  if (generatingTitle === suggestion.title) return;
-                  setGeneratingTitle(suggestion.title);
-                  try {
-                    await onGenerateAssetSuggestion(suggestion);
-                  } finally {
-                    setGeneratingTitle("");
-                  }
-                }}
-                style={{ marginTop: 14, border: `1px solid ${S.border}`, background: generatingTitle === suggestion.title ? "#F3F1FF" : "white", color: P[700], borderRadius: 12, padding: "10px 12px", fontSize: 12, fontWeight: 800, cursor: generatingTitle === suggestion.title ? "wait" : "pointer", fontFamily: "inherit" }}
-              >
-                {generatingTitle === suggestion.title ? "Generating..." : "Generate Asset"}
-              </button>
+              <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={async () => {
+                    if (generatingTitle === suggestion.title) return;
+                    setGeneratingTitle(suggestion.title);
+                    try {
+                      await onGenerateAssetSuggestion(suggestion);
+                    } finally {
+                      setGeneratingTitle("");
+                    }
+                  }}
+                  style={{ border: `1px solid ${S.border}`, background: generatingTitle === suggestion.title ? "#F3F1FF" : "white", color: P[700], borderRadius: 12, padding: "10px 12px", fontSize: 12, fontWeight: 800, cursor: generatingTitle === suggestion.title ? "wait" : "pointer", fontFamily: "inherit" }}
+                >
+                  {generatingTitle === suggestion.title ? "Filling..." : "Fill Template"}
+                </button>
+                <button
+                  onClick={() => onPreviewAssetSuggestion?.(suggestion)}
+                  style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Preview
+                </button>
+              </div>
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function AssetTemplatePreviewModal({ preview, onClose, onFillTemplate }) {
+  if (!preview) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(20, 18, 52, 0.38)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 24 }}>
+      <div style={{ width: "min(920px, 100%)", maxHeight: "calc(100vh - 48px)", overflow: "auto", background: "linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%)", border: `1px solid ${S.border}`, borderRadius: 28, boxShadow: "0 26px 60px rgba(38, 33, 92, 0.18)", padding: 24, display: "grid", gap: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Asset Preview</div>
+            <div style={{ fontSize: 30, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>{preview.assetName}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.7, color: S.muted }}>
+              Loop will fill this {preview.template.toLowerCase()} using the current workspace context so teams can review both content hierarchy and layout intent before approval.
+            </div>
+          </div>
+          <button onClick={onClose} style={{ width: 38, height: 38, borderRadius: 14, border: `1px solid ${S.border}`, background: "white", color: S.muted, cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>×</button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(280px, 0.8fr)", gap: 18, alignItems: "start" }}>
+          <div style={{ borderRadius: 24, border: `1px solid ${S.border}`, background: "white", overflow: "hidden", boxShadow: "0 16px 34px rgba(38, 33, 92, 0.08)" }}>
+            <div style={{ padding: 22, borderBottom: `1px solid ${S.border}`, background: "linear-gradient(135deg, #F7F4FF 0%, #FFFFFF 100%)", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{preview.template}</div>
+                <div style={{ marginTop: 6, fontSize: 24, fontWeight: 800, color: P[900], lineHeight: 1.08 }}>{preview.headline}</div>
+              </div>
+              <span style={{ padding: "6px 10px", borderRadius: 999, background: P[50], color: P[700], fontSize: 11, fontWeight: 800 }}>{preview.category}</span>
+            </div>
+            <div style={{ padding: 22, display: "grid", gap: 16 }}>
+              <div style={{ padding: 16, borderRadius: 18, background: "#FCFBFF", border: `1px solid ${S.border}` }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Supporting Message</div>
+                <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.7, color: S.text }}>{preview.support}</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
+                <div style={{ padding: 16, borderRadius: 18, background: "white", border: `1px solid ${S.border}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Proof / Context</div>
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: S.text }}>{preview.proof}</div>
+                </div>
+                <div style={{ padding: 16, borderRadius: 18, background: "white", border: `1px solid ${S.border}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Call To Action</div>
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: S.text }}>{preview.cta}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ padding: 18, borderRadius: 20, background: "white", border: `1px solid ${S.border}` }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Layout Guidance</div>
+              <ul style={{ margin: "10px 0 0", paddingLeft: 18, color: S.text, lineHeight: 1.75 }}>
+                <li>Keep the headline at the top of the asset.</li>
+                <li>Use the supporting message to explain the main promise in plain language.</li>
+                <li>Reserve proof for the strongest evidence or differentiation point.</li>
+                <li>End with a single CTA that fits the chosen channel.</li>
+              </ul>
+            </div>
+            <div style={{ padding: 18, borderRadius: 20, background: "linear-gradient(135deg, #F7F4FF 0%, #FFF9FC 100%)", border: `1px solid ${S.border}` }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Why this matters</div>
+              <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: S.text }}>
+                Preview helps teams review not just the words, but the intended hierarchy and content placement before the asset enters Readiness.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={onClose} style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Close</button>
+          <button onClick={onFillTemplate} style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Fill Template</button>
+        </div>
       </div>
     </div>
   );
@@ -5268,7 +5919,7 @@ function AnalyticsPanel({ d }) {
   return (
     <div style={{ display: "grid", gap: 22 }}>
       <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 22, padding: 20, display: "grid", gap: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Market Feedback</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>External Feedback</div>
         <div style={{ fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>How engagement data will feed Loop’s narrative intelligence</div>
         <div style={{ maxWidth: 860, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
           This page is intentionally an infographic-style preview for now. It shows how wins, downloads, campaign engagement, social engagement, event engagement, and other activity will later connect into measurable PMM intelligence once third-party integrations are added.
@@ -5403,8 +6054,8 @@ const NAV = [
   ]},
   { group: "Resources", icon: "◉", items: [
     { id: "assets", label: "Assets", icon: "≡" },
-    { id: "reviewCenter", label: "Internal Feedback", icon: "◈" },
-    { id: "analytics", label: "Market Feedback", icon: "◔" },
+    { id: "reviewCenter", label: "Readiness", icon: "◈" },
+    { id: "analytics", label: "External Feedback", icon: "◔" },
     { id: "confidence", label: "Loop Readiness", icon: "◌" },
   ]},
 ];
@@ -5415,11 +6066,94 @@ const WORKFLOW_STEPS = [
   { id: "productTruth", label: "Product Truth", workspace: "Product Truth", summary: "Build the factual source of truth section by section." },
   { id: "narrative", label: "Core Narrative", workspace: "Core Narrative", summary: "Turn product truth into approved positioning and messaging." },
   { id: "gtm", label: "GTM", workspace: "GTM", summary: "Translate the narrative into launch strategy and channel messaging." },
-  { id: "assets", label: "Assets", workspace: "Resources", summary: "Generate launch assets, validate them, and package approved kits." },
-  { id: "review", label: "Internal Feedback", workspace: "Resources", summary: "Resolve flags, request approval, and manage review in one place." },
-  { id: "launch", label: "Market Feedback", workspace: "Resources", summary: "Track launch outcomes and external signal from one operational view." },
-  { id: "feedback", label: "Resources Intelligence", workspace: "Resources", summary: "Capture signal, analytics, and recommendations for the next cycle." },
+  { id: "assets", label: "Assets", workspace: "Assets", summary: "Generate team-specific launch assets and organize them by the groups that will use them." },
+  { id: "review", label: "Readiness", workspace: "Readiness", summary: "Track approvals, blockers, and review progress in one launch control board." },
+  { id: "launch", label: "External Feedback", workspace: "External Feedback", summary: "Track launch outcomes and external signal from one operational view." },
+  { id: "feedback", label: "Loop Intelligence", workspace: "External Feedback", summary: "Capture signal, analytics, and recommendations for the next cycle." },
   { id: "complete", label: "Loop Closed", workspace: "Resources", summary: "Approved resources, internal feedback, and market signal feed the next version." },
+];
+
+const ASSET_WORKSPACE_CONFIG = [
+  {
+    id: "productMarketingAssets",
+    label: "Product Marketing",
+    icon: "PM",
+    noteKey: "productMarketing",
+    category: "Product Marketing",
+    noteLabel: "Product Marketing Asset Plan",
+    description: "Turn approved positioning and messaging into launch-ready PMM deliverables and reusable guidance.",
+    placeholder: "Capture the PMM-ready outputs this narrative needs first: launch brief, message house, proof points, positioning brief, and other reusable strategy assets.",
+    helper: "Keep this focused on the strategic PMM layer that other teams will reuse.",
+    suggestions: [
+      { type: "asset", icon: "▣", title: "Launch Brief", description: "Package the launch story, audience, proof, and GTM direction into one PMM brief.", category: "Product Marketing", type: "Brief", kit: "PMM Kit", team: "Product Marketing" },
+      { type: "asset", icon: "◈", title: "Message House", description: "Generate a structured message house with positioning, pillars, proof, and fallback language.", category: "Product Marketing", type: "Messaging", kit: "PMM Kit", team: "Product Marketing" },
+      { type: "asset", icon: "✦", title: "Proof Point Library", description: "Create a reusable list of claims, outcomes, and proof the rest of the launch can borrow from.", category: "Product Marketing", type: "Enablement", kit: "PMM Kit", team: "Product Marketing" },
+    ],
+  },
+  {
+    id: "salesAssets",
+    label: "Sales",
+    icon: "SA",
+    noteKey: "sales",
+    category: "Sales",
+    noteLabel: "Sales Asset Plan",
+    description: "Give sellers the talk tracks, proof, and objections support they need to tell the story consistently.",
+    placeholder: "List the most important sales-ready outputs this narrative should produce: pitch, outbound email, one-pager, objection handling, and sales proof.",
+    helper: "Prioritize assets that help someone sell this story in a real conversation.",
+    suggestions: [
+      { type: "asset", icon: "✉", title: "Outbound Email", description: "Generate a short outbound draft that turns the message into a credible first-touch sales email.", category: "Sales", type: "Enablement", kit: "Sales Kit", team: "Sales" },
+      { type: "asset", icon: "◆", title: "Objection Handling", description: "Create seller-ready rebuttals for likely concerns, confusion, or competitive pushback.", category: "Sales", type: "Enablement", kit: "Sales Kit", team: "Sales" },
+      { type: "asset", icon: "▤", title: "Sales One-Pager", description: "Turn the story into a single-page summary a rep or founder can actually use.", category: "Sales", type: "Sales", kit: "Sales Kit", team: "Sales" },
+    ],
+  },
+  {
+    id: "marketingAssets",
+    label: "Marketing",
+    icon: "MK",
+    noteKey: "marketing",
+    category: "Marketing",
+    noteLabel: "Marketing Asset Plan",
+    description: "Translate the narrative into launch and campaign content for website, lifecycle, and channel execution.",
+    placeholder: "Outline the highest-priority marketing outputs: homepage hero, landing page copy, launch email, campaign copy, and CTA variations.",
+    helper: "Keep this tied to the first launch motion rather than every possible marketing deliverable.",
+    suggestions: [
+      { type: "asset", icon: "◫", title: "Homepage Hero", description: "Generate a sharper homepage hero and subheadline based on the approved message.", category: "Marketing", type: "Messaging", kit: "Marketing Kit", team: "Marketing" },
+      { type: "asset", icon: "✉", title: "Launch Email", description: "Write a launch email that explains what changed, why it matters, and what to do next.", category: "Marketing", type: "Campaign", kit: "Marketing Kit", team: "Marketing" },
+      { type: "asset", icon: "↗", title: "Campaign Copy", description: "Turn the GTM story into a short campaign-ready messaging draft for demand gen or launch distribution.", category: "Marketing", type: "Campaign", kit: "Marketing Kit", team: "Marketing" },
+    ],
+  },
+  {
+    id: "socialAssets",
+    label: "Social",
+    icon: "SO",
+    noteKey: "social",
+    category: "Social",
+    noteLabel: "Social Asset Plan",
+    description: "Create shorter, public-facing launch content for founder voice, distribution, and community channels.",
+    placeholder: "Note the social outputs that matter most: founder post, launch post, teaser snippets, or reusable quote lines.",
+    helper: "Focus on lightweight public assets that carry the narrative clearly in a few lines.",
+    suggestions: [
+      { type: "asset", icon: "✦", title: "Founder Launch Post", description: "Generate a founder-style launch post that explains the shift in a clear, human voice.", category: "Social", type: "Social", kit: "Social Kit", team: "Social" },
+      { type: "asset", icon: "◉", title: "Launch Announcement", description: "Write a concise public launch announcement for social or community channels.", category: "Social", type: "Social", kit: "Social Kit", team: "Social" },
+      { type: "asset", icon: "…", title: "Teaser Snippets", description: "Create short teaser lines the team can reuse across launch week posts.", category: "Social", type: "Social", kit: "Social Kit", team: "Social" },
+    ],
+  },
+  {
+    id: "generalAssets",
+    label: "General",
+    icon: "GN",
+    noteKey: "general",
+    category: "General",
+    noteLabel: "Reusable Asset Plan",
+    description: "Store reusable narrative building blocks that multiple teams can pull into their own work.",
+    placeholder: "Capture the reusable assets this version needs: boilerplate, FAQ copy, elevator pitch, summary copy, or key message bank.",
+    helper: "Use this for shared content blocks that should stay stable across teams.",
+    suggestions: [
+      { type: "asset", icon: "◌", title: "Company Boilerplate", description: "Generate a short reusable description the team can use across decks, emails, and launch docs.", category: "General", type: "Messaging", kit: "Reusable Kit", team: "General" },
+      { type: "asset", icon: "◍", title: "FAQ Draft", description: "Create a starter FAQ that answers the biggest product and positioning questions.", category: "General", type: "Enablement", kit: "Reusable Kit", team: "General" },
+      { type: "asset", icon: "▤", title: "Reusable Message Bank", description: "Generate short message blocks the rest of the asset system can borrow without rewriting from scratch.", category: "General", type: "Messaging", kit: "Reusable Kit", team: "General" },
+    ],
+  },
 ];
 
 const MVP_NAV = [
@@ -5445,7 +6179,28 @@ const MVP_NAV = [
     items: [
       { id: "strategy", label: "Strategy", icon: "ST" },
       { id: "story", label: "Story", icon: "SY" },
-      { id: "assets", label: "Assets", icon: "AS" },
+    ],
+  },
+  {
+    group: "Assets",
+    items: [
+      { id: "productMarketingAssets", label: "Product Marketing", icon: "PM" },
+      { id: "salesAssets", label: "Sales", icon: "SA" },
+      { id: "marketingAssets", label: "Marketing", icon: "MK" },
+      { id: "socialAssets", label: "Social", icon: "SO" },
+      { id: "generalAssets", label: "General", icon: "GN" },
+    ],
+  },
+  {
+    group: "Readiness",
+    items: [
+      { id: "reviewCenter", label: "Board", icon: "RD" },
+    ],
+  },
+  {
+    group: "External Feedback",
+    items: [
+      { id: "analytics", label: "Signals", icon: "EF" },
     ],
   },
 ];
@@ -5454,6 +6209,9 @@ const WORKSPACE_NAV_ICONS = {
   "Product Truth": "◫",
   "Core Narrative": "✦",
   GTM: "↗",
+  Assets: "▤",
+  Readiness: "◈",
+  "External Feedback": "◔",
   context: "◎",
   customer: "◔",
   product: "▣",
@@ -5463,7 +6221,13 @@ const WORKSPACE_NAV_ICONS = {
   value: "⬡",
   strategy: "↗",
   story: "✳",
-  assets: "▤",
+  productMarketingAssets: "◉",
+  salesAssets: "▣",
+  marketingAssets: "◫",
+  socialAssets: "✦",
+  generalAssets: "◌",
+  reviewCenter: "RD",
+  analytics: "EF",
 };
 
 const WORKSPACE_SECTION_GUIDANCE = {
@@ -5512,14 +6276,35 @@ const WORKSPACE_SECTION_GUIDANCE = {
     improveFocus: ["Shape the launch story", "Connect truth to narrative", "Keep the storyline focused"],
     successSignal: "The market narrative feels launchable and consistent with the product truth.",
   },
-  assets: {
-    summary: "List the practical assets the team should create so the narrative turns into execution.",
-    improveFocus: ["Prioritize the first asset set", "Map assets to the motion", "Keep the list realistic"],
-    successSignal: "The team leaves with a clear asset plan, not just ideas.",
+  productMarketingAssets: {
+    summary: "Turn the narrative into PMM-ready deliverables the broader launch can align around.",
+    improveFocus: ["Prioritize PMM essentials", "Make the message reusable", "Keep proof and positioning tight"],
+    successSignal: "PMM can package the story cleanly for the rest of the organization.",
+  },
+  salesAssets: {
+    summary: "Equip sellers with practical, believable materials they can use in real conversations.",
+    improveFocus: ["Focus on seller usefulness", "Add proof and objections", "Keep the copy easy to speak aloud"],
+    successSignal: "Sales has concrete assets that make the narrative easier to sell.",
+  },
+  marketingAssets: {
+    summary: "Translate the narrative into campaign and website outputs the launch motion actually needs.",
+    improveFocus: ["Map to the launch motion", "Keep the message clear", "Favor execution-ready copy over brainstorms"],
+    successSignal: "Marketing can take the story live without rewriting the strategy from scratch.",
+  },
+  socialAssets: {
+    summary: "Create short public-facing content that keeps the launch story sharp in lighter-weight channels.",
+    improveFocus: ["Make the hook immediate", "Keep it human", "Avoid losing the main message in cleverness"],
+    successSignal: "The story stays consistent even in short-form public distribution.",
+  },
+  generalAssets: {
+    summary: "Capture reusable message blocks and shared copy other teams can pull from without drift.",
+    improveFocus: ["Store the reusable core", "Reduce rewrite work", "Keep cross-team language aligned"],
+    successSignal: "Multiple teams can reuse the same narrative building blocks with confidence.",
   },
 };
 
 const LEGACY_ACTIVE_SECTION_MAP = {
+  assets: "productMarketingAssets",
   feedback: "confidence",
   review: "reviewCenter",
   launch: "analytics",
@@ -5594,10 +6379,10 @@ const WORKFLOW_CHECKLISTS = {
   ],
   review: [
     "Review flags are resolved or accepted",
-    "Version is ready to publish",
+    "Launch readiness is cleared",
   ],
   launch: [
-    "Narrative version is published",
+    "Version is approved to go live",
     "Product launch status is live",
   ],
   feedback: [
@@ -5688,7 +6473,8 @@ function WorkflowCommandCenter({
         {primaryAction && (
           <button
             onClick={primaryAction.onClick}
-            style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+            disabled={!!primaryAction.disabled}
+            style={{ border: "none", background: primaryAction.disabled ? "#C9C4F6" : P[600], color: "white", borderRadius: 12, padding: "11px 16px", fontSize: 13, fontWeight: 800, cursor: primaryAction.disabled ? "default" : "pointer", opacity: primaryAction.disabled ? 0.72 : 1, fontFamily: "inherit" }}
           >
             {primaryAction.label}
           </button>
@@ -5775,6 +6561,11 @@ function WorkflowCommandCenter({
           </div>
         </div>
       </div>
+      {primaryAction?.disabled && primaryAction.note && (
+        <div style={{ fontSize: 12, lineHeight: 1.6, color: "#A05A00", padding: "10px 12px", borderRadius: 12, background: "#FFF7E8", border: "1px solid #F3D48C" }}>
+          {primaryAction.note}
+        </div>
+      )}
     </div>
   );
 }
@@ -7050,9 +7841,55 @@ function LandingPage({ onStartProject }) {
   );
 }
 
+function VersionContextField({ label, fieldKey, value, options = [], setPd, placeholder }) {
+  const [showCustom, setShowCustom] = useState(false);
+  const isCustom = showCustom || (!!value && !options.includes(value));
+  return (
+    <label style={{ display: "grid", gap: 8 }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>{label}</span>
+      <select
+        value={isCustom ? "__custom__" : value}
+        onChange={e => {
+          const next = e.target.value;
+          if (next === "__custom__") {
+            setShowCustom(true);
+            return;
+          }
+          setShowCustom(false);
+          setPd(prev => ({
+            ...prev,
+            [fieldKey]: next,
+          }));
+        }}
+        style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }}
+      >
+        <option value="">{placeholder || `Select ${label.toLowerCase()}`}</option>
+        {options.map(option => <option key={option} value={option}>{option}</option>)}
+        <option value="__custom__">Custom...</option>
+      </select>
+      <button
+        type="button"
+        onClick={() => setShowCustom(true)}
+        style={{ justifySelf: "start", border: "none", background: "transparent", color: P[600], padding: 0, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+      >
+        + Add custom
+      </button>
+      {isCustom && (
+        <input
+          value={value}
+          onChange={e => setPd(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+          placeholder={`Enter custom ${label.toLowerCase()}`}
+          style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: `1px solid ${P[200]}`, background: "white", color: S.text, outline: "none", fontFamily: "inherit" }}
+        />
+      )}
+    </label>
+  );
+}
+
 function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, versionDraft, onVersionModeChange }) {
   const isVersionFlow = !!versionDraft?.sourceProjectId;
   const versionMode = versionDraft?.mode || "minor";
+  const versionContextItems = buildVersionContextSummary(pd);
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)", padding: "42px 28px 56px" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 22 }}>
@@ -7062,7 +7899,7 @@ function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, vers
             <div style={{ marginTop: 8, fontSize: 38, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>{isVersionFlow ? "Create the next version of this narrative" : "Create your first Loop project"}</div>
             <div style={{ marginTop: 10, maxWidth: 760, fontSize: 15, lineHeight: 1.7, color: S.muted }}>
               {isVersionFlow
-                ? "Choose whether this is a minor or major change, update the product info, and tell Loop what changed before continuing into the next version."
+                ? "Choose whether this is a minor or major change, define the context for this version, and tell Loop what changed before continuing into the next version."
                 : `Add the product information that appears in the Loop platform header. Once saved, you will be taken directly into the ${platformMode === "test" ? "Test Platform" : "Original Platform"} workspace.`}
             </div>
           </div>
@@ -7098,6 +7935,32 @@ function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, vers
                   <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>What Changed</span>
                   <textarea value={pd.whatChanged || ""} onChange={e => setPd(prev => ({ ...prev, whatChanged: e.target.value }))} placeholder="Describe what changed in the product, audience, market, or positioning for this next version." rows={4} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
                 </label>
+                <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "minmax(0, 1.15fr) minmax(280px, 0.85fr)", gap: 18, alignItems: "start" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
+                    <VersionContextField label="Audience / User" fieldKey="versionAudienceUser" value={pd.versionAudienceUser || ""} options={VERSION_CONTEXT_OPTIONS.audienceUser} setPd={setPd} placeholder="Select audience / user" />
+                    <VersionContextField label="Market / Segment" fieldKey="versionMarketSegment" value={pd.versionMarketSegment || ""} options={VERSION_CONTEXT_OPTIONS.marketSegment} setPd={setPd} placeholder="Select market / segment" />
+                    <VersionContextField label="Primary Channel" fieldKey="versionPrimaryChannel" value={pd.versionPrimaryChannel || ""} options={VERSION_CONTEXT_OPTIONS.primaryChannel} setPd={setPd} placeholder="Select primary channel" />
+                    <VersionContextField label="Competitive Lens" fieldKey="versionCompetitiveLens" value={pd.versionCompetitiveLens || ""} options={VERSION_CONTEXT_OPTIONS.competitiveLens} setPd={setPd} placeholder="Select competitive lens" />
+                    <VersionContextField label="Version Purpose" fieldKey="versionPurpose" value={pd.versionPurpose || ""} options={VERSION_CONTEXT_OPTIONS.versionPurpose} setPd={setPd} placeholder="Select version purpose" />
+                  </div>
+                  <div style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%)", border: `1px solid ${S.border}`, borderRadius: 20, padding: 18, display: "grid", gap: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Version Context Summary</div>
+                    {versionContextItems.length ? (
+                      <div style={{ display: "grid", gap: 10 }}>
+                        {versionContextItems.map(item => (
+                          <div key={item.key} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", padding: "10px 12px", borderRadius: 14, background: "white", border: `1px solid ${S.border}` }}>
+                            <span style={{ fontSize: 12, color: S.muted }}>{item.label}</span>
+                            <span style={{ padding: "6px 10px", borderRadius: 999, background: P[50], color: P[700], fontSize: 11, fontWeight: 800 }}>{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 13, lineHeight: 1.65, color: S.muted }}>
+                        Choose the audience, market, channel, competitive lens, and purpose for this version so Loop can shape the narrative more precisely.
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
             <label style={{ display: "grid", gap: 8 }}>
@@ -7131,7 +7994,7 @@ function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, vers
             <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>
               {isVersionFlow
                 ? versionMode === "minor"
-                  ? "Minor Change keeps the previous workspace content and opens a duplicated next-version workspace so you can update it."
+                  ? "Minor Change keeps the previous workspace content, but the new version context still tells Loop which audience, market, channel, and competitive lens this variant should follow."
                   : "Major Change reuses the prior product info, adds what changed, and lets Loop regenerate the next version from the updated context."
                 : "MVP supports one product project. You can create more versions inside Loop, but additional projects require an upgrade."}
             </div>
@@ -7528,6 +8391,7 @@ function WorkspaceAIPanel({
   onAsk,
   askOutput,
   askLoading,
+  pageIntelligence,
   chatDocked = false,
   showChat = true,
 }) {
@@ -7548,6 +8412,13 @@ function WorkspaceAIPanel({
     { label: "Review", value: reviewOnlyItems.length, tone: "warning" },
     { label: "Actions", value: quickActions.length, tone: "accent" },
   ];
+  const resolvedPageIntelligence = pageIntelligence || {
+    eyebrow: "Page Intelligence",
+    title: "Keep the current workspace aligned",
+    summary: "Loop will call out the strongest next move, visible gaps, and where the narrative may be drifting as the workspace evolves.",
+    bullets: [],
+    recommendation: "Refine the active workspace, then move it into Readiness once the story is stable.",
+  };
   const panelBodyPadding = chatDocked ? 16 : 0;
   const conversationCard = (
     <div
@@ -7767,6 +8638,26 @@ function WorkspaceAIPanel({
                           {item}
                         </span>
                       ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ padding: "14px 14px", borderRadius: 16, background: "white", border: `1px solid ${S.border}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{resolvedPageIntelligence.eyebrow || "Page Intelligence"}</div>
+                  <div style={{ marginTop: 8, fontSize: 16, fontWeight: 800, color: P[900] }}>{resolvedPageIntelligence.title}</div>
+                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.65, color: S.muted }}>{resolvedPageIntelligence.summary}</div>
+                  {!!resolvedPageIntelligence.bullets?.length && (
+                    <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                      {resolvedPageIntelligence.bullets.slice(0, 3).map(item => (
+                        <div key={item} style={{ padding: "10px 12px", borderRadius: 14, background: S.bg, border: `1px solid ${S.border}`, fontSize: 12, lineHeight: 1.6, color: S.text }}>
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!!resolvedPageIntelligence.recommendation && (
+                    <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 14, background: "linear-gradient(135deg, #F7F4FF 0%, #FFF9FC 100%)", border: `1px solid ${S.border}`, fontSize: 12, lineHeight: 1.6, color: S.text }}>
+                      <span style={{ fontWeight: 800, color: P[700] }}>AI recommendation:</span> {resolvedPageIntelligence.recommendation}
                     </div>
                   )}
                 </div>
@@ -8373,11 +9264,13 @@ export default function App() {
   const [reviewDismissed, setReviewDismissed] = useState({});
   const [approvedChanges, setApprovedChanges] = useState({});
   const [compareVersionId, setCompareVersionId] = useState("");
+  const [assetTemplatePreview, setAssetTemplatePreview] = useState(null);
   const [starredTiles, setStarredTiles] = useState({});
   const [testProjects, setTestProjects] = useState([]);
   const [currentTestProjectId, setCurrentTestProjectId] = useState("");
   const [versionDraft, setVersionDraft] = useState({ sourceProjectId: "", mode: "minor" });
   const [remoteProjectsLoaded, setRemoteProjectsLoaded] = useState(false);
+  const [saveIndicator, setSaveIndicator] = useState({ status: "idle", updatedAt: "" });
   const [viewportWidth, setViewportWidth] = useState(typeof window === "undefined" ? 1280 : window.innerWidth);
   const [pd, setPd] = useState({
     name: "",
@@ -8388,6 +9281,11 @@ export default function App() {
     previousVersionId: "",
     previousVersionName: "",
     changeType: "",
+    versionAudienceUser: "",
+    versionMarketSegment: "",
+    versionPrimaryChannel: "",
+    versionCompetitiveLens: "",
+    versionPurpose: "",
     launchDate: "",
     version: "",
     status: "Planned",
@@ -8478,7 +9376,7 @@ export default function App() {
   });
   const [analytics, setAnalytics] = useState(makeDefaultAnalyticsState());
   const [confidence, setConfidence] = useState(makeDefaultConfidenceState());
-  const [assets, setAssets] = useState({ notes: "", rows: [] });
+  const [assets, setAssets] = useState({ notes: "", sections: makeDefaultAssetSections(), rows: [] });
   const [brand, setBrand] = useState({
     tagline: "",
     tones: ["Professional", "Friendly"],
@@ -8500,6 +9398,7 @@ export default function App() {
     teams: ["Product", "Sales"],
     lastAction: "Project created",
   });
+  const [readinessBoard, setReadinessBoard] = useState(makeEmptyReadinessBoard());
   const [reviewRouting, setReviewRouting] = useState(makeEmptyReviewRouting());
   const [sectionReviews, setSectionReviews] = useState({});
   const [reviewInsights, setReviewInsights] = useState({
@@ -8513,6 +9412,10 @@ export default function App() {
     updatedAt: "",
   });
   const [feedbackEntries, setFeedbackEntries] = useState([]);
+
+  function updateSaveIndicator(status) {
+    setSaveIndicator({ status, updatedAt: new Date().toISOString() });
+  }
   const safePd = normalizePdState(pd);
   const safeCap = normalizeCapabilitiesState(cap);
   const safeComp = normalizeCompetitionState(comp);
@@ -8644,6 +9547,11 @@ export default function App() {
     competitionSales: [comp.differentiators, comp.winLose].filter(Boolean).join(" | "),
     strategy: safeStrat.goal,
     story: safeStory.origin,
+    productMarketingAssets: safeAssets.sections?.productMarketing || "",
+    salesAssets: safeAssets.sections?.sales || "",
+    marketingAssets: safeAssets.sections?.marketing || "",
+    socialAssets: safeAssets.sections?.social || "",
+    generalAssets: safeAssets.sections?.general || "",
     reviewCenter: projectReview.lastAction || "Review the full project before launch.",
     analytics: feedbackSignals[1]?.text || safeAnalytics.signals[0]?.note,
     confidence: safeConfidence.decisionNotes || safeConfidence.factors[0]?.note,
@@ -8683,12 +9591,12 @@ export default function App() {
       targetLabel: sectionLabels.addSection,
       severity: "review",
     } : null,
-    brand.tagline && !assets.notes ? {
+    brand.tagline && !safeAssets.rows.length && !Object.values(safeAssets.sections || {}).some(value => String(value || "").trim()) ? {
       id: "asset-rollout-gap",
       title: "Assets may need refreshing",
       body: "Brand guidance is evolving. Review launch assets so they stay aligned with the newest brand direction.",
-      target: "assets",
-      targetLabel: sectionLabels.assets,
+      target: "productMarketingAssets",
+      targetLabel: sectionLabels.productMarketingAssets,
       severity: "suggested",
     } : null,
   ].filter(Boolean).filter(item => !reviewDismissed[item.id]);
@@ -8709,10 +9617,199 @@ export default function App() {
     confidence: readinessNotifications,
   };
   const resourcesNotificationCount = resourceAssetNotifications + internalFeedbackNotifications + marketFeedbackNotifications + readinessNotifications;
+  const normalizedReadinessBoard = normalizeReadinessBoard(readinessBoard);
+  const readinessBoardItems = Object.values(normalizedReadinessBoard.items || {});
+  const readinessGate = computeReadinessGate(normalizedReadinessBoard, safeAssets, reviewAnalytics);
+  const readinessApprovedCount = readinessBoardItems.filter(item => item.status === "Approved").length;
+  const readinessInReviewCount = readinessBoardItems.filter(item => item.status === "In Review").length;
+  const readinessNeedsWorkCount = readinessBoardItems.filter(item => item.status === "Needs Work").length;
+  const filledAssetGroupCount = ASSET_WORKSPACE_CONFIG.filter(config =>
+    !!String(safeAssets.sections?.[config.noteKey] || "").trim() ||
+    safeAssets.rows.some(row => normalizeAssetWorkspaceCategory(row.category) === config.category)
+  ).length;
+  const assetGroupsWithReview = ASSET_WORKSPACE_CONFIG.filter(config =>
+    safeAssets.rows.some(row => normalizeAssetWorkspaceCategory(row.category) === config.category && row.status === "In Review")
+  ).length;
+  const currentPageReviewItems = rawReviewItems.filter(item => {
+    if (activeGroup === "Product Truth") return ["context", "customer", "product", "market", "productTruth", "addSection"].includes(item.target);
+    if (activeGroup === "Core Narrative") return ["positioning", "messaging", "value", "positioningStatementSection", "messagingPillarsSection", "valuePropSection", "headlineSection", "elevatorPitchSection", "taglineSection", "keyValueSection", "addNarrativeSection"].includes(item.target);
+    if (activeGroup === "GTM") return ["strategy", "story"].includes(item.target);
+    if (activeGroup === "Assets") return String(item.target || "").includes("Assets") || item.target === "assets";
+    if (activeGroup === "Readiness") return true;
+    if (activeGroup === "External Feedback") return item.target === "analytics" || item.target === "confidence";
+    return item.target === active;
+  });
+  const pageIntelligence = (() => {
+    if (activeGroup === "Product Truth") {
+      const bullets = [
+        !safePd.audience ? "Primary audience is still weak, so downstream messaging may stay broad." : `Audience is defined around ${safePd.audience}. Keep use cases concrete so the narrative stays buyer-specific.`,
+        !safePd.problem ? "Problem framing still needs a sharper pain statement before Narrative can stay aligned." : "Problem framing exists. Make sure the consequence of inaction is explicit.",
+        !safeComp.proofPoints ? "Proof is still thin. Add evidence before launch claims harden into assets." : "Proof signals are present. Use them consistently across later assets and readiness checks.",
+      ].filter(Boolean);
+      return {
+        eyebrow: "Product Truth Intelligence",
+        title: currentPageReviewItems.length ? `${currentPageReviewItems.length} truth gap${currentPageReviewItems.length === 1 ? "" : "s"} to tighten` : "Product Truth looks structurally aligned",
+        summary: "This page should keep the factual product reality stable so Narrative, GTM, and Assets do not drift later.",
+        bullets,
+        recommendation: currentPageReviewItems.length
+          ? "Resolve the truth gaps first, then move Product Truth into Readiness so the rest of the launch inherits a stronger foundation."
+          : "Move Product Truth into Readiness once the proof and audience language feel specific enough for downstream teams to reuse.",
+      };
+    }
+    if (activeGroup === "Core Narrative") {
+      const bullets = [
+        !safePos.statement ? "Positioning statement is still light, so the top-line story may drift across teams." : "Positioning is present. Make sure Messaging and Value keep reflecting the same strategic frame.",
+        !safeMsg.pillars ? "Messaging pillars are missing, which weakens asset consistency later." : "Messaging pillars exist. Prioritize the strongest one so asset generation does not flatten the story.",
+        !safePos.valueProp ? "Value proposition still needs sharpening before GTM and Assets can stay focused." : "Value proposition is defined. Pressure-test whether it carries the latest differentiation clearly.",
+      ].filter(Boolean);
+      return {
+        eyebrow: "Narrative Intelligence",
+        title: currentPageReviewItems.length ? `${currentPageReviewItems.length} narrative drift signal${currentPageReviewItems.length === 1 ? "" : "s"} detected` : "Core Narrative is holding together",
+        summary: "Narrative is where Loop should catch message drift early, before GTM strategy and launch assets start inheriting weak language.",
+        bullets,
+        recommendation: currentPageReviewItems.length
+          ? "Tighten Positioning, Messaging, and Value until the story reads as one system, then move Narrative into Readiness."
+          : "Narrative is ready for a Readiness pass once the leading message, proof language, and value story feel consistent.",
+      };
+    }
+    if (activeGroup === "GTM") {
+      const bullets = [
+        !safeStrat.goal ? "Launch goal is still vague, so Assets may overproduce instead of focusing on the first motion." : `Strategy already points toward ${safeStrat.goal}. Keep channels and sequencing aligned with that goal.`,
+        !safeStory.origin ? "Launch story is still weak, which makes campaigns and social assets harder to prioritize." : "Story exists. Keep the why-now angle concrete so launch copy does not feel generic.",
+        !safeStory.whyNow ? "A clear why-now moment is still missing from GTM." : "Why-now is present. Reuse it across launch email, social, and PMM briefs.",
+      ].filter(Boolean);
+      return {
+        eyebrow: "GTM Intelligence",
+        title: currentPageReviewItems.length ? `${currentPageReviewItems.length} GTM issue${currentPageReviewItems.length === 1 ? "" : "s"} still open` : "GTM direction looks stable",
+        summary: "GTM should narrow the first launch motion so the asset layer knows what to build first and what can wait.",
+        bullets,
+        recommendation: currentPageReviewItems.length
+          ? "Clarify the launch goal, story, and why-now angle before sending GTM into Readiness."
+          : "Move GTM into Readiness once the primary motion, channels, and launch story all point to the same outcome.",
+      };
+    }
+    if (activeGroup === "Assets") {
+      const bullets = [
+        `${filledAssetGroupCount} asset group${filledAssetGroupCount === 1 ? "" : "s"} currently have planning or generated output.`,
+        assetGroupsWithReview ? `${assetGroupsWithReview} asset group${assetGroupsWithReview === 1 ? "" : "s"} already sit in review.` : "No asset groups are in review yet. Use Readiness to centralize approval next.",
+        safeAssets.rows.length ? `${safeAssets.rows.length} generated asset${safeAssets.rows.length === 1 ? "" : "s"} are available to refine or send forward.` : "No generated assets yet. Use Fill Template when each team is ready for a first usable draft.",
+      ];
+      return {
+        eyebrow: "Assets Intelligence",
+        title: filledAssetGroupCount ? "Assets are starting to operationalize the strategy" : "Assets still need launch-ready structure",
+        summary: "Assets should stay downstream from Product Truth, Narrative, and GTM. This page should help teams assemble the right outputs, not create noise.",
+        bullets,
+        recommendation: filledAssetGroupCount
+          ? "Keep only the launch-critical asset groups active, then move Assets into Readiness so approvals and blockers stay centralized."
+          : "Build only the highest-priority team assets first, then push the workspace into Readiness instead of generating everything at once.",
+      };
+    }
+    if (activeGroup === "Readiness") {
+      const bullets = [
+        `${readinessApprovedCount} item${readinessApprovedCount === 1 ? "" : "s"} approved, ${readinessInReviewCount} in review, ${readinessNeedsWorkCount} needing work.`,
+        reviewAnalytics.totals.pending ? `${reviewAnalytics.totals.pending} section review item${reviewAnalytics.totals.pending === 1 ? "" : "s"} are still pending in the deeper grid.` : "No pending section reviews are blocking the board right now.",
+        readinessGate.ready
+          ? "Go Live conditions are satisfied from the current Readiness board state."
+          : readinessGate.blockers[0] || "Readiness still has a launch blocker to resolve.",
+      ];
+      return {
+        eyebrow: "Readiness Intelligence",
+        title: readinessGate.ready ? "Readiness is cleared for Go Live" : readinessNeedsWorkCount ? "Readiness still has launch blockers" : "Readiness is becoming launch-decision ready",
+        summary: "Readiness is the launch control layer. AI should help surface blockers, stale work, and what needs approval next.",
+        bullets,
+        recommendation: readinessNeedsWorkCount
+          ? "Resolve the rows marked Needs Work first, then resend only the affected items for review."
+          : readinessInReviewCount
+            ? "Finish the items already in review before pushing more work into the board."
+            : readinessGate.ready
+              ? "This version can move into Go Live now. Capture external feedback next so the loop can close honestly."
+              : "Once critical rows are approved or intentionally dropped, this page can become the Go Live decision point.",
+      };
+    }
+    if (activeGroup === "External Feedback") {
+      const bullets = [
+        feedbackEntries.length ? `${feedbackEntries.length} captured feedback signal${feedbackEntries.length === 1 ? "" : "s"} can inform narrative health.` : "No external signal has been captured yet, so Loop cannot assess narrative health honestly.",
+        reviewInsights.weakestParameter ? `Weakest signal right now: ${reviewInsights.weakestParameter}.` : "Loop has not identified a weakest signal yet.",
+        `Narrative health score is ${narrativeHealthScore}/10 and review confidence is ${feedbackConfidenceScore}/100.`,
+      ];
+      return {
+        eyebrow: "External Feedback Intelligence",
+        title: feedbackEntries.length ? "Market signal is starting to shape the next version" : "External feedback is still waiting for launch signal",
+        summary: "This page should help PMMs understand whether the narrative is actually resonating in market over time, not just internally.",
+        bullets,
+        recommendation: feedbackEntries.length
+          ? "Use the recurring objections and weakest parameter to guide the next narrative version instead of making ad hoc edits."
+          : "Go live first, then let external feedback accumulate before trying to close the loop.",
+      };
+    }
+    return {
+      eyebrow: "Page Intelligence",
+      title: "Loop is tracking the current workspace",
+      summary: "AI should guide the next move, highlight drift, and keep the current page connected to the launch flow.",
+      bullets: currentPageReviewItems.map(item => item.title).slice(0, 3),
+      recommendation: "Keep refining the active page, then move it into Readiness when the work is stable enough for review.",
+    };
+  })();
   const isCompact = viewportWidth < 1180;
   const isMobile = viewportWidth < 820;
   const showDesktopAiRail = !isMobile;
   const compressedCenterTables = showDesktopAiRail && !aiRailCollapsed && !leftRailCollapsed;
+  const assetWorkspacePanels = Object.fromEntries(
+    ASSET_WORKSPACE_CONFIG.map(config => {
+      const aiSummary = (() => {
+        if (config.id === "productMarketingAssets") {
+          return [
+            aiDraft.assets.headline ? `Headline direction: ${aiDraft.assets.headline}` : "",
+            aiDraft.assets.messagingAsset ? `Messaging asset: ${aiDraft.assets.messagingAsset}` : "",
+            aiDraft.assets.elevatorPitch ? `Elevator pitch: ${aiDraft.assets.elevatorPitch}` : "",
+          ].filter(Boolean).join("\n");
+        }
+        if (config.id === "salesAssets") {
+          return [
+            aiDraft.assets.elevatorPitch ? `Pitch: ${aiDraft.assets.elevatorPitch}` : "",
+            aiDraft.assets.messagingAsset ? `Enablement angle: ${aiDraft.assets.messagingAsset}` : "",
+          ].filter(Boolean).join("\n");
+        }
+        if (config.id === "marketingAssets") {
+          return [
+            aiDraft.assets.headline ? `Homepage hero: ${aiDraft.assets.headline}` : "",
+            aiDraft.assets.emailPitch ? `Launch email: ${aiDraft.assets.emailPitch}` : "",
+          ].filter(Boolean).join("\n");
+        }
+        if (config.id === "socialAssets") {
+          return [
+            aiDraft.assets.headline ? `Launch hook: ${aiDraft.assets.headline}` : "",
+            aiDraft.assets.messagingAsset ? `Reusable snippet: ${aiDraft.assets.messagingAsset}` : "",
+          ].filter(Boolean).join("\n");
+        }
+        return [
+          aiDraft.assets.elevatorPitch ? `Elevator pitch: ${aiDraft.assets.elevatorPitch}` : "",
+          aiDraft.assets.messagingAsset ? `Reusable message bank: ${aiDraft.assets.messagingAsset}` : "",
+        ].filter(Boolean).join("\n");
+      })();
+
+      return [
+        config.id,
+        <WorkspaceAssetCategoryPanel
+          category={config.category}
+          noteLabel={config.noteLabel}
+          description={config.description}
+          fieldKey={`assets.${config.noteKey}`}
+          value={safeAssets.sections?.[config.noteKey] || ""}
+          aiValue={aiSummary}
+          placeholder={config.placeholder}
+          helper={config.helper}
+          suggestions={config.suggestions}
+          assetsState={safeAssets}
+          improveMode={narrativeUiState.improveMode}
+          enhancing={narrativeUiState.enhancingSection === "assets"}
+          onEnhance={() => handleEnhanceSection("assets")}
+          onFieldChange={updateNarrativeField}
+          userEdits={userEdits}
+        />,
+      ];
+    })
+  );
 
   const panelMap = {
     context: <WorkspaceCategoryCanvas
@@ -8993,6 +10090,7 @@ export default function App() {
       onFieldChange={updateNarrativeField}
       userEdits={userEdits}
     />,
+    ...assetWorkspacePanels,
     alignment: <AlignmentPanel d={{
       ...feedbackDashboardData,
       reviewItems: rawReviewItems,
@@ -9009,34 +10107,7 @@ export default function App() {
     competitionOverview: <CompetitionOverviewPanel comp={comp} />,
     competitionComparison: <CompetitionComparisonPanel comp={comp} setComp={setComp} compact={!useCanvasColumns} layout={competitionComparisonLayout} setLayout={setCompetitionComparisonLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitionComparison" />,
     competitionSales: <CompetitionSalesPanel comp={comp} setComp={setComp} compact={!useCanvasColumns} layout={competitionSalesLayout} setLayout={setCompetitionSalesLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitionSales" />,
-    reviewCenter: <ProjectReviewCenter reviewState={projectReview.status} reviewTeams={projectReview.teams} reviewSections={reviewSections} reviewRouting={currentReviewRouting} assignedSections={assignedReviewSections} sectionReviews={currentSectionReviews} reviewInsights={reviewInsights} confidenceScore={feedbackConfidenceScore} reviewAnalytics={reviewAnalytics} pmmActionQueue={pmmActionQueue} onAssignTeam={assignSectionToReviewTeam} onUpdateScore={updateSectionReviewScore} onUpdateComment={updateSectionReviewComment} onChooseImprove={markSectionReviewForImprove} onChooseApprove={approveSectionReview} onSubmitFeedback={submitCurrentTeamReview} onSendReview={sendReviewRouting} feedbackCount={feedbackEntries.length} compactView={compressedCenterTables} />,
-    assets: <WorkspaceCategoryCanvas
-      workspace="GTM"
-      category="Assets"
-      description="Track the asset list or planning notes that should come out of the GTM strategy and market story."
-      sections={[
-        {
-          label: "Asset List",
-          fieldKey: "gtm.assetList",
-          aiValue: [
-            aiDraft.assets.headline ? `Headline: ${aiDraft.assets.headline}` : "",
-            aiDraft.assets.elevatorPitch ? `Elevator Pitch: ${aiDraft.assets.elevatorPitch}` : "",
-            aiDraft.assets.emailPitch ? `Email Pitch: ${aiDraft.assets.emailPitch}` : "",
-            aiDraft.assets.messagingAsset ? `Messaging Asset: ${aiDraft.assets.messagingAsset}` : "",
-          ].filter(Boolean).join("\n"),
-          value: safeAssets.notes || "",
-          rows: 6,
-          placeholder: "List the core launch or GTM assets the team should create from this narrative.",
-          helper: "Use this as a practical planning canvas for the first asset set, not a final asset table.",
-          treatment: "ghost",
-        },
-      ]}
-      improveMode={narrativeUiState.improveMode}
-      enhancing={narrativeUiState.enhancingSection === "gtm"}
-      onEnhance={() => handleEnhanceSection("gtm")}
-      onFieldChange={updateNarrativeField}
-      userEdits={userEdits}
-    />,
+    reviewCenter: <ProjectReviewCenter reviewState={projectReview.status} reviewTeams={projectReview.teams} reviewSections={reviewSections} reviewRouting={currentReviewRouting} assignedSections={assignedReviewSections} sectionReviews={currentSectionReviews} reviewInsights={reviewInsights} confidenceScore={feedbackConfidenceScore} reviewAnalytics={reviewAnalytics} pmmActionQueue={pmmActionQueue} assetState={safeAssets} readinessBoard={readinessBoard} onAssignTeam={assignSectionToReviewTeam} onUpdateScore={updateSectionReviewScore} onUpdateComment={updateSectionReviewComment} onChooseImprove={markSectionReviewForImprove} onChooseApprove={approveSectionReview} onSubmitFeedback={submitCurrentTeamReview} onSendReview={sendReviewRouting} onOpenReadinessItem={openReadinessBoardItem} onSendReadinessItem={sendReadinessBoardItemForReview} onDropReadinessItem={markReadinessBoardItemDropped} feedbackCount={feedbackEntries.length} compactView={compressedCenterTables} />,
   };
 
   const groupOverviewMap = {};
@@ -9093,10 +10164,18 @@ export default function App() {
     }
 
     if (item.id === "asset-rollout-gap") {
-      setAssets(prev => ({
-        ...prev,
-        notes: prev.notes || `Refresh launch assets to align with ${brand.tagline || "the latest brand direction"} and updated narrative claims.`,
-      }));
+      setAssets(prev => {
+        const normalized = normalizeAssetsState(prev);
+        const nextSections = {
+          ...normalized.sections,
+          productMarketing: normalized.sections.productMarketing || `Refresh launch assets to align with ${brand.tagline || "the latest brand direction"} and updated narrative claims.`,
+        };
+        return {
+          ...normalized,
+          sections: nextSections,
+          notes: Object.values(nextSections).map(value => String(value || "").trim()).filter(Boolean).join("\n\n"),
+        };
+      });
     }
 
     setApprovedChanges(prev => ({ ...prev, [item.id]: true }));
@@ -9144,12 +10223,12 @@ export default function App() {
       ));
       setRemoteProjectsLoaded(true);
       return sanitizedRemoteProjects;
-    } catch {
+    } catch (error) {
       setRemoteProjectsLoaded(true);
       if (showNoticeOnFail) {
-        setPlatformNotice("Loop could not refresh projects from Supabase. Check the connection and try again.");
+        setPlatformNotice(getSupabaseProjectsErrorMessage(error, "Loop could not refresh projects from Supabase. Check the connection and try again."));
       } else {
-        setPlatformNotice("Supabase is connected, but Loop's database schema is not ready yet. Run the SQL in supabase/loop_mvp_schema.sql to enable live project saves.");
+        setPlatformNotice(getSupabaseProjectsErrorMessage(error, "Loop could not refresh projects from Supabase right now."));
       }
       return [];
     }
@@ -9207,6 +10286,7 @@ export default function App() {
       if (saved.brand) setBrand(saved.brand);
       if (saved.workspaceSaves) setWorkspaceSaves(saved.workspaceSaves);
       if (saved.projectReview) setProjectReview(saved.projectReview);
+      if (saved.readinessBoard) setReadinessBoard(normalizeReadinessBoard(saved.readinessBoard));
       if (saved.reviewRouting) setReviewRouting(saved.reviewRouting);
       if (saved.sectionReviews) setSectionReviews(saved.sectionReviews);
       if (saved.reviewInsights) setReviewInsights(saved.reviewInsights);
@@ -9277,46 +10357,7 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !hasHydratedRef.current) return;
-    const snapshot = {
-      screen: "home",
-      platformMode: "original",
-      active,
-      workflowStage,
-      workflowEvents,
-      launchComplete,
-      feedbackCaptured,
-      testScenarioLoaded,
-      platformNotice,
-      reviewDismissed,
-      approvedChanges,
-      compareVersionId,
-      starredTiles,
-      testProjects: sanitizeProjects(testProjects),
-      currentTestProjectId,
-      versionDraft,
-      pd,
-      cap,
-      comp,
-      pos,
-      msg,
-      aud,
-      strat,
-      story,
-      assets,
-      analytics,
-      confidence,
-      aiDraft,
-      userEdits,
-      narrativeUiState,
-      brand,
-      workspaceSaves,
-      projectReview,
-      reviewRouting,
-      sectionReviews: currentSectionReviews,
-      reviewInsights,
-      feedbackEntries,
-    };
-    window.localStorage.setItem(LOOP_STORAGE_KEY, JSON.stringify(snapshot));
+    window.localStorage.setItem(LOOP_STORAGE_KEY, JSON.stringify(buildPersistedAppSnapshot()));
   }, [
     screen,
     platformMode,
@@ -9358,11 +10399,76 @@ export default function App() {
   ]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const flushProjectState = () => {
+      persistCurrentProjectLocally();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushProjectState();
+      }
+    };
+
+    window.addEventListener("pagehide", flushProjectState);
+    window.addEventListener("beforeunload", flushProjectState);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", flushProjectState);
+      window.removeEventListener("beforeunload", flushProjectState);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [
+    active,
+    aiDraft,
+    analytics,
+    approvedChanges,
+    assets,
+    aud,
+    brand,
+    cap,
+    compareVersionId,
+    confidence,
+    currentSectionReviews,
+    currentTestProjectId,
+    feedbackCaptured,
+    feedbackEntries,
+    launchComplete,
+    msg,
+    narrativeUiState,
+    pd,
+    platformMode,
+    platformNotice,
+    projectReview,
+    reviewDismissed,
+    reviewInsights,
+    reviewRouting,
+    starredTiles,
+    story,
+    strat,
+    testProjects,
+    testScenarioLoaded,
+    userEdits,
+    versionDraft,
+    workflowEvents,
+    workflowStage,
+    workspaceSaves,
+  ]);
+
+  useEffect(() => {
     if (!currentTestProjectId) return;
     if (restoringProjectRef.current) return;
     if (!["workspace", "contextReview", "reviewRouting"].includes(screen)) return;
+    updateSaveIndicator("saving");
     const snapshot = buildTestProjectSnapshot(currentTestProjectId);
     setTestProjects(prev => mergeProjectsById(prev, [snapshot]));
+    window.localStorage.setItem(
+      LOOP_STORAGE_KEY,
+      JSON.stringify(buildPersistedAppSnapshot(mergeProjectsById(sanitizeProjects(testProjects), [snapshot])))
+    );
+    updateSaveIndicator(isSupabaseConfigured() ? "local" : "local");
 
     if (!remoteProjectsLoaded || !isSupabaseConfigured()) return;
 
@@ -9375,9 +10481,11 @@ export default function App() {
         const savedProject = await saveLoopProject(snapshot);
         if (savedProject) {
           setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+          updateSaveIndicator("synced");
         }
-      } catch {
-        setPlatformNotice("Loop could not save to Supabase. Check that the loop_projects table and public policies were created.");
+      } catch (error) {
+        updateSaveIndicator("local");
+        setPlatformNotice(getSupabaseProjectsErrorMessage(error, "Loop could not save this project to Supabase right now."));
       }
     }, 500);
   }, [
@@ -9576,15 +10684,19 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
       category: prev.category || draft.context.productCategory || "",
     }));
     applyNarrativeDraftToWorkingState(draft, false);
-    setAssets(prev => ({
-      ...prev,
-      notes: prev.notes || [
-        draft.assets.headline ? `Homepage headline: ${draft.assets.headline}` : "",
-        draft.assets.elevatorPitch ? `Elevator pitch: ${draft.assets.elevatorPitch}` : "",
-        draft.assets.emailPitch ? `Email pitch: ${draft.assets.emailPitch}` : "",
-        draft.assets.messagingAsset ? `Messaging asset: ${draft.assets.messagingAsset}` : "",
-      ].filter(Boolean).join("\n\n") || "Generate launch-ready assets from the approved narrative draft.",
-    }));
+    setAssets(prev => {
+      const normalized = normalizeAssetsState(prev);
+      return {
+        ...normalized,
+        sections: Object.values(normalized.sections || {}).some(value => String(value || "").trim()) ? normalized.sections : buildAssetSectionsFromDraft(draft.assets),
+        notes: normalized.notes || [
+          draft.assets.headline ? `Homepage headline: ${draft.assets.headline}` : "",
+          draft.assets.elevatorPitch ? `Elevator pitch: ${draft.assets.elevatorPitch}` : "",
+          draft.assets.emailPitch ? `Email pitch: ${draft.assets.emailPitch}` : "",
+          draft.assets.messagingAsset ? `Messaging asset: ${draft.assets.messagingAsset}` : "",
+        ].filter(Boolean).join("\n\n") || "Generate launch-ready assets from the approved narrative draft.",
+      };
+    });
     setProjectReview(prev => ({ ...prev, status: "Draft", lastAction: "AI narrative draft generated" }));
     setWorkflowStage("productTruth");
     setActive("context");
@@ -9654,6 +10766,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
         story,
         assets: {
           ...assets,
+          sections: Object.values(assets.sections || {}).some(value => String(value || "").trim()) ? { ...makeDefaultAssetSections(), ...(assets.sections || {}) } : buildAssetSectionsFromDraft(draft.assets),
           notes: assets.notes || [
             draft.assets.headline ? `Homepage headline: ${draft.assets.headline}` : "",
             draft.assets.elevatorPitch ? `Elevator pitch: ${draft.assets.elevatorPitch}` : "",
@@ -9706,6 +10819,20 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
     if (!(pd.name || "").trim() || !(pd.description || "").trim()) {
       setPlatformNotice("Add a product name and product description before generating a narrative.");
       return;
+    }
+
+    if (versionDraft.sourceProjectId) {
+      const requiredVersionContext = [
+        pd.versionAudienceUser,
+        pd.versionMarketSegment,
+        pd.versionPrimaryChannel,
+        pd.versionCompetitiveLens,
+        pd.versionPurpose,
+      ].every(value => String(value || "").trim());
+      if (!requiredVersionContext) {
+        setPlatformNotice("Choose the version context before building the next version so Loop can shape the narrative, GTM, assets, and readiness around the right lens.");
+        return;
+      }
     }
 
     if (versionDraft.sourceProjectId && versionDraft.mode === "minor") {
@@ -9886,7 +11013,14 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
         changeType: versionDraft.sourceProjectId ? versionDraft.mode : prev.changeType || "",
       }));
       applyNarrativeDraftToWorkingState(coreDraft, false);
-      setAssets(prev => ({ ...prev, notes: prev.notes || fallbackAssetNotes }));
+      setAssets(prev => {
+        const normalized = normalizeAssetsState(prev);
+        return {
+          ...normalized,
+          sections: Object.values(normalized.sections || {}).some(value => String(value || "").trim()) ? normalized.sections : buildAssetSectionsFromDraft(coreDraft.assets),
+          notes: normalized.notes || fallbackAssetNotes,
+        };
+      });
       setProjectReview(prev => ({ ...prev, status: "Draft", lastAction: "AI narrative draft generated" }));
       setScreen("workspace");
       setNarrativeUiState({
@@ -9947,6 +11081,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
           },
           assets: {
             ...assets,
+            sections: Object.values(assets.sections || {}).some(value => String(value || "").trim()) ? { ...makeDefaultAssetSections(), ...(assets.sections || {}) } : buildAssetSectionsFromDraft(coreDraft.assets),
             notes: assets.notes || fallbackAssetNotes,
           },
           projectReview: {
@@ -9997,10 +11132,14 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
 
           setAiDraft(fullDraft);
           applyNarrativeDraftToWorkingState(fullDraft, true);
-          setAssets(prev => ({
-            ...prev,
-            notes: prev.notes === fallbackAssetNotes || !prev.notes ? fullAssetNotes : prev.notes,
-          }));
+          setAssets(prev => {
+            const normalized = normalizeAssetsState(prev);
+            return {
+              ...normalized,
+              sections: Object.values(normalized.sections || {}).some(value => String(value || "").trim()) ? normalized.sections : buildAssetSectionsFromDraft(fullDraft.assets),
+              notes: normalized.notes === fallbackAssetNotes || !normalized.notes ? fullAssetNotes : normalized.notes,
+            };
+          });
           setPlatformNotice("Loop finished GTM and starter assets in the background.");
 
           const refreshedSnapshot = buildTestProjectSnapshot(currentTestProjectId || baseProjectSnapshot.id);
@@ -10221,8 +11360,21 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
       setStory(prev => ({ ...prev, origin: value }));
       return;
     }
-    if (fieldKey === "gtm.assetList") {
-      setAssets(prev => ({ ...prev, notes: value }));
+    if (fieldKey.startsWith("assets.")) {
+      const noteKey = fieldKey.split(".")[1];
+      setAssets(prev => {
+        const normalized = normalizeAssetsState(prev);
+        const nextSections = {
+          ...normalized.sections,
+          [noteKey]: value,
+        };
+        const nextNotes = Object.values(nextSections).map(item => String(item || "").trim()).filter(Boolean).join("\n\n");
+        return {
+          ...normalized,
+          sections: nextSections,
+          notes: nextNotes,
+        };
+      });
       return;
     }
     if (fieldKey === "gtm.channels") {
@@ -10279,11 +11431,26 @@ If section is gtm return:
     }
   }
 
-  const workspaceTabs = ["Product Truth", "Core Narrative", "GTM"];
+  const workspaceTabs = ["Product Truth", "Core Narrative", "GTM", "Assets"];
   const activeWorkspace = workspaceTabs.includes(activeGroup) ? activeGroup : "Product Truth";
+  const displayedWorkspaceName = activeGroup || activeWorkspace;
   const sidebarGroups = MVP_NAV.filter(group =>
-    ["Product Truth", "Core Narrative", "GTM"].includes(group.group)
+    ["Product Truth", "Core Narrative", "GTM", "Assets", "Readiness", "External Feedback"].includes(group.group)
   );
+  const nextWorkspaceOverviewId = getNextWorkspaceOverviewId(displayedWorkspaceName);
+  const nextWorkspaceGroup = nextWorkspaceOverviewId
+    ? (MVP_NAV.find(group => group.items.some(item => item.id === nextWorkspaceOverviewId))?.group || "")
+    : "";
+  const formattedSaveTime = saveIndicator.updatedAt
+    ? new Date(saveIndicator.updatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : "";
+  const saveStatusMeta = saveIndicator.status === "saving"
+    ? { label: "Saving...", detail: "Updating your latest draft", bg: "#FFF7E8", color: "#A05A00", border: "#F3D48C" }
+    : saveIndicator.status === "synced"
+      ? { label: "Synced", detail: formattedSaveTime ? `Saved to Projects at ${formattedSaveTime}` : "Saved to Projects", bg: "#ECFDF3", color: "#177A51", border: "#A7F3D0" }
+      : saveIndicator.status === "local"
+        ? { label: "Saved locally", detail: formattedSaveTime ? `Draft captured at ${formattedSaveTime}` : "Draft captured on this device", bg: "#EEF4FF", color: "#1D4ED8", border: "#BFDBFE" }
+        : { label: "Draft active", detail: "Changes save automatically", bg: "#F6F3FF", color: P[700], border: P[200] };
   const askAiRightOffset = screen === "workspace" && showDesktopAiRail ? (aiRailCollapsed ? 92 : 354) : 24;
 
   function openWorkspaceTab(group) {
@@ -10297,6 +11464,170 @@ If section is gtm return:
     if (firstItem) {
       setActive(firstItem.id);
     }
+  }
+
+  function updateReadinessBoardItems(itemIds = [], updater = item => item) {
+    if (!itemIds.length) return;
+    setReadinessBoard(prev => {
+      const normalized = normalizeReadinessBoard(prev);
+      const nextItems = { ...normalized.items };
+      itemIds.forEach(itemId => {
+        if (!nextItems[itemId]) return;
+        nextItems[itemId] = updater(nextItems[itemId], itemId);
+      });
+      return {
+        ...normalized,
+        items: nextItems,
+      };
+    });
+  }
+
+  function registerWorkspaceInReadiness(workspaceName = "") {
+    const nextBoard = buildReadinessBoardForWorkspaceMove(readinessBoard, workspaceName, assets);
+    setReadinessBoard(nextBoard);
+    return nextBoard;
+  }
+
+  function openReadinessBoardItem(itemId = "") {
+    const target = getWorkspaceTargetForReadinessItem(itemId);
+    setScreen("workspace");
+    setActive(target);
+  }
+
+  async function markReadinessBoardItemDropped(itemId = "") {
+    const boardItem = normalizeReadinessBoard(readinessBoard).items?.[itemId];
+    if (!boardItem) return;
+    const nextBoard = normalizeReadinessBoard(readinessBoard);
+    nextBoard.items = {
+      ...nextBoard.items,
+      [itemId]: {
+        ...nextBoard.items[itemId],
+        dropped: true,
+        status: "Dropped",
+        lastAction: `${boardItem.label} was dropped from this launch`,
+      },
+    };
+    setReadinessBoard(nextBoard);
+    let nextAssets = null;
+    if (ASSET_WORKSPACE_CONFIG.some(config => config.id === itemId)) {
+      const assetConfig = ASSET_WORKSPACE_CONFIG.find(config => config.id === itemId);
+      const normalizedAssets = normalizeAssetsState(assets);
+      nextAssets = {
+        ...normalizedAssets,
+        rows: normalizedAssets.rows.map(row =>
+          normalizeAssetWorkspaceCategory(row.category) === assetConfig.category
+            ? { ...row, status: row.status === "Approved" ? row.status : "Dropped" }
+            : row
+        ),
+      };
+      setAssets(nextAssets);
+    }
+    const nextProjectReview = {
+      ...projectReview,
+      lastAction: `${boardItem.label} dropped from launch scope`,
+    };
+    setProjectReview(nextProjectReview);
+    await syncCurrentProjectSnapshot(true, {
+      readinessBoard: nextBoard,
+      assets: nextAssets || assets,
+      projectReview: nextProjectReview,
+    });
+    setPlatformNotice(`${boardItem.label} was marked dropped in Readiness and will no longer block go-live.`);
+  }
+
+  async function sendReadinessBoardItemForReview(itemId = "") {
+    const boardItem = normalizeReadinessBoard(readinessBoard).items?.[itemId];
+    if (!boardItem) return;
+
+    if (ASSET_WORKSPACE_CONFIG.some(config => config.id === itemId)) {
+      const assetConfig = ASSET_WORKSPACE_CONFIG.find(config => config.id === itemId);
+      const normalizedAssets = normalizeAssetsState(assets);
+      const nextAssets = {
+        ...normalizedAssets,
+        rows: normalizedAssets.rows.map(row =>
+          normalizeAssetWorkspaceCategory(row.category) === assetConfig.category && row.status !== "Approved" && row.status !== "Dropped"
+            ? { ...row, status: "In Review" }
+            : row
+        ),
+      };
+      const nextBoard = normalizeReadinessBoard(readinessBoard);
+      nextBoard.items = {
+        ...nextBoard.items,
+        [itemId]: {
+          ...nextBoard.items[itemId],
+          dropped: false,
+          status: "In Review",
+          lastAction: `${boardItem.label} sent for review`,
+        },
+      };
+      const nextProjectReview = {
+        ...projectReview,
+        required: true,
+        status: "In Review",
+        lastAction: `${boardItem.label} sent for review`,
+      };
+      setAssets(nextAssets);
+      setReadinessBoard(nextBoard);
+      setProjectReview(nextProjectReview);
+      await syncCurrentProjectSnapshot(true, {
+        assets: nextAssets,
+        readinessBoard: nextBoard,
+        projectReview: nextProjectReview,
+      });
+      setPlatformNotice(`${boardItem.label} is now in review from Readiness.`);
+      return;
+    }
+
+    const workspaceLabel = boardItem.label;
+    const matchingSections = reviewSections.filter(section => section.workspace === workspaceLabel);
+    if (!matchingSections.length) {
+      setPlatformNotice(`Loop could not find any reviewable sections inside ${workspaceLabel} yet.`);
+      return;
+    }
+
+    const nextAssignments = Object.fromEntries(REVIEW_TEAMS.map(team => [team, [...(reviewRouting.assignments?.[team] || [])]]));
+    matchingSections.forEach(section => {
+      const team = section.suggestedTeam || getReviewTeamForSection(section);
+      if (!nextAssignments[team].includes(section.id)) {
+        nextAssignments[team].push(section.id);
+      }
+    });
+    const nextRouting = normalizeReviewRouting({
+      ...reviewRouting,
+      assignments: nextAssignments,
+      selectedTeam: reviewRouting.selectedTeam || matchingSections[0]?.suggestedTeam || "Sales",
+      lastAssignedAt: new Date().toISOString(),
+      sentAt: new Date().toISOString(),
+    }, reviewSections);
+    const nextBoard = normalizeReadinessBoard(readinessBoard);
+    nextBoard.items = {
+      ...nextBoard.items,
+      [itemId]: {
+        ...nextBoard.items[itemId],
+        dropped: false,
+        status: "In Review",
+        lastAction: `${workspaceLabel} sent for review`,
+      },
+    };
+    const nextProjectReview = {
+      ...projectReview,
+      required: true,
+      status: "In Review",
+      teams: Array.from(new Set([...Object.keys(nextAssignments).filter(team => nextAssignments[team].length > 0), ...(projectReview.teams || [])])),
+      lastAction: `${workspaceLabel} sent for review`,
+    };
+    setReviewRouting(nextRouting);
+    setReadinessBoard(nextBoard);
+    setProjectReview(nextProjectReview);
+    setScreen("workspace");
+    setActive("reviewCenter");
+    setWorkflowStage("review");
+    await syncCurrentProjectSnapshot(true, {
+      reviewRouting: nextRouting,
+      readinessBoard: nextBoard,
+      projectReview: nextProjectReview,
+    });
+    setPlatformNotice(`${workspaceLabel} was sent for review from Readiness and is now being tracked in the launch board.`);
   }
 
   function renderSidebarGroup({ group, icon, items }) {
@@ -10402,6 +11733,7 @@ If section is gtm return:
       confidence,
       workspaceSaves,
       projectReview,
+      readinessBoard,
       reviewRouting,
       sectionReviews: currentSectionReviews,
       reviewInsights,
@@ -10439,6 +11771,70 @@ If section is gtm return:
     };
   }
 
+  function buildPersistedAppSnapshot(projectsOverride = testProjects) {
+    return {
+      screen: "home",
+      platformMode: "original",
+      active,
+      workflowStage,
+      workflowEvents,
+      launchComplete,
+      feedbackCaptured,
+      testScenarioLoaded,
+      platformNotice,
+      reviewDismissed,
+      approvedChanges,
+      compareVersionId,
+      starredTiles,
+      testProjects: sanitizeProjects(projectsOverride),
+      currentTestProjectId,
+      versionDraft,
+      pd,
+      cap,
+      comp,
+      pos,
+      msg,
+      aud,
+      strat,
+      story,
+      assets,
+      analytics,
+      confidence,
+      aiDraft,
+      userEdits,
+      narrativeUiState,
+      brand,
+      workspaceSaves,
+      projectReview,
+      readinessBoard,
+      reviewRouting,
+      sectionReviews: currentSectionReviews,
+      reviewInsights,
+      feedbackEntries,
+    };
+  }
+
+  function persistCurrentProjectLocally(updateStatus = true) {
+    if (typeof window === "undefined" || !hasHydratedRef.current) return;
+
+    const shouldSnapshotCurrentProject =
+      platformMode === "test" &&
+      ((currentTestProjectId && String(currentTestProjectId).trim()) || (pd.name || "").trim());
+
+    const nextProjects = shouldSnapshotCurrentProject
+      ? mergeProjectsById(
+          sanitizeProjects(testProjects),
+          [buildTestProjectSnapshot(currentTestProjectId || `test-${Date.now()}`)]
+        )
+      : sanitizeProjects(testProjects);
+
+    window.localStorage.setItem(LOOP_STORAGE_KEY, JSON.stringify(buildPersistedAppSnapshot(nextProjects)));
+    if (updateStatus) {
+      updateSaveIndicator("local");
+    }
+    return nextProjects;
+  }
+
   function openTestProject(project) {
     if (!project?.snapshot) return;
     const s = hydrateDraftSnapshot(project.snapshot);
@@ -10464,6 +11860,7 @@ If section is gtm return:
     setNarrativeUiState(s.narrativeUiState || { isGenerated: false, improveMode: false, isGenerating: false, enhancingSection: "" });
     setWorkspaceSaves(s.workspaceSaves || {});
     setProjectReview(s.projectReview || { status: "Draft", required: false, teams: ["Product", "Sales"], lastAction: "Project opened" });
+    setReadinessBoard(normalizeReadinessBoard(s.readinessBoard || makeEmptyReadinessBoard()));
     setReviewRouting(normalizeReviewRouting(s.reviewRouting || makeEmptyReviewRouting(), buildReviewableSections(s)));
     setSectionReviews(s.sectionReviews || {});
     setReviewInsights(s.reviewInsights || {
@@ -10532,6 +11929,7 @@ If section is gtm return:
     setUserEdits({});
     setNarrativeUiState({ isGenerated: false, improveMode: false, isGenerating: false, enhancingSection: "" });
     setProjectReview({ status: "Draft", required: false, teams: ["Product", "Sales"], lastAction: "Project reset" });
+    setReadinessBoard(makeEmptyReadinessBoard());
     setReviewRouting(makeEmptyReviewRouting());
     setSectionReviews({});
     setReviewInsights({
@@ -10549,7 +11947,7 @@ If section is gtm return:
 
   const onboardingReady = !!(pd.name && pd.launchDate);
   const narrativeReady = !!(pos.statement && pos.valueProp && msg.pillars);
-  const assetsReady = !!assets.notes;
+  const assetsReady = !!(assets.rows?.length || Object.values(normalizeAssetsState(assets).sections || {}).some(value => String(value || "").trim()));
   const reviewReady = rawReviewItems.length === 0 && narrativeReady;
 
   const checklistStatusMap = {
@@ -10657,10 +12055,22 @@ If section is gtm return:
       customer: force || !prev.customer ? "Teams know the product deeply, but they struggle to tell the same story across product, sales, and marketing." : prev.customer,
       demo: force || !prev.demo ? "Show how Product Truth becomes Narrative, then GTM assets, then feedback-driven improvement." : prev.demo,
     }));
-    setAssets(prev => ({
-      ...prev,
-      notes: force || !prev.notes ? "Website hero copy, launch email, sales brief, and founder talk track are ready for alignment review." : prev.notes,
-    }));
+    setAssets(prev => {
+      const normalized = normalizeAssetsState(prev);
+      const seededSections = force || !normalized.notes
+        ? {
+            ...normalized.sections,
+            marketing: normalized.sections.marketing || "Website hero copy and launch email are ready for alignment review.",
+            sales: normalized.sections.sales || "Sales brief is ready for alignment review.",
+            social: normalized.sections.social || "Founder talk track is ready for alignment review.",
+          }
+        : normalized.sections;
+      return {
+        ...normalized,
+        sections: seededSections,
+        notes: Object.values(seededSections).map(value => String(value || "").trim()).filter(Boolean).join("\n\n") || normalized.notes,
+      };
+    });
     setWorkspaceSaves(prev => ({ ...prev, gtm: new Date().toISOString(), assets: new Date().toISOString() }));
   }
 
@@ -10720,7 +12130,7 @@ If section is gtm return:
   function getNextWorkspaceOverviewId(workspace) {
     if (workspace === "Product Truth" || workspace === "productTruth") return "narrative";
     if (workspace === "Core Narrative" || workspace === "Narrative" || workspace === "narrative") return "strategy";
-    if (workspace === "GTM" || workspace === "GTM Readiness" || workspace === "gtm") return "assets";
+    if (workspace === "GTM" || workspace === "GTM Readiness" || workspace === "gtm") return "productMarketingAssets";
     if (workspace === "Assets" || workspace === "Resources" || workspace === "assets") return "reviewCenter";
     return "";
   }
@@ -10814,7 +12224,27 @@ If section is gtm return:
     setScreen("workspace");
     setActive("reviewCenter");
     setWorkflowStage("review");
-    setPlatformNotice("Loop opened Review Center with suggested team assignments. Adjust owners inline if you want, then click Send Review.");
+    setPlatformNotice("Loop opened Readiness with suggested team assignments. Adjust owners inline if you want, then click Send Review.");
+  }
+
+  async function moveCurrentWorkspaceToReadiness() {
+    const workspaceName = activeGroup || activeLabel || "Current workspace";
+    saveWorkspace(workspaceName);
+    const nextReadinessBoard = registerWorkspaceInReadiness(workspaceName);
+    const nextProjectReview = {
+      ...projectReview,
+      status: projectReview.required ? projectReview.status : "Ready for Review",
+      lastAction: `${workspaceName} moved to Readiness`,
+    };
+    setProjectReview(nextProjectReview);
+    await syncCurrentProjectSnapshot(true, {
+      readinessBoard: nextReadinessBoard,
+      projectReview: nextProjectReview,
+    });
+    setScreen("workspace");
+    setActive("reviewCenter");
+    setWorkflowStage("review");
+    setPlatformNotice(`${workspaceName} moved to Readiness. From here you can send items for review, track blockers, and decide when to go live.`);
   }
 
   async function sendReviewRouting() {
@@ -10829,7 +12259,19 @@ If section is gtm return:
       ...nextRouting,
       sentAt: new Date().toISOString(),
     };
+    const routedWorkspaceIds = Array.from(new Set(
+      reviewSections
+        .filter(section => routedTeams.some(team => (stampedRouting.assignments?.[team] || []).includes(section.id)))
+        .map(section => getReadinessItemIdForWorkspace(section.workspace))
+        .filter(Boolean)
+    ));
     setReviewRouting(stampedRouting);
+    updateReadinessBoardItems(routedWorkspaceIds, item => ({
+      ...item,
+      dropped: false,
+      status: "In Review",
+      lastAction: `${item.label} sent for review`,
+    }));
     setProjectReview(prev => ({
       ...prev,
       required: true,
@@ -10964,6 +12406,17 @@ If section is gtm return:
     setFeedbackEntries(prev => [feedbackEntry, ...prev]);
 
     const overallSummary = summarizeSectionReviewState(currentSectionReviews, currentReviewRouting);
+    const reviewedWorkspaceIds = Array.from(new Set(
+      activeSectionIds
+        .map(sectionId => reviewSections.find(section => section.id === sectionId)?.workspace)
+        .map(workspace => getReadinessItemIdForWorkspace(workspace))
+        .filter(Boolean)
+    ));
+    updateReadinessBoardItems(reviewedWorkspaceIds, item => ({
+      ...item,
+      status: improveCount > 0 ? "Needs Work" : "Approved",
+      lastAction: improveCount > 0 ? `${activeTeam} flagged changes in ${item.label}` : `${activeTeam} approved ${item.label}`,
+    }));
     setProjectReview(prev => ({
       ...prev,
       required: true,
@@ -11182,13 +12635,13 @@ If section is gtm return:
       intro = "This export captures the current go-to-market direction from Loop's guided MVP workflow.";
     } else if (workspaceTitle === "Assets" || (workspaceTitle === "Resources" && active === "assets")) {
       rows = [
-        { label: "Homepage Headline", value: aiDraft.assets.headline || "" },
-        { label: "Elevator Pitch", value: aiDraft.assets.elevatorPitch || msg.elevator },
-        { label: "Email Pitch", value: aiDraft.assets.emailPitch || "" },
-        { label: "Messaging Asset", value: aiDraft.assets.messagingAsset || "" },
-        { label: "Asset Notes", value: assets.notes },
+        { label: "Product Marketing", value: assets.sections?.productMarketing || "" },
+        { label: "Sales", value: assets.sections?.sales || "" },
+        { label: "Marketing", value: assets.sections?.marketing || "" },
+        { label: "Social", value: assets.sections?.social || "" },
+        { label: "General", value: assets.sections?.general || "" },
       ];
-      intro = "This export captures the current starter assets and asset notes generated from the narrative.";
+      intro = "This export captures the current team-based asset plans and generated outputs from the Assets workspace.";
     } else if (workspaceTitle === "Resources" && active === "reviewCenter") {
       rows = [
         { label: "Review Status", value: projectReview.status || "Draft" },
@@ -11196,7 +12649,7 @@ If section is gtm return:
         { label: "Feedback Count", value: `${feedbackEntries.length}` },
         { label: "Confidence Score", value: `${feedbackConfidenceScore || 0}` },
       ];
-      intro = "This export captures the internal feedback state, review decisions, and the latest intelligence generated from the review center.";
+      intro = "This export captures the readiness state, review decisions, and the latest launch control signals from the readiness board.";
     } else if (workspaceTitle === "Resources" && (active === "analytics" || active === "confidence")) {
       rows = [
         { label: "Launch Feedback Entries", value: `${feedbackEntries.length}` },
@@ -11204,7 +12657,7 @@ If section is gtm return:
         { label: "Weakest Parameter", value: reviewInsights.weakestParameter || "" },
         { label: "Confidence Score", value: `${feedbackConfidenceScore || 0}` },
       ];
-      intro = "This export captures market feedback, signals, and the current confidence view inside Resources.";
+      intro = "This export captures external feedback, signals, and the current narrative health view after launch.";
     } else {
       return;
     }
@@ -11361,7 +12814,7 @@ If section is gtm return:
     setPlatformMode("test");
     setCurrentTestProjectId("");
     setVersionDraft({ sourceProjectId: "", mode: "minor" });
-    setAssets({ notes: "", rows: [] });
+    setAssets({ notes: "", sections: makeDefaultAssetSections(), rows: [] });
     setReviewRouting(makeEmptyReviewRouting());
     setSectionReviews({});
     setReviewInsights({
@@ -11383,6 +12836,11 @@ If section is gtm return:
       previousVersionId: "",
       previousVersionName: "",
       changeType: "",
+      versionAudienceUser: "",
+      versionMarketSegment: "",
+      versionPrimaryChannel: "",
+      versionCompetitiveLens: "",
+      versionPurpose: "",
     }));
     setScreen("projectSetup");
   }
@@ -11391,7 +12849,7 @@ If section is gtm return:
     setPlatformMode("test");
     setCurrentTestProjectId("");
     setVersionDraft({ sourceProjectId: "", mode: "minor" });
-    setAssets({ notes: "", rows: [] });
+    setAssets({ notes: "", sections: makeDefaultAssetSections(), rows: [] });
     setReviewRouting(makeEmptyReviewRouting());
     setSectionReviews({});
     setReviewInsights({
@@ -11413,6 +12871,11 @@ If section is gtm return:
       previousVersionId: "",
       previousVersionName: "",
       changeType: "",
+      versionAudienceUser: "",
+      versionMarketSegment: "",
+      versionPrimaryChannel: "",
+      versionCompetitiveLens: "",
+      versionPurpose: "",
       launchDate: addDays(new Date().toISOString().slice(0, 10), 21),
       version: "v1.0",
       status: "Planned",
@@ -11429,6 +12892,7 @@ If section is gtm return:
   async function syncCurrentProjectSnapshot(showNoticeOnFail = false, snapshotOverrides = null) {
     if (platformMode !== "test" || !(pd.name || "").trim()) return null;
 
+    updateSaveIndicator("saving");
     const baseProject = buildTestProjectSnapshot(currentTestProjectId || `test-${Date.now()}`);
     const snapshot = snapshotOverrides
       ? {
@@ -11438,15 +12902,19 @@ If section is gtm return:
         }
       : baseProject;
     setTestProjects(prev => mergeProjectsById(prev, [snapshot]));
+    persistCurrentProjectLocally(false);
+    updateSaveIndicator("local");
 
     if (isSupabaseConfigured()) {
       try {
         const savedProject = await saveLoopProject(snapshot);
         if (savedProject) {
           setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+          updateSaveIndicator("synced");
           return savedProject;
         }
       } catch (error) {
+        updateSaveIndicator("local");
         if (showNoticeOnFail) {
           setPlatformNotice(`Loop could not sync this project to Supabase: ${error?.message || "Unknown error"}`);
         }
@@ -11498,18 +12966,46 @@ If section is gtm return:
           baseRow,
           ...normalizedCurrent.rows.filter(row => row.id !== suggestion.id),
         ],
+        sections: {
+          ...normalizedCurrent.sections,
+          [String(suggestion.team || "").toLowerCase().replace(/[^a-z]+/g, "") === "productmarketing"
+            ? "productMarketing"
+            : String(suggestion.team || "").toLowerCase() === "sales"
+              ? "sales"
+              : String(suggestion.team || "").toLowerCase() === "marketing"
+                ? "marketing"
+                : String(suggestion.team || "").toLowerCase() === "social"
+                  ? "social"
+                  : "general"]: normalizedCurrent.sections?.[String(suggestion.team || "").toLowerCase().replace(/[^a-z]+/g, "") === "productmarketing"
+                    ? "productMarketing"
+                    : String(suggestion.team || "").toLowerCase() === "sales"
+                      ? "sales"
+                      : String(suggestion.team || "").toLowerCase() === "marketing"
+                        ? "marketing"
+                        : String(suggestion.team || "").toLowerCase() === "social"
+                          ? "social"
+                          : "general"] || `${suggestion.assetName}\n${generatedContent}`,
+        },
         notes: normalizedCurrent.notes || `AI generated ${suggestion.assetName}.`,
       };
     })();
 
     setAssets(nextAssets);
     await syncCurrentProjectSnapshot(true, { assets: nextAssets });
-    setPlatformNotice(`${suggestion.assetName} was generated and saved in Resources.`);
+    setPlatformNotice(`${suggestion.assetName} was generated and saved in Assets.`);
   }
 
   async function handleGenerateWorkspaceAssetSuggestion(suggestion) {
     const nextSuggestion = buildWorkspaceAssetSuggestion(suggestion, activeLabel || activeGroup || "Workspace");
     await handleGenerateSuggestedAsset(nextSuggestion);
+  }
+
+  function handlePreviewWorkspaceAssetSuggestion(suggestion) {
+    const nextSuggestion = buildWorkspaceAssetSuggestion(suggestion, activeLabel || activeGroup || "Workspace");
+    setAssetTemplatePreview({
+      suggestion: nextSuggestion,
+      preview: buildAssetTemplatePreview(nextSuggestion, { pd, msg, strat, aiDraft, brand }),
+    });
   }
 
   function handleStartNextVersion(project) {
@@ -11539,6 +13035,11 @@ If section is gtm return:
       previousVersionId: project.id,
       previousVersionName: source.pd?.name || project.name || "",
       changeType: "minor",
+      versionAudienceUser: "",
+      versionMarketSegment: "",
+      versionPrimaryChannel: "",
+      versionCompetitiveLens: "",
+      versionPurpose: "",
       version: nextVersionLabel(source.pd?.version || project.version || "v1.0"),
       status: "Started",
     });
@@ -11546,6 +13047,7 @@ If section is gtm return:
   }
 
   function handleViewProjectsFromHome() {
+    persistCurrentProjectLocally();
     setPlatformMode("test");
     setCurrentTestProjectId("");
     setVersionDraft({ sourceProjectId: "", mode: "minor" });
@@ -11600,28 +13102,32 @@ If section is gtm return:
       saveWorkspace("gtm");
       seedGtmAndAssets(false);
       setWorkflowStage("assets");
-      setActive("assets");
+      setActive("productMarketingAssets");
       logWorkflowEvent("GTM automation ran", "Loop created a starter GTM plan and suggested launch assets from the approved narrative.");
       return;
     }
 
     if (workflowStage === "assets") {
       saveWorkspace("assets");
+      const nextReadinessBoard = buildReadinessBoardForWorkspaceMove(readinessBoard, "Assets", assets);
+      setReadinessBoard(nextReadinessBoard);
       setWorkflowStage("review");
       setActive("reviewCenter");
-      setProjectReview(prev => ({ ...prev, lastAction: "Project ready for owner review decision", status: prev.required ? "Requested" : "Draft" }));
-      logWorkflowEvent("Assets aligned for review", "Launch assets were staged and the project is ready for a review decision.");
+      setProjectReview(prev => ({ ...prev, lastAction: "Assets moved to Readiness", status: prev.required ? prev.status : "Ready for Review" }));
+      logWorkflowEvent("Assets moved to Readiness", "Launch assets were staged in Readiness so approvals and blockers can be managed in one place.");
       return;
     }
 
     if (workflowStage === "review") {
-      rawReviewItems.forEach(item => approveReviewItem(item));
-      publishNarrativeVersion();
-      setProjectReview(prev => ({ ...prev, status: "Approved", lastAction: "Project approved and version published" }));
+      if (!readinessGate.ready) {
+        setPlatformNotice(readinessGate.blockers[0] || "Readiness still has blockers before Go Live.");
+        return;
+      }
+      setProjectReview(prev => ({ ...prev, status: "Approved", lastAction: "Readiness cleared and launch approved" }));
       setPd(prev => ({ ...prev, status: "ready" }));
       setWorkflowStage("launch");
       setActive("reviewCenter");
-      logWorkflowEvent("Version published", "Loop resolved available review items and published the next narrative version for launch.");
+      logWorkflowEvent("Launch approved", "Readiness cleared the critical blockers and the project is approved to go live.");
       return;
     }
 
@@ -11651,12 +13157,12 @@ If section is gtm return:
     productTruth: { label: "Move to Core Narrative", onClick: handleAdvanceWorkflow },
     narrative: { label: "Move to GTM", onClick: handleAdvanceWorkflow },
     competition: { label: "Move to GTM", onClick: () => { setWorkflowStage("narrative"); handleAdvanceWorkflow(); } },
-    gtm: { label: "Generate GTM + Assets", onClick: handleAdvanceWorkflow },
-    assets: { label: "Open Internal Feedback", onClick: handleAdvanceWorkflow },
+    gtm: { label: "Continue to Assets", onClick: handleAdvanceWorkflow },
+    assets: { label: "Move to Readiness", onClick: handleAdvanceWorkflow },
     review: projectReview.required
-      ? { label: "Publish Version", onClick: handleAdvanceWorkflow }
-      : { label: "Send Project for Review", onClick: requestProjectReview },
-    launch: { label: "Launch Product", onClick: handleAdvanceWorkflow },
+      ? { label: "Go Live", onClick: handleAdvanceWorkflow, disabled: !readinessGate.ready, note: readinessGate.blockers[0] || "" }
+      : { label: "Send for Review", onClick: requestProjectReview },
+    launch: { label: "Capture External Feedback", onClick: handleAdvanceWorkflow },
     feedback: { label: "Close the Loop", onClick: handleAdvanceWorkflow },
     complete: null,
   };
@@ -11670,24 +13176,8 @@ If section is gtm return:
     },
     {
       id: "feedback",
-      label: "Get Feedback",
-      onClick: () => {
-        const workspaceName = activeGroup || activeLabel || "Current canvas";
-        saveWorkspace(workspaceName);
-        syncCurrentProjectSnapshot(true);
-        requestProjectReview();
-      },
-      variant: "secondary",
-    },
-    {
-      id: "publish",
-      label: "Publish",
-      onClick: () => {
-        const workspaceName = activeGroup || activeLabel || "Current canvas";
-        saveWorkspace(workspaceName);
-        syncCurrentProjectSnapshot(true);
-        publishNarrativeVersion();
-      },
+      label: "Move to Readiness",
+      onClick: moveCurrentWorkspaceToReadiness,
       variant: "secondary",
     },
   ];
@@ -11996,6 +13486,14 @@ If section is gtm return:
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: isMobile ? "flex-start" : "flex-end" }}>
+                <div style={{ padding: "10px 14px", borderRadius: 16, background: saveStatusMeta.bg, border: `1px solid ${saveStatusMeta.border}`, color: saveStatusMeta.color, display: "grid", gap: 2 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800 }}>
+                    {saveStatusMeta.label}
+                  </span>
+                  <span style={{ fontSize: 11, color: saveStatusMeta.color, opacity: 0.88 }}>
+                    {saveStatusMeta.detail}
+                  </span>
+                </div>
                 <span style={{ padding: "10px 14px", borderRadius: 999, background: P[50], color: P[700], fontSize: 12, fontWeight: 800 }}>
                   Review: {projectReview.status}
                 </span>
@@ -12218,32 +13716,32 @@ If section is gtm return:
 
             <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, background: "white", border: `1px solid ${S.border}`, borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 44px rgba(38, 33, 92, 0.05)" }}>
               <div style={{ padding: "14px 16px", borderBottom: `1px solid ${S.border}`, background: "linear-gradient(180deg, #FBFAFF 0%, #F7F5FF 100%)", display: "grid", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 6, background: S.sidebar, border: `1px solid ${S.border}`, borderRadius: 16, flexWrap: "wrap", justifyContent: "flex-start" }}>
-                  {workspaceTabs.map(tab => {
-                    const isActive = activeWorkspace === tab;
-                    return (
-                      <button
-                        key={tab}
-                        onClick={() => openWorkspaceTab(tab)}
-                        style={{
-                          border: "none",
-                          background: isActive ? "white" : "transparent",
-                          color: isActive ? P[600] : S.muted,
-                          borderRadius: 12,
-                          padding: "10px 16px",
-                          fontSize: 14,
-                          fontWeight: isActive ? 700 : 500,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          boxShadow: isActive ? "0 1px 0 rgba(38, 33, 92, 0.05)" : "none",
-                        }}
-                      >
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                          <span>{tab}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 16px", background: S.sidebar, border: `1px solid ${S.border}`, borderRadius: 16, flexWrap: "wrap" }}>
+                  <div style={{ display: "grid", gap: 3 }}>
+                    <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.03em", color: P[900] }}>{displayedWorkspaceName}</span>
+                  </div>
+                  {nextWorkspaceGroup ? (
+                    <button
+                      onClick={() => openWorkspaceTab(nextWorkspaceGroup)}
+                      style={{
+                        border: `1px solid ${P[200]}`,
+                        background: "white",
+                        color: P[700],
+                        borderRadius: 12,
+                        padding: "10px 14px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      Next: {nextWorkspaceGroup}
+                    </button>
+                  ) : (
+                    <div style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, color: S.muted }}>
+                      Final workspace
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
@@ -12256,14 +13754,14 @@ If section is gtm return:
                     )}
                   </div>
                   <span style={{ fontSize: 12, color: S.muted, fontWeight: 700, textAlign: "right" }}>
-                    Improve, get feedback, or publish from this canvas.
+                    Improve this workspace, then move it into Readiness when it is ready for review.
                   </span>
                 </div>
               </div>
               <div style={{ padding: "22px 20px 28px", minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
                 {narrativeUiState.isGenerated && (
                   <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "linear-gradient(135deg, #F8F6FF 0%, #F1EEFF 100%)", border: `1px solid ${P[200]}`, color: P[800], fontSize: 13, fontWeight: 700 }}>
-                    Draft generated. Refine it, get feedback, and publish when the story feels right.
+                    Draft generated. Refine it here, then move it into Readiness when the story feels launch-ready.
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16, alignItems: "center" }}>
@@ -12288,7 +13786,7 @@ If section is gtm return:
                   ))}
                 </div>
                 <div style={{ minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
-                  <WorkspaceAssetActionContext.Provider value={{ onGenerateAssetSuggestion: handleGenerateWorkspaceAssetSuggestion }}>
+                  <WorkspaceAssetActionContext.Provider value={{ onGenerateAssetSuggestion: handleGenerateWorkspaceAssetSuggestion, onPreviewAssetSuggestion: handlePreviewWorkspaceAssetSuggestion }}>
                     {panelMap[active]}
                   </WorkspaceAssetActionContext.Provider>
                 </div>
@@ -12320,6 +13818,7 @@ If section is gtm return:
                 onAsk={() => runAssistantPrompt(aiPrompt)}
                 askOutput={aiOutput}
                 askLoading={aiLoading}
+                pageIntelligence={pageIntelligence}
                 chatDocked={false}
               />
             </div>
@@ -12351,6 +13850,7 @@ If section is gtm return:
               onAsk={() => runAssistantPrompt(aiPrompt)}
               askOutput={aiOutput}
               askLoading={aiLoading}
+              pageIntelligence={pageIntelligence}
               chatDocked={!aiRailCollapsed}
               showChat={false}
             />
@@ -12361,6 +13861,17 @@ If section is gtm return:
       </div>
         </div>
       )}
+
+      <AssetTemplatePreviewModal
+        preview={assetTemplatePreview?.preview}
+        onClose={() => setAssetTemplatePreview(null)}
+        onFillTemplate={async () => {
+          const suggestion = assetTemplatePreview?.suggestion;
+          if (!suggestion) return;
+          await handleGenerateSuggestedAsset(suggestion);
+          setAssetTemplatePreview(null);
+        }}
+      />
 
       {platformNotice && (
         <div style={{ position: "fixed", left: 24, bottom: 24, zIndex: 60, maxWidth: 420, background: "white", border: `1px solid ${S.border}`, borderRadius: 18, boxShadow: "0 20px 44px rgba(83, 74, 183, 0.18)", padding: 16 }}>
