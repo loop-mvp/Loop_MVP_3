@@ -1419,9 +1419,9 @@ function makeDefaultAnalyticsState() {
       { id: "clarity", label: "Clarity", value: "3.9", note: "Average message clarity score", tint: "linear-gradient(135deg, #FDF6EA 0%, #FFFDF7 100%)" },
     ],
     signals: [
-      { id: "sales-calls", title: "Sales Call Signal", stage: "Emerging", note: "Capture repeated objections, high-conviction moments, and language prospects naturally use." },
-      { id: "customer-feedback", title: "Customer Feedback Signal", stage: "Active", note: "Summarize the strongest customer reactions, surprises, and confusion points from interviews or demos." },
-      { id: "market-patterns", title: "Market Pattern Signal", stage: "Watching", note: "Track how often similar competitors or buyers describe the same problem and category." },
+      { id: "sales-calls", title: "Sales Call Signal", stage: "Emerging", note: "Capture repeated objections, high-conviction moments, and language prospects naturally use.", sourceTeam: "Sales", channel: "Sales Calls", signalType: "Objection", severity: "Medium", linkedVersion: "v1.0" },
+      { id: "customer-feedback", title: "Customer Feedback Signal", stage: "Active", note: "Summarize the strongest customer reactions, surprises, and confusion points from interviews or demos.", sourceTeam: "Customer", channel: "Customer Interviews", signalType: "Confusion", severity: "High", linkedVersion: "v1.0" },
+      { id: "market-patterns", title: "Market Pattern Signal", stage: "Watching", note: "Track how often similar competitors or buyers describe the same problem and category.", sourceTeam: "PMM", channel: "Market Scan", signalType: "Competitive Mention", severity: "Medium", linkedVersion: "v1.0" },
     ],
     versions: [
       {
@@ -1444,6 +1444,71 @@ function makeDefaultAnalyticsState() {
   };
 }
 
+function normalizeExternalSignal(signal = {}, index = 0, fallbackVersion = "v1.0") {
+  const sourceTeam = signal.sourceTeam || signal.source || "PMM";
+  const channel = signal.channel || "General";
+  const signalType = signal.signalType || signal.title || "Observation";
+  const severity = signal.severity || (signal.stage === "Active" ? "High" : signal.stage === "Watching" ? "Medium" : "Low");
+  return {
+    id: signal.id || `signal-${index}-${Date.now()}`,
+    title: signal.title || signalType,
+    stage: signal.stage || "Active",
+    note: signal.note || "",
+    sourceTeam,
+    channel,
+    signalType,
+    severity,
+    linkedVersion: signal.linkedVersion || fallbackVersion,
+    createdAt: signal.createdAt || "",
+  };
+}
+
+function buildExternalFeedbackInsights(signals = []) {
+  const normalizedSignals = signals.map((signal, index) => normalizeExternalSignal(signal, index));
+  const totalsByType = normalizedSignals.reduce((acc, signal) => {
+    acc[signal.signalType] = (acc[signal.signalType] || 0) + 1;
+    return acc;
+  }, {});
+  const totalsBySource = normalizedSignals.reduce((acc, signal) => {
+    acc[signal.sourceTeam] = (acc[signal.sourceTeam] || 0) + 1;
+    return acc;
+  }, {});
+  const strongestType = Object.entries(totalsByType).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const strongestSource = Object.entries(totalsBySource).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const severeSignals = normalizedSignals.filter(signal => signal.severity === "High");
+  const resonanceSignals = normalizedSignals.filter(signal => signal.signalType === "Resonance");
+  const objectionSignals = normalizedSignals.filter(signal => signal.signalType === "Objection");
+  const confusionSignals = normalizedSignals.filter(signal => signal.signalType === "Confusion");
+  return {
+    normalizedSignals,
+    strongestType,
+    strongestSource,
+    severeSignals,
+    resonanceSignals,
+    objectionSignals,
+    confusionSignals,
+    groupedSignals: Object.entries(totalsByType).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count),
+  };
+}
+
+function computeCloseLoopGate({ launchComplete = false, signals = [] } = {}) {
+  const insights = buildExternalFeedbackInsights(signals);
+  const signalCount = insights.normalizedSignals.length;
+  const sourceCount = new Set(insights.normalizedSignals.map(signal => signal.sourceTeam)).size;
+  const ready = launchComplete && signalCount >= 3 && sourceCount >= 2;
+  let blocker = "";
+  if (!launchComplete) blocker = "Go Live must happen before Loop can close.";
+  else if (signalCount < 3) blocker = "Capture at least 3 external feedback signals before closing the loop.";
+  else if (sourceCount < 2) blocker = "Capture feedback from at least 2 sources or teams before closing the loop.";
+  return {
+    ready,
+    blocker,
+    signalCount,
+    sourceCount,
+    insights,
+  };
+}
+
 function normalizeAnalyticsState(analytics = {}) {
   const fallback = makeDefaultAnalyticsState();
   return {
@@ -1458,7 +1523,8 @@ function normalizeAnalyticsState(analytics = {}) {
       ...(analytics?.performance || {}),
     },
     metrics: Array.isArray(analytics?.metrics) && analytics.metrics.length ? analytics.metrics : fallback.metrics,
-    signals: Array.isArray(analytics?.signals) && analytics.signals.length ? analytics.signals : fallback.signals,
+    signals: (Array.isArray(analytics?.signals) && analytics.signals.length ? analytics.signals : fallback.signals)
+      .map((signal, index) => normalizeExternalSignal(signal, index, analytics?.narrativePeriod?.version || fallback.narrativePeriod.version)),
     versions: Array.isArray(analytics?.versions) ? analytics.versions : fallback.versions,
   };
 }
@@ -5982,40 +6048,42 @@ function AlignmentPanel({ d }) {
   return <FeedbackDashboard {...d} />;
 }
 
-function AnalyticsPanel({ d }) {
+function AnalyticsPanel({ d, onAddSignal, onCloseLoop, closeLoopGate, launchComplete, feedbackCaptured }) {
+  const [draftSignal, setDraftSignal] = useState({
+    sourceTeam: "Marketing",
+    channel: "Launch Campaign",
+    signalType: "Resonance",
+    severity: "Medium",
+    note: "",
+  });
+  const externalInsights = buildExternalFeedbackInsights(d.rawSignals || d.feedbackSignals || []);
   const performanceCards = [
-    { label: "Wins Influenced", value: d.performance?.wins || "0", note: "How many revenue opportunities used the narrative in a meaningful way." },
-    { label: "Asset Downloads", value: d.performance?.downloads || "0", note: "Downloads show which outputs are actually being pulled into field use." },
-    { label: "Campaign Engagement", value: d.performance?.campaigns || "0", note: "Campaign interactions show whether the narrative is resonating in-market." },
-    { label: "Revenue Influenced", value: d.performance?.revenue || "$0", note: "Pipeline and revenue links help PMM connect narrative quality to business outcomes." },
+    { label: "Signals Captured", value: String(externalInsights.normalizedSignals.length), note: "Structured post-launch signals connected to this narrative version." },
+    { label: "High-Severity", value: String(externalInsights.severeSignals.length), note: "Signals that likely require PMM attention before the next version." },
+    { label: "Top Signal Type", value: externalInsights.strongestType || "None", note: "The signal type appearing most often across captured feedback." },
+    { label: "Top Source", value: externalInsights.strongestSource || "None", note: "Which team or source is contributing the most signal right now." },
   ];
-
-  const signalBlocks = [
+  const groupedBlocks = [
     {
-      title: "Narrative Performance Inputs",
-      bullets: [
-        "Wins and pipeline influenced by the active narrative",
-        "Asset downloads by sales and marketing teams",
-        "Campaign engagement and CTA conversion",
-        "Social, event, and field engagement mapped back to the story",
-      ],
+      title: "What's Resonating",
+      items: externalInsights.resonanceSignals.length
+        ? externalInsights.resonanceSignals.map(signal => signal.sourceTeam + ": " + signal.note)
+        : ["No resonance signals captured yet."],
     },
     {
-      title: "How This Feeds Narrative Intelligence",
-      bullets: [
-        "AI summarizes what messages are working across channels",
-        "Weak engagement highlights which parts of the narrative are underperforming",
-        "High-converting assets reveal what language or proof points should be promoted",
-        "PMM can compare signal quality across versions and launches",
-      ],
+      title: "What's Blocking Adoption",
+      items: externalInsights.objectionSignals.length || externalInsights.confusionSignals.length
+        ? [...externalInsights.objectionSignals, ...externalInsights.confusionSignals].map(signal => signal.signalType + ": " + signal.note)
+        : ["No objection or confusion signals captured yet."],
     },
     {
-      title: "What Third-Party Integrations Will Unlock",
-      bullets: [
-        "CRM and pipeline attribution",
-        "Campaign performance from ad and marketing platforms",
-        "Social engagement by message theme",
-        "Event and webinar engagement mapped to the narrative",
+      title: "Narrative Intelligence Readout",
+      items: [
+        externalInsights.strongestType ? externalInsights.strongestType + " is the strongest emerging pattern across recent feedback." : "Loop is still waiting for enough signal to identify a pattern.",
+        closeLoopGate.ready
+          ? "Loop has enough post-launch signal to close the cycle and seed the next version intelligently."
+          : closeLoopGate.blocker || "Capture more post-launch signal before closing the loop.",
+        externalInsights.strongestSource ? externalInsights.strongestSource + " is contributing the most signal so far." : "A broader mix of sources will make narrative intelligence more trustworthy.",
       ],
     },
   ];
@@ -6024,9 +6092,9 @@ function AnalyticsPanel({ d }) {
     <div style={{ display: "grid", gap: 22 }}>
       <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 22, padding: 20, display: "grid", gap: 12 }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>External Feedback</div>
-        <div style={{ fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>How engagement data will feed Loop’s narrative intelligence</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Capture the market signal that should shape the next version</div>
         <div style={{ maxWidth: 860, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
-          This page is intentionally an infographic-style preview for now. It shows how wins, downloads, campaign engagement, social engagement, event engagement, and other activity will later connect into measurable PMM intelligence once third-party integrations are added.
+          This is the lightweight MVP market-feedback layer. Capture what resonated, what confused buyers, what objections came up, and which signals deserve to change the next narrative version.
         </div>
       </div>
 
@@ -6040,40 +6108,102 @@ function AnalyticsPanel({ d }) {
         ))}
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.05fr) minmax(320px, 0.95fr)", gap: 16 }}>
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 22, padding: 18, display: "grid", gap: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Quick Capture</div>
+              <div style={{ marginTop: 6, fontSize: 14, color: S.muted }}>Add lightweight market feedback instead of waiting for heavy integrations.</div>
+            </div>
+            <button
+              onClick={() => {
+                if (!String(draftSignal.note || "").trim()) return;
+                onAddSignal?.(draftSignal);
+                setDraftSignal(prev => ({ ...prev, note: "" }));
+              }}
+              style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Add Signal
+            </button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            {[
+              ["sourceTeam", "Source Team", ["Marketing", "Sales", "Customer", "PMM", "Founder", "Product"]],
+              ["channel", "Channel", ["Launch Campaign", "Sales Calls", "Customer Interviews", "Website", "Social", "Community"]],
+              ["signalType", "Signal Type", ["Resonance", "Objection", "Confusion", "Competitive Mention", "ROI Signal", "Request"]],
+              ["severity", "Severity", ["Low", "Medium", "High"]],
+            ].map(([key, label, options]) => (
+              <label key={key} style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+                <select value={draftSignal[key]} onChange={event => setDraftSignal(prev => ({ ...prev, [key]: event.target.value }))} style={{ padding: "12px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: "white", fontSize: 14, fontFamily: "inherit" }}>
+                  {options.map(option => <option key={option} value={option}>{option}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
+          <label style={{ display: "grid", gap: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Signal Note</span>
+            <textarea value={draftSignal.note} onChange={event => setDraftSignal(prev => ({ ...prev, note: event.target.value }))} rows={4} placeholder="What happened in market, what language stood out, or what objection kept repeating?" style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", borderRadius: 16, border: `1px solid ${S.border}`, background: "white", fontSize: 14, lineHeight: 1.65, resize: "vertical", fontFamily: "inherit" }} />
+          </label>
+        </div>
+
+        <div style={{ background: "linear-gradient(135deg, #FBFAFF 0%, #F2F0FF 100%)", border: `1px solid ${S.border}`, borderRadius: 22, padding: 18, display: "grid", gap: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Close Loop Readiness</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: P[900] }}>{closeLoopGate.ready ? "Ready to Close" : "Still Collecting Signal"}</div>
+          <div style={{ fontSize: 14, lineHeight: 1.7, color: S.muted }}>
+            {!launchComplete
+              ? "Launch has not happened yet, so Loop should keep collecting internal readiness rather than closing the cycle."
+              : closeLoopGate.blocker || "Loop has enough external signal to close the cycle and summarize the next-version guidance."}
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ padding: "12px 14px", borderRadius: 16, background: "white", border: `1px solid ${S.border}`, fontSize: 13, lineHeight: 1.65, color: S.text }}>
+              Launch status: <strong>{launchComplete ? "Live" : "Not live yet"}</strong>
+            </div>
+            <div style={{ padding: "12px 14px", borderRadius: 16, background: "white", border: `1px solid ${S.border}`, fontSize: 13, lineHeight: 1.65, color: S.text }}>
+              Signals captured: <strong>{closeLoopGate.signalCount}</strong>
+            </div>
+            <div style={{ padding: "12px 14px", borderRadius: 16, background: "white", border: `1px solid ${S.border}`, fontSize: 13, lineHeight: 1.65, color: S.text }}>
+              Source coverage: <strong>{closeLoopGate.sourceCount}</strong>
+            </div>
+          </div>
+          <button onClick={onCloseLoop} disabled={!closeLoopGate.ready || feedbackCaptured} style={{ border: "none", background: !closeLoopGate.ready || feedbackCaptured ? "#D9D6F8" : P[600], color: "white", borderRadius: 12, padding: "12px 14px", fontSize: 13, fontWeight: 800, cursor: !closeLoopGate.ready || feedbackCaptured ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+            {feedbackCaptured ? "Loop Closed" : "Close the Loop"}
+          </button>
+        </div>
+      </div>
+
       <div style={{ display: "grid", gap: 14 }}>
-        {signalBlocks.map(block => (
+        {groupedBlocks.map(block => (
           <div key={block.title} style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 20, padding: 18 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: P[900] }}>{block.title}</div>
             <ul style={{ margin: "10px 0 0", paddingLeft: 18, color: S.text, lineHeight: 1.75 }}>
-              {block.bullets.map(item => <li key={item}>{item}</li>)}
+              {block.items.map(item => <li key={item}>{item}</li>)}
             </ul>
           </div>
         ))}
       </div>
 
-      <div style={{ background: "linear-gradient(135deg, #FBFAFF 0%, #F2F0FF 100%)", border: `1px solid ${S.border}`, borderRadius: 22, padding: 20, display: "grid", gap: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>AI Autofill Preview</div>
-        <div style={{ display: "grid", gap: 12 }}>
-          {[
-            {
-              label: "Narrative Resonance Summary",
-              value: "AI will summarize which narrative themes are producing the strongest wins, conversion signals, and repeat engagement.",
-            },
-            {
-              label: "Pipeline Influence Story",
-              value: "AI will connect product narrative, GTM execution, and influenced pipeline so PMM can prove business impact over time.",
-            },
-            {
-              label: "Signal-to-Action Recommendation",
-              value: "AI will recommend which message, proof point, or asset should be promoted, revised, or retired based on engagement patterns.",
-            },
-          ].map(item => (
-            <div key={item.label} style={{ padding: 16, borderRadius: 16, background: "white", border: `1px solid ${S.border}` }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.label}</div>
-              <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.7, color: S.text }}>{item.value}</div>
+      <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 22, padding: 18, display: "grid", gap: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Captured Signals</div>
+        {!externalInsights.normalizedSignals.length ? (
+          <div style={{ padding: "16px 14px", borderRadius: 16, background: "#FCFBFF", border: `1px dashed ${S.border}`, fontSize: 13, lineHeight: 1.65, color: S.muted }}>
+            No external signals have been captured yet. Add a few lightweight entries after launch to keep narrative intelligence grounded in real market response.
+          </div>
+        ) : (
+          externalInsights.normalizedSignals.map(signal => (
+            <div key={signal.id} style={{ borderRadius: 16, border: `1px solid ${S.border}`, background: "#FCFBFF", padding: 14, display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: P[900] }}>{signal.signalType}</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ padding: "6px 10px", borderRadius: 999, background: "#F5F3FF", color: P[700], fontSize: 11, fontWeight: 800 }}>{signal.sourceTeam}</span>
+                  <span style={{ padding: "6px 10px", borderRadius: 999, background: "#EEF8FF", color: "#0F5B96", fontSize: 11, fontWeight: 800 }}>{signal.channel}</span>
+                  <span style={{ padding: "6px 10px", borderRadius: 999, background: signal.severity === "High" ? "#FFF1F0" : signal.severity === "Medium" ? "#FFF7E8" : "#ECFFF3", color: signal.severity === "High" ? "#B44332" : signal.severity === "Medium" ? "#C77812" : "#177A51", fontSize: 11, fontWeight: 800 }}>{signal.severity}</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.65, color: S.text }}>{signal.note}</div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -9848,6 +9978,7 @@ export default function App() {
     category: signal.title,
     frequency: Math.max(18, 40 - index * 6),
   }));
+  const closeLoopGate = computeCloseLoopGate({ launchComplete, signals: safeAnalytics.signals });
   const alignmentMatrix = {
     internal: [
       { label: "Product team", score: Math.round(average(safeAlignment.internal.map(section => section.product)) * 2) },
@@ -9897,6 +10028,7 @@ export default function App() {
     narrativeHealth: narrativeHealthMetrics,
     performance: safeAnalytics.performance,
     feedbackSignals: activeFeedbackSignals,
+    rawSignals: safeAnalytics.signals,
     alignment: alignmentMatrix,
     versions: narrativeVersions,
     aiContext,
@@ -10737,7 +10869,7 @@ export default function App() {
       onDismissChange: dismissReviewItem,
       onPublishVersion: publishNarrativeVersion,
     }} set={setAlignment} compact={!useCanvasColumns} />,
-    analytics: <AnalyticsPanel d={feedbackDashboardData} set={setAnalytics} compact={!useCanvasColumns} />,
+    analytics: <AnalyticsPanel d={feedbackDashboardData} onAddSignal={addExternalFeedbackSignal} onCloseLoop={closeLoopFromFeedback} closeLoopGate={closeLoopGate} launchComplete={launchComplete} feedbackCaptured={feedbackCaptured} />,
     confidence: <ConfidencePanel d={{ ...confidence, confidenceScore: feedbackConfidenceScore, narrativeHealth: narrativeHealthMetrics, alignment: alignmentMatrix, aiContext: { ...aiContext, feedbackInsights: reviewInsights }, assets, reviewAnalytics, feedbackSignals: activeFeedbackSignals }} set={setConfidence} compact={!useCanvasColumns} />,
     competitionOverview: <CompetitionOverviewPanel comp={comp} />,
     competitionComparison: <CompetitionComparisonPanel comp={comp} setComp={setComp} compact={!useCanvasColumns} layout={competitionComparisonLayout} setLayout={setCompetitionComparisonLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitionComparison" />,
@@ -12728,9 +12860,9 @@ If section is gtm return:
         { id: "clarity", label: "Clarity", value: "4.4", note: "Average post-launch clarity score", tint: "linear-gradient(135deg, #FDF6EA 0%, #FFFDF7 100%)" },
       ],
       signals: [
-        { id: "sales-calls", title: "Sales Call Signal", stage: "Active", note: "Buyers repeat the phrase 'one source of truth' most often when the story lands well." },
-        { id: "customer-feedback", title: "Customer Feedback Signal", stage: "Active", note: "Customers love the guided structure but want deeper proof-point support and stronger asset automation." },
-        { id: "market-patterns", title: "Market Pattern Signal", stage: "Watching", note: "The category is still forming, so positioning clarity matters more than feature breadth." },
+        { id: "sales-calls", title: "Sales Call Signal", stage: "Active", note: "Buyers repeat the phrase 'one source of truth' most often when the story lands well.", sourceTeam: "Sales", channel: "Sales Calls", signalType: "Resonance", severity: "Medium", linkedVersion: pd.version || "v1.0", createdAt: new Date().toISOString() },
+        { id: "customer-feedback", title: "Customer Feedback Signal", stage: "Active", note: "Customers love the guided structure but want deeper proof-point support and stronger asset automation.", sourceTeam: "Customer", channel: "Customer Interviews", signalType: "Request", severity: "High", linkedVersion: pd.version || "v1.0", createdAt: new Date().toISOString() },
+        { id: "market-patterns", title: "Market Pattern Signal", stage: "Watching", note: "The category is still forming, so positioning clarity matters more than feature breadth.", sourceTeam: "PMM", channel: "Market Scan", signalType: "Competitive Mention", severity: "Medium", linkedVersion: pd.version || "v1.0", createdAt: new Date().toISOString() },
       ],
     }));
     setConfidence(prev => ({
@@ -12746,6 +12878,66 @@ If section is gtm return:
       { id: "fb-2", source: "Sales", note: "The one-source-of-truth language lands well in calls.", createdAt: new Date().toISOString() },
     ]);
     setWorkspaceSaves(prev => ({ ...prev, feedback: new Date().toISOString() }));
+  }
+
+  function addExternalFeedbackSignal(signalDraft = {}) {
+    const nextSignal = normalizeExternalSignal({
+      id: `external-signal-${Date.now()}`,
+      title: signalDraft.signalType || "Observation",
+      stage: signalDraft.severity === "High" ? "Active" : signalDraft.severity === "Medium" ? "Watching" : "Emerging",
+      note: signalDraft.note || "",
+      sourceTeam: signalDraft.sourceTeam || "PMM",
+      channel: signalDraft.channel || "General",
+      signalType: signalDraft.signalType || "Observation",
+      severity: signalDraft.severity || "Medium",
+      linkedVersion: pd.version || safeAnalytics.narrativePeriod.version || "v1.0",
+      createdAt: new Date().toISOString(),
+    }, 0, pd.version || safeAnalytics.narrativePeriod.version || "v1.0");
+    setAnalytics(prev => {
+      const nextSignals = [nextSignal, ...normalizeAnalyticsState(prev).signals];
+      const nextInsights = buildExternalFeedbackInsights(nextSignals);
+      return {
+        ...prev,
+        signals: nextSignals,
+        metrics: [
+          { id: "coverage", label: "Coverage", value: `${Math.min(100, 55 + nextSignals.length * 10)}%`, note: "How much of the launch now has real market signal.", tint: "linear-gradient(135deg, #F6F3FF 0%, #FFF8FC 100%)" },
+          { id: "velocity", label: "Velocity", value: `${nextSignals.length}`, note: "Structured external feedback items captured so far.", tint: "linear-gradient(135deg, #EEF8FF 0%, #F7FCFF 100%)" },
+          { id: "clarity", label: "Clarity", value: `${Math.max(3.8, Math.min(9.2, 4.2 + nextInsights.resonanceSignals.length * 0.2 - nextInsights.confusionSignals.length * 0.1)).toFixed(1)}`, note: "Estimated clarity signal from captured market feedback.", tint: "linear-gradient(135deg, #FDF6EA 0%, #FFFDF7 100%)" },
+        ],
+      };
+    });
+    setFeedbackEntries(prev => [
+      {
+        id: `external-entry-${Date.now()}`,
+        source: signalDraft.sourceTeam || "Market",
+        note: signalDraft.note || "",
+        createdAt: new Date().toISOString(),
+        kind: "external-signal",
+      },
+      ...prev,
+    ]);
+    setPlatformNotice("External feedback signal captured and added to Narrative Intelligence.");
+  }
+
+  function closeLoopFromFeedback() {
+    if (!closeLoopGate.ready) {
+      setPlatformNotice(closeLoopGate.blocker || "Loop still needs more market signal before it can close.");
+      return;
+    }
+    saveWorkspace("feedback");
+    setFeedbackCaptured(true);
+    setWorkflowStage("complete");
+    setActive("confidence");
+    setConfidence(prev => ({
+      ...prev,
+      decisionNotes: [
+        closeLoopGate.insights.strongestType ? `Most common signal: ${closeLoopGate.insights.strongestType}.` : "",
+        closeLoopGate.insights.strongestSource ? `Most active source: ${closeLoopGate.insights.strongestSource}.` : "",
+        closeLoopGate.insights.objectionSignals.length ? `Objections captured: ${closeLoopGate.insights.objectionSignals.length}.` : "",
+        closeLoopGate.insights.resonanceSignals.length ? `Resonance signals captured: ${closeLoopGate.insights.resonanceSignals.length}.` : "",
+      ].filter(Boolean).join(" "),
+    }));
+    logWorkflowEvent("Loop closed", "External feedback was strong enough to close the cycle and seed the next version with real market signal.");
   }
 
   function saveWorkspace(workspace) {
@@ -13846,12 +14038,10 @@ If section is gtm return:
     }
 
     if (workflowStage === "feedback") {
-      seedFeedbackSnapshot();
-      saveWorkspace("feedback");
-      setFeedbackCaptured(true);
-      setWorkflowStage("complete");
-      setActive("confidence");
-      logWorkflowEvent("Loop closed", "Feedback, analytics, and recommendations were captured so the next version can start from real signal.");
+      if (!safeAnalytics.signals.length) {
+        seedFeedbackSnapshot();
+      }
+      closeLoopFromFeedback();
     }
   }
 
@@ -13868,7 +14058,7 @@ If section is gtm return:
       ? { label: "Go Live", onClick: handleAdvanceWorkflow, disabled: !readinessGate.ready, note: readinessGate.primaryBlocker || "" }
       : { label: "Send for Review", onClick: requestProjectReview },
     launch: { label: "Capture External Feedback", onClick: handleAdvanceWorkflow },
-    feedback: { label: "Close the Loop", onClick: handleAdvanceWorkflow },
+    feedback: { label: "Close the Loop", onClick: closeLoopFromFeedback, disabled: !closeLoopGate.ready, note: closeLoopGate.blocker || "" },
     complete: null,
   };
 

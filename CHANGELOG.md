@@ -156,3 +156,20 @@ This file tracks meaningful product, platform, and documentation changes in Loop
 
 - Phase 4 added to the live roadmap in [docs/ROADMAP.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/ROADMAP.md)
 - Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-phase4-complete.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase4-complete.md)
+
+## 2026-04-30-phase5-complete
+
+### Platform / Runtime
+
+- Completed the MVP post-launch loop inside [src/App.jsx](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/src/App.jsx):
+  - replaced the External Feedback placeholder with a working lightweight signal-capture UI
+  - added structured post-launch feedback fields for source team, channel, signal type, severity, and signal note
+  - grouped external feedback into resonance, objections, confusion, and broader narrative-intelligence patterns
+  - added close-loop gating so `Close Loop` only unlocks after launch plus enough external signal
+  - tied loop closure to the confidence/readiness system so the next version can start from real signal
+- Updated analytics normalization so captured external signals stay structured in project state.
+
+### Documentation / Repo
+
+- Phase 5 added to the live roadmap in [docs/ROADMAP.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/ROADMAP.md)
+- Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-phase5-complete.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase5-complete.md)

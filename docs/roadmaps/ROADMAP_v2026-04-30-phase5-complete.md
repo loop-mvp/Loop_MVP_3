@@ -1,7 +1,5 @@
-# Roadmap
-
-Current roadmap for Loop MVP 3.
-
+# Roadmap Snapshot v2026-04-30-phase5-complete
+This file captures the roadmap state as of `2026-04-30-phase5-complete`.
 ## Roadmap Version
 
 - Current version: `2026-04-30-phase5-complete`
