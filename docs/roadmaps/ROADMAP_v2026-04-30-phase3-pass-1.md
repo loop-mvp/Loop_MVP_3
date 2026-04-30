@@ -1,11 +1,9 @@
-# Roadmap
-
-Current roadmap for Loop MVP 3.
-
+# Roadmap Snapshot v2026-04-30-phase3-pass-1
+This file captures the roadmap state as of `2026-04-30-phase3-pass-1`.
 ## Roadmap Version
 
-- Current version: `2026-04-30-phase3-pass-1`
-- Snapshot file: [docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md)
+- Current version: `2026-04-29`
+- Snapshot file: [docs/roadmaps/ROADMAP_v2026-04-29.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-29.md)
 
 ## How this should be maintained
 

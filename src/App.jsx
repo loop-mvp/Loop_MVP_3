@@ -8417,6 +8417,8 @@ function WorkspaceAIPanel({
     title: "Keep the current workspace aligned",
     summary: "Loop will call out the strongest next move, visible gaps, and where the narrative may be drifting as the workspace evolves.",
     bullets: [],
+    focusTags: [],
+    priorityActions: [],
     recommendation: "Refine the active workspace, then move it into Readiness once the story is stable.",
   };
   const panelBodyPadding = chatDocked ? 16 : 0;
@@ -8658,6 +8660,35 @@ function WorkspaceAIPanel({
                   {!!resolvedPageIntelligence.recommendation && (
                     <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 14, background: "linear-gradient(135deg, #F7F4FF 0%, #FFF9FC 100%)", border: `1px solid ${S.border}`, fontSize: 12, lineHeight: 1.6, color: S.text }}>
                       <span style={{ fontWeight: 800, color: P[700] }}>AI recommendation:</span> {resolvedPageIntelligence.recommendation}
+                    </div>
+                  )}
+                  {!!resolvedPageIntelligence.focusTags?.length && (
+                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {resolvedPageIntelligence.focusTags.map(item => (
+                        <span key={item} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 999, background: "#F6F3FF", border: `1px solid ${S.border}`, color: P[700], fontSize: 11, fontWeight: 800 }}>
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {!!resolvedPageIntelligence.priorityActions?.length && (
+                    <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Priority Actions</div>
+                      {resolvedPageIntelligence.priorityActions.map(action => (
+                        <div key={action.id || action.label} style={{ padding: "10px 12px", borderRadius: 14, background: S.bg, border: `1px solid ${S.border}`, display: "grid", gap: 10 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: P[900] }}>{action.label}</div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button onClick={() => onRunQuickAction(action)} style={{ border: "none", background: P[600], color: "white", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                              Ask AI
+                            </button>
+                            {!!action.target && (
+                              <button onClick={() => onOpenSection(action.target)} style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                Open {action.targetLabel || action.label}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -9591,6 +9622,38 @@ export default function App() {
       targetLabel: sectionLabels.addSection,
       severity: "review",
     } : null,
+    pd.audience && !safeAud.primary ? {
+      id: "primary-persona-gap",
+      title: "Primary persona still needs sharpening",
+      body: "The audience is named, but the primary persona is still light. Assets may stay generic until the user lens is tighter.",
+      target: "customer",
+      targetLabel: sectionLabels.customer || "Customer",
+      severity: "suggested",
+    } : null,
+    pos.statement && !msg.headline ? {
+      id: "message-hierarchy-gap",
+      title: "Messaging hierarchy needs a lead message",
+      body: "Positioning exists, but the headline is still empty. Narrative may drift because the top message is not obvious yet.",
+      target: "messaging",
+      targetLabel: sectionLabels.messaging || "Messaging",
+      severity: "review",
+    } : null,
+    strat.goal && !safeStrat.channels ? {
+      id: "channel-priority-gap",
+      title: "Channel plan still needs narrowing",
+      body: "GTM has a goal, but channels are still light. Asset creation may sprawl until the first distribution motion is clearer.",
+      target: "strategy",
+      targetLabel: sectionLabels.strategy || "Strategy",
+      severity: "suggested",
+    } : null,
+    strat.goal && !safeStory.whyNow ? {
+      id: "why-now-gap",
+      title: "Why-now is missing from GTM",
+      body: "The launch goal exists, but the why-now moment is still weak. Campaign and social copy may feel generic until this is sharper.",
+      target: "story",
+      targetLabel: sectionLabels.story || "Story",
+      severity: "review",
+    } : null,
     brand.tagline && !safeAssets.rows.length && !Object.values(safeAssets.sections || {}).some(value => String(value || "").trim()) ? {
       id: "asset-rollout-gap",
       title: "Assets may need refreshing",
@@ -9651,6 +9714,34 @@ export default function App() {
         title: currentPageReviewItems.length ? `${currentPageReviewItems.length} truth gap${currentPageReviewItems.length === 1 ? "" : "s"} to tighten` : "Product Truth looks structurally aligned",
         summary: "This page should keep the factual product reality stable so Narrative, GTM, and Assets do not drift later.",
         bullets,
+        focusTags: [
+          safePd.audience ? `Audience: ${safePd.audience}` : "Audience gap",
+          safePd.problem ? "Problem defined" : "Problem gap",
+          safeComp.proofPoints ? "Proof present" : "Proof gap",
+        ].filter(Boolean),
+        priorityActions: [
+          !safePd.audience ? {
+            id: "truth-audience",
+            label: "Tighten audience framing",
+            prompt: `Tighten the audience framing in Product Truth so the narrative stays buyer-specific. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "customer",
+            targetLabel: sectionLabels.customer || "Customer",
+          } : null,
+          !safeComp.proofPoints ? {
+            id: "truth-proof",
+            label: "Find missing proof signals",
+            prompt: `Find the missing proof signals in Product Truth and suggest concrete evidence to add before launch. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "product",
+            targetLabel: sectionLabels.product || "Product",
+          } : null,
+          {
+            id: "truth-drift",
+            label: "Check truth-to-narrative drift",
+            prompt: `Check for drift between Product Truth and Core Narrative, then explain what should be tightened first. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "positioning",
+            targetLabel: sectionLabels.positioning || "Positioning",
+          },
+        ].filter(Boolean),
         recommendation: currentPageReviewItems.length
           ? "Resolve the truth gaps first, then move Product Truth into Readiness so the rest of the launch inherits a stronger foundation."
           : "Move Product Truth into Readiness once the proof and audience language feel specific enough for downstream teams to reuse.",
@@ -9667,6 +9758,34 @@ export default function App() {
         title: currentPageReviewItems.length ? `${currentPageReviewItems.length} narrative drift signal${currentPageReviewItems.length === 1 ? "" : "s"} detected` : "Core Narrative is holding together",
         summary: "Narrative is where Loop should catch message drift early, before GTM strategy and launch assets start inheriting weak language.",
         bullets,
+        focusTags: [
+          safePos.statement ? "Positioning live" : "Positioning gap",
+          safeMsg.pillars ? "Pillars present" : "Pillars gap",
+          safeMsg.headline ? "Lead message present" : "Lead message gap",
+        ].filter(Boolean),
+        priorityActions: [
+          !safePos.statement ? {
+            id: "narrative-positioning",
+            label: "Sharpen positioning",
+            prompt: `Sharpen the positioning statement so Product Truth and GTM stay aligned. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "positioning",
+            targetLabel: sectionLabels.positioning || "Positioning",
+          } : null,
+          !safeMsg.headline ? {
+            id: "narrative-headline",
+            label: "Set the lead message",
+            prompt: `Find the strongest lead message for Core Narrative and suggest a clearer headline hierarchy. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "messaging",
+            targetLabel: sectionLabels.messaging || "Messaging",
+          } : null,
+          {
+            id: "narrative-drift",
+            label: "Pressure-test narrative drift",
+            prompt: `Pressure-test the narrative for drift across positioning, messaging, and value, then recommend the most important fix. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "value",
+            targetLabel: sectionLabels.value || "Value",
+          },
+        ].filter(Boolean),
         recommendation: currentPageReviewItems.length
           ? "Tighten Positioning, Messaging, and Value until the story reads as one system, then move Narrative into Readiness."
           : "Narrative is ready for a Readiness pass once the leading message, proof language, and value story feel consistent.",
@@ -9683,6 +9802,34 @@ export default function App() {
         title: currentPageReviewItems.length ? `${currentPageReviewItems.length} GTM issue${currentPageReviewItems.length === 1 ? "" : "s"} still open` : "GTM direction looks stable",
         summary: "GTM should narrow the first launch motion so the asset layer knows what to build first and what can wait.",
         bullets,
+        focusTags: [
+          safeStrat.goal ? "Launch goal set" : "Goal gap",
+          safeStrat.channels ? "Channels named" : "Channel gap",
+          safeStory.whyNow ? "Why-now present" : "Why-now gap",
+        ].filter(Boolean),
+        priorityActions: [
+          !safeStrat.goal ? {
+            id: "gtm-goal",
+            label: "Clarify the first launch goal",
+            prompt: `Clarify the first GTM goal so launch work focuses on one motion instead of spreading too wide. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "strategy",
+            targetLabel: sectionLabels.strategy || "Strategy",
+          } : null,
+          !safeStory.whyNow ? {
+            id: "gtm-why-now",
+            label: "Strengthen the why-now angle",
+            prompt: `Strengthen the why-now angle in GTM so launch storytelling feels timely and specific. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "story",
+            targetLabel: sectionLabels.story || "Story",
+          } : null,
+          {
+            id: "gtm-channel-fit",
+            label: "Check strategy-to-channel fit",
+            prompt: `Check whether GTM strategy, channels, and story all point to the same launch outcome. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "strategy",
+            targetLabel: sectionLabels.strategy || "Strategy",
+          },
+        ].filter(Boolean),
         recommendation: currentPageReviewItems.length
           ? "Clarify the launch goal, story, and why-now angle before sending GTM into Readiness."
           : "Move GTM into Readiness once the primary motion, channels, and launch story all point to the same outcome.",
@@ -9699,6 +9846,34 @@ export default function App() {
         title: filledAssetGroupCount ? "Assets are starting to operationalize the strategy" : "Assets still need launch-ready structure",
         summary: "Assets should stay downstream from Product Truth, Narrative, and GTM. This page should help teams assemble the right outputs, not create noise.",
         bullets,
+        focusTags: [
+          `${filledAssetGroupCount} active group${filledAssetGroupCount === 1 ? "" : "s"}`,
+          assetGroupsWithReview ? `${assetGroupsWithReview} in review` : "Nothing in review",
+          safeAssets.rows.length ? `${safeAssets.rows.length} generated asset${safeAssets.rows.length === 1 ? "" : "s"}` : "No generated assets",
+        ].filter(Boolean),
+        priorityActions: [
+          !safeAssets.rows.length ? {
+            id: "assets-first-template",
+            label: "Generate the first launch-critical asset",
+            prompt: `Recommend the first launch-critical asset group to build and explain why it should come before the others. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "productMarketingAssets",
+            targetLabel: sectionLabels.productMarketingAssets || "Product Marketing Assets",
+          } : null,
+          {
+            id: "assets-stale-check",
+            label: "Check for stale asset risk",
+            prompt: `Check whether the current assets are drifting from Product Truth, Narrative, or GTM and suggest what should be refreshed first. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "assets",
+            targetLabel: sectionLabels.assets || "Assets",
+          },
+          {
+            id: "assets-readiness",
+            label: "Prioritize assets for Readiness",
+            prompt: `Prioritize which asset groups should move into Readiness first and which can wait without hurting launch quality. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "reviewCenter",
+            targetLabel: sectionLabels.reviewCenter || "Readiness",
+          },
+        ].filter(Boolean),
         recommendation: filledAssetGroupCount
           ? "Keep only the launch-critical asset groups active, then move Assets into Readiness so approvals and blockers stay centralized."
           : "Build only the highest-priority team assets first, then push the workspace into Readiness instead of generating everything at once.",
@@ -9717,6 +9892,34 @@ export default function App() {
         title: readinessGate.ready ? "Readiness is cleared for Go Live" : readinessNeedsWorkCount ? "Readiness still has launch blockers" : "Readiness is becoming launch-decision ready",
         summary: "Readiness is the launch control layer. AI should help surface blockers, stale work, and what needs approval next.",
         bullets,
+        focusTags: [
+          `${readinessApprovedCount} approved`,
+          `${readinessInReviewCount} in review`,
+          readinessGate.ready ? "Go Live ready" : "Launch blocked",
+        ].filter(Boolean),
+        priorityActions: [
+          readinessNeedsWorkCount ? {
+            id: "readiness-needs-work",
+            label: "Resolve launch blockers first",
+            prompt: `Summarize the current launch blockers in Readiness and suggest the best order to resolve them. Current page: ${activeGroup}.`,
+            target: "reviewCenter",
+            targetLabel: sectionLabels.reviewCenter || "Readiness",
+          } : null,
+          readinessInReviewCount ? {
+            id: "readiness-review-order",
+            label: "Sequence review completion",
+            prompt: `Decide which in-review items should be closed first so the launch can move faster with less risk. Current page: ${activeGroup}.`,
+            target: "reviewCenter",
+            targetLabel: sectionLabels.reviewCenter || "Readiness",
+          } : null,
+          !readinessGate.ready ? {
+            id: "readiness-go-live-gap",
+            label: "Explain what blocks Go Live",
+            prompt: `Explain what is still blocking Go Live from the current Readiness board and which items could be delayed or dropped safely. Current page: ${activeGroup}.`,
+            target: "reviewCenter",
+            targetLabel: sectionLabels.reviewCenter || "Readiness",
+          } : null,
+        ].filter(Boolean),
         recommendation: readinessNeedsWorkCount
           ? "Resolve the rows marked Needs Work first, then resend only the affected items for review."
           : readinessInReviewCount
@@ -9737,6 +9940,27 @@ export default function App() {
         title: feedbackEntries.length ? "Market signal is starting to shape the next version" : "External feedback is still waiting for launch signal",
         summary: "This page should help PMMs understand whether the narrative is actually resonating in market over time, not just internally.",
         bullets,
+        focusTags: [
+          feedbackEntries.length ? `${feedbackEntries.length} market signal${feedbackEntries.length === 1 ? "" : "s"}` : "No market signal yet",
+          `Health ${narrativeHealthScore}/10`,
+          `Confidence ${feedbackConfidenceScore}/100`,
+        ].filter(Boolean),
+        priorityActions: [
+          feedbackEntries.length ? {
+            id: "external-patterns",
+            label: "Summarize the strongest market patterns",
+            prompt: `Summarize the strongest external feedback patterns shaping narrative health and suggest what should change in the next version. Current page: ${activeGroup}.`,
+            target: "analytics",
+            targetLabel: sectionLabels.analytics || "External Feedback",
+          } : null,
+          !feedbackEntries.length ? {
+            id: "external-capture-plan",
+            label: "Plan the first feedback capture",
+            prompt: `Recommend the first external feedback signals to capture after launch so narrative health can be assessed honestly. Current page: ${activeGroup}.`,
+            target: "analytics",
+            targetLabel: sectionLabels.analytics || "External Feedback",
+          } : null,
+        ].filter(Boolean),
         recommendation: feedbackEntries.length
           ? "Use the recurring objections and weakest parameter to guide the next narrative version instead of making ad hoc edits."
           : "Go live first, then let external feedback accumulate before trying to close the loop.",
@@ -9747,9 +9971,19 @@ export default function App() {
       title: "Loop is tracking the current workspace",
       summary: "AI should guide the next move, highlight drift, and keep the current page connected to the launch flow.",
       bullets: currentPageReviewItems.map(item => item.title).slice(0, 3),
+      focusTags: [],
+      priorityActions: [],
       recommendation: "Keep refining the active page, then move it into Readiness when the work is stable enough for review.",
     };
   })();
+  const quickActions = (pageIntelligence?.priorityActions?.length
+    ? pageIntelligence.priorityActions
+    : [
+        { id: "summarize", label: `Summarize ${activeLabel}` },
+        { id: "sharpen", label: `Sharpen ${activeLabel}` },
+        { id: "risks", label: `Find risks in ${activeLabel}` },
+      ])
+    .filter(Boolean);
   const isCompact = viewportWidth < 1180;
   const isMobile = viewportWidth < 820;
   const showDesktopAiRail = !isMobile;
@@ -10117,12 +10351,6 @@ export default function App() {
   const activePath = activeGroup && activeLabel ? `${activeGroup} / ${activeLabel}` : activeLabel || activeGroup || "Workspace";
   const activeGuidance = WORKSPACE_SECTION_GUIDANCE[active] || null;
   const activeSummary = previewMap[active];
-  const quickActions = [
-    { id: "summarize", label: `Summarize ${activeLabel}` },
-    { id: "sharpen", label: `Sharpen ${activeLabel}` },
-    { id: "risks", label: `Find risks in ${activeLabel}` },
-  ];
-
   function dismissReviewItem(itemId) {
     setReviewDismissed(prev => ({ ...prev, [itemId]: true }));
   }
@@ -10546,7 +10774,7 @@ export default function App() {
   }
 
   function handleQuickAction(action) {
-    const promptText = `${action.label}. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`;
+    const promptText = action.prompt || `${action.label}. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`;
     setAiTab("changes");
     setAiPrompt(promptText);
     runAssistantPrompt(promptText);

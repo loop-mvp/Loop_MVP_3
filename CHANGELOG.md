@@ -61,6 +61,11 @@ This file tracks meaningful product, platform, and documentation changes in Loop
 - Began separating deterministic launch workflow behavior from AI-guided diagnosis:
   - automation for status changes, readiness transitions, and save flow
   - AI for drift, gaps, guidance, and recommendations
+- Started the first deeper Phase 3 intelligence pass in the right rail with:
+  - stronger page-specific drift and gap detection
+  - page-specific focus tags
+  - AI priority actions by workspace
+  - clearer readiness and external-feedback guidance without changing homepage draft generation
 
 ### Documentation / Repo
 
@@ -88,3 +93,10 @@ This file tracks meaningful product, platform, and documentation changes in Loop
 
 - Deepen the intelligence layer with better drift detection, gap detection, readiness intelligence, and more page-specific AI guidance.
 - Design a more cost-efficient AI architecture after the workflow layer is stable.
+
+## 2026-04-30-phase3-pass-1
+
+### Documentation / Repo
+
+- Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md)
+- Roadmap snapshot created.
