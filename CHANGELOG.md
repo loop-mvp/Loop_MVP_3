@@ -9,6 +9,13 @@ This file tracks meaningful product, platform, and documentation changes in Loop
 - Completed the MVP Phase 3 intelligence pass in the workspace right rail.
 - Added more operational page actions so AI guidance can open the relevant section before running the prompt.
 - Tightened Readiness logic so launch blockers, content blockers, and review blockers are separated more clearly for Go Live decisions.
+- Added `Competitive Intelligence` as a real `GTM` subsection in the left rail and center workspace instead of keeping competitive comparison as a disconnected legacy surface.
+- Added a lighter competitive comparison UI with:
+  - parameters on the left
+  - our product plus top 2 competitors across the top
+  - collapsed parameter rows by default
+  - one-line comparison inputs when expanded
+- Wired competitive comparison into GTM review routing, right-rail intelligence, and workspace previews so differentiation, proof, and messaging risk stay connected to the main Loop workflow.
 
 ### AI / Workflow
 
@@ -21,6 +28,7 @@ This file tracks meaningful product, platform, and documentation changes in Loop
   - focus tags
   - priority actions
   - more actionable recommendations
+- Added GTM competitive-intelligence guidance so Loop can flag missing competitor context and missing proof when the launch story is taking shape.
 - Kept the homepage narrative generation flow stable while making the workflow intelligence more useful and more operational.
 
 ### Documentation / Repo
@@ -173,3 +181,10 @@ This file tracks meaningful product, platform, and documentation changes in Loop
 
 - Phase 5 added to the live roadmap in [docs/ROADMAP.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/ROADMAP.md)
 - Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-phase5-complete.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase5-complete.md)
+
+## 2026-04-30-competitive-intelligence
+
+### Documentation / Repo
+
+- Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-competitive-intelligence.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-competitive-intelligence.md)
+- Roadmap snapshot created.

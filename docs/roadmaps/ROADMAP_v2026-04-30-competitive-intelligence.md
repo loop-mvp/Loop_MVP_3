@@ -1,11 +1,9 @@
-# Roadmap
-
-Current roadmap for Loop MVP 3.
-
+# Roadmap Snapshot v2026-04-30-competitive-intelligence
+This file captures the roadmap state as of `2026-04-30-competitive-intelligence`.
 ## Roadmap Version
 
-- Current version: `2026-04-30-competitive-intelligence`
-- Snapshot file: [docs/roadmaps/ROADMAP_v2026-04-30-competitive-intelligence.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-competitive-intelligence.md)
+- Current version: `2026-04-30-phase5-complete`
+- Snapshot file: [docs/roadmaps/ROADMAP_v2026-04-30-phase5-complete.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase5-complete.md)
 
 ## How this should be maintained
 

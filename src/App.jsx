@@ -257,6 +257,7 @@ function getReviewTeamForSection(section) {
   if (["problem", "solution"].includes(section.id)) return "Product";
   if (["primaryAudience", "differentiation", "positioning", "valueProposition", "messaging"].includes(section.id)) return "PMM";
   if (["headline", "elevator"].includes(section.id)) return "Sales";
+  if (["competitiveIntelligence"].includes(section.id)) return "PMM";
   if (["gtmStrategy", "keyChannels", "launchStrategy"].includes(section.id)) return "Marketing";
   if (String(section.workspace || "").includes("Assets")) {
     if (section.id === "salesAssetsReview") return "Sales";
@@ -484,6 +485,19 @@ function buildReviewableSections(source = {}) {
     { id: "gtmStrategy", workspace: "GTM", label: "GTM Strategy", content: snapshot.strat?.goal || "" },
     { id: "keyChannels", workspace: "GTM", label: "Key Channels", content: snapshot.strat?.channels || "" },
     { id: "launchStrategy", workspace: "GTM", label: "Launch Strategy", content: snapshot.strat?.hooks || "" },
+    {
+      id: "competitiveIntelligence",
+      workspace: "GTM",
+      label: "Competitive Intelligence",
+      content: [
+        snapshot.comp?.competitors || "",
+        snapshot.comp?.alternativeGaps || "",
+        snapshot.comp?.differentiators || "",
+        (snapshot.comp?.comparisonRows || [])
+          .map(row => `${row.category}: us ${row.ourProduct || "-"}, competitor 1 ${row.competitorOne || "-"}, competitor 2 ${row.competitorTwo || "-"}`)
+          .join(" | "),
+      ].filter(Boolean).join(" | "),
+    },
     { id: "productMarketingAssetsReview", workspace: "Assets", label: "Product Marketing Assets", content: assetSections.productMarketing || "" },
     { id: "salesAssetsReview", workspace: "Assets", label: "Sales Assets", content: assetSections.sales || "" },
     { id: "marketingAssetsReview", workspace: "Assets", label: "Marketing Assets", content: assetSections.marketing || "" },
@@ -513,6 +527,7 @@ function getWorkspacePanelForReviewSection(sectionId = "", workspace = "") {
   }
   if (workspace === "GTM") {
     if (["gtmStrategy", "keyChannels"].includes(sectionId)) return "strategy";
+    if (["competitiveIntelligence"].includes(sectionId)) return "competitiveIntelligence";
     return "story";
   }
   if (workspace === "Assets") {
@@ -1616,7 +1631,55 @@ function normalizeCapabilitiesState(cap = {}) {
   };
 }
 
+const DEFAULT_COMPETITIVE_PARAMETERS = [
+  "Audience Fit",
+  "Problem Coverage",
+  "Differentiation",
+  "Proof / Credibility",
+  "Messaging Risk",
+];
+
+const COMPETITIVE_PARAMETER_DESCRIPTIONS = {
+  "Audience Fit": "Who is each product best for, and where is buyer fit the strongest?",
+  "Problem Coverage": "Which problem does each option solve most directly and completely?",
+  "Differentiation": "Where does your product create meaningful separation instead of sounding similar?",
+  "Proof / Credibility": "What evidence makes the claims believable when buyers compare options?",
+  "Messaging Risk": "Where might buyers confuse the products or raise the hardest objections?",
+};
+
+function makeDefaultCompetitiveRows() {
+  return DEFAULT_COMPETITIVE_PARAMETERS.map(category => ({
+    category,
+    ourProduct: "",
+    competitorOne: "",
+    competitorTwo: "",
+  }));
+}
+
+function extractTopCompetitorNames(raw = "") {
+  const names = String(raw || "")
+    .split(/\r?\n|,|;/)
+    .map(item => item.trim())
+    .filter(Boolean)
+    .flatMap(item => item.split(/\s+vs\.?\s+/i).map(part => part.trim()).filter(Boolean));
+  return names.slice(0, 2);
+}
+
 function normalizeCompetitionState(comp = {}) {
+  const incomingRows = Array.isArray(comp?.comparisonRows) ? comp.comparisonRows : [];
+  const rowsByCategory = Object.fromEntries(
+    incomingRows
+      .filter(row => row?.category)
+      .map(row => [
+        row.category,
+        {
+          category: row?.category || "",
+          ourProduct: row?.ourProduct || "",
+          competitorOne: row?.competitorOne || "",
+          competitorTwo: row?.competitorTwo || "",
+        },
+      ])
+  );
   return {
     competitors: comp?.competitors || "",
     differentiators: comp?.differentiators || "",
@@ -1624,17 +1687,14 @@ function normalizeCompetitionState(comp = {}) {
     proofMetrics: comp?.proofMetrics || "",
     winLose: comp?.winLose || "",
     alternativeGaps: comp?.alternativeGaps || "",
-    comparisonRows: Array.isArray(comp?.comparisonRows) && comp.comparisonRows.length
-      ? comp.comparisonRows.map(row => ({
-          category: row?.category || "",
-          ourProduct: row?.ourProduct || "",
-          competitorOne: row?.competitorOne || "",
-          competitorTwo: row?.competitorTwo || "",
-        }))
-      : [
-          { category: "Ease of use", ourProduct: "", competitorOne: "", competitorTwo: "" },
-          { category: "Implementation speed", ourProduct: "", competitorOne: "", competitorTwo: "" },
-        ],
+    comparisonRows: DEFAULT_COMPETITIVE_PARAMETERS.map(category =>
+      rowsByCategory[category] || {
+        category,
+        ourProduct: "",
+        competitorOne: "",
+        competitorTwo: "",
+      }
+    ),
   };
 }
 
@@ -4627,6 +4687,212 @@ function NarrativeOverviewPanel({ pos, msg, aud }) {
   );
 }
 
+function CompetitiveIntelligencePanel({ pd, pos, msg, strat, story, comp, setComp }) {
+  const [expandedRow, setExpandedRow] = useState(DEFAULT_COMPETITIVE_PARAMETERS[0]);
+  const [suggesting, setSuggesting] = useState(false);
+  const competitorNames = extractTopCompetitorNames(comp.competitors || "");
+  const competitorOneName = competitorNames[0] || "Competitor 1";
+  const competitorTwoName = competitorNames[1] || "Competitor 2";
+  const comparisonRows = normalizeCompetitionState(comp).comparisonRows;
+
+  const updateField = key => value => setComp(prev => ({ ...prev, [key]: value }));
+  const updateComparisonRow = (category, key, value) => {
+    setComp(prev => ({
+      ...prev,
+      comparisonRows: normalizeCompetitionState(prev).comparisonRows.map(row =>
+        row.category === category ? { ...row, [key]: value } : row
+      ),
+    }));
+  };
+
+  async function suggestCompetitors() {
+    if (suggesting) return;
+    setSuggesting(true);
+    try {
+      const prompt = `Suggest the top 2 most direct competitors or status-quo alternatives for this product. Product: ${pd.name || pd.category || "Unknown product"}. Category: ${pd.category || "Unknown category"}. Audience: ${pd.audience || strat.icp || "Unknown audience"}. Problem: ${pd.problem || "Unknown problem"}. Positioning: ${pos.statement || "Unknown positioning"}. Launch story: ${story.origin || "Unknown launch story"}. Return exactly 2 lines. Each line should contain only the competitor or alternative name and a 4-8 word reason.`;
+      const suggestion = await callClaude(prompt);
+      if (suggestion?.trim()) {
+        setComp(prev => ({ ...prev, competitors: suggestion.trim() }));
+      }
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ border: `1px dashed ${P[200]}`, borderRadius: 22, background: "linear-gradient(180deg, rgba(238, 237, 254, 0.45) 0%, rgba(244, 243, 255, 0.82) 100%)", padding: 24 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Competitive Intelligence</div>
+        <div style={{ marginTop: 8, fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Compare the story against the 2 alternatives buyers will actually mention</div>
+        <div style={{ marginTop: 12, maxWidth: 820, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
+          Keep this table lightweight and current. When Product Truth, Core Narrative, or GTM changes, tighten the wedge here so Launch, Sales, and Narrative Intelligence all stay grounded in the same comparison logic.
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(320px, 1.15fr) minmax(260px, 0.85fr)", gap: 16 }}>
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 20, padding: 18, boxShadow: "0 10px 28px rgba(38, 33, 92, 0.04)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Top 2 competitors</div>
+              <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: S.muted }}>Name the 2 most direct competitors or status-quo alternatives. Loop can suggest them if the team is still unsure.</div>
+            </div>
+            <button
+              onClick={suggestCompetitors}
+              disabled={suggesting}
+              style={{
+                border: `1px solid ${P[300]}`,
+                background: suggesting ? P[50] : "white",
+                color: P[700],
+                borderRadius: 999,
+                padding: "8px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: suggesting ? "default" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              {suggesting ? "Suggesting..." : "Suggest competitors"}
+            </button>
+          </div>
+          <textarea
+            value={comp.competitors || ""}
+            onChange={e => updateField("competitors")(e.target.value)}
+            placeholder={"Competitor 1 - why buyers compare it\nCompetitor 2 - why buyers compare it"}
+            rows={4}
+            style={{
+              width: "100%",
+              marginTop: 14,
+              boxSizing: "border-box",
+              padding: "12px 14px",
+              borderRadius: 14,
+              border: `1px solid ${S.border}`,
+              background: "#FBFBFF",
+              color: S.text,
+              fontSize: 13,
+              fontFamily: "inherit",
+              lineHeight: 1.6,
+              resize: "vertical",
+            }}
+          />
+        </div>
+
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 20, padding: 18, boxShadow: "0 10px 28px rgba(38, 33, 92, 0.04)", display: "grid", gap: 12, alignContent: "start" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>How Loop uses this</div>
+          {[
+            "Feeds GTM wedge and messaging risk checks",
+            "Strengthens differentiation and proof guidance in Narrative Intelligence",
+            "Gives Sales and PMM a cleaner comparison frame before launch",
+          ].map(text => (
+            <div key={text} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ width: 7, height: 7, borderRadius: 999, background: P[500], marginTop: 7 }} />
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>{text}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 22, overflow: "hidden", boxShadow: "0 12px 30px rgba(38, 33, 92, 0.05)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(210px, 0.9fr) repeat(3, minmax(180px, 1fr))", background: "linear-gradient(180deg, #FAF9FF 0%, #F3F1FF 100%)", borderBottom: `1px solid ${S.border}` }}>
+          <div style={{ padding: "14px 16px", fontSize: 11, fontWeight: 800, color: P[800], textTransform: "uppercase", letterSpacing: "0.08em" }}>Parameter</div>
+          <div style={{ padding: "14px 16px", fontSize: 11, fontWeight: 800, color: P[800], textTransform: "uppercase", letterSpacing: "0.08em" }}>Our Product</div>
+          <div style={{ padding: "14px 16px", fontSize: 11, fontWeight: 800, color: P[800], textTransform: "uppercase", letterSpacing: "0.08em" }}>{competitorOneName}</div>
+          <div style={{ padding: "14px 16px", fontSize: 11, fontWeight: 800, color: P[800], textTransform: "uppercase", letterSpacing: "0.08em" }}>{competitorTwoName}</div>
+        </div>
+
+        {comparisonRows.map((row, index) => {
+          const expanded = expandedRow === row.category;
+          const quickSummary = [row.ourProduct, row.competitorOne, row.competitorTwo].filter(Boolean).join(" / ");
+          return (
+            <div key={row.category} style={{ borderBottom: index === comparisonRows.length - 1 ? "none" : `1px solid ${S.border}` }}>
+              <button
+                onClick={() => setExpandedRow(expanded ? "" : row.category)}
+                style={{
+                  width: "100%",
+                  border: "none",
+                  background: expanded ? "rgba(245, 243, 255, 0.75)" : "white",
+                  padding: 0,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  textAlign: "left",
+                }}
+              >
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(210px, 0.9fr) repeat(3, minmax(180px, 1fr))" }}>
+                  <div style={{ padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ fontSize: 15, color: P[700], width: 14 }}>{expanded ? "-" : "+"}</div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: S.text }}>{row.category}</div>
+                        <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.5, color: S.muted }}>{expanded ? COMPETITIVE_PARAMETER_DESCRIPTIONS[row.category] : (quickSummary || "Expand to compare this parameter.")}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {[row.ourProduct, row.competitorOne, row.competitorTwo].map((value, valueIndex) => (
+                    <div key={`${row.category}-${valueIndex}`} style={{ padding: "14px 16px", fontSize: 13, lineHeight: 1.55, color: value ? S.text : S.muted }}>
+                      {value || (expanded ? "Add a one-line comparison." : "-")}
+                    </div>
+                  ))}
+                </div>
+              </button>
+
+              {expanded ? (
+                <div style={{ padding: "0 16px 16px 16px", background: "rgba(250, 249, 255, 0.82)" }}>
+                  <div style={{ marginLeft: 24, marginBottom: 12, fontSize: 12, lineHeight: 1.55, color: S.muted }}>
+                    {COMPETITIVE_PARAMETER_DESCRIPTIONS[row.category]}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(210px, 0.9fr) repeat(3, minmax(180px, 1fr))", gap: 12 }}>
+                    <div />
+                    {[
+                      { key: "ourProduct", label: "Our Product", value: row.ourProduct },
+                      { key: "competitorOne", label: competitorOneName, value: row.competitorOne },
+                      { key: "competitorTwo", label: competitorTwoName, value: row.competitorTwo },
+                    ].map(field => (
+                      <textarea
+                        key={`${row.category}-${field.key}`}
+                        value={field.value}
+                        onChange={e => updateComparisonRow(row.category, field.key, e.target.value)}
+                        placeholder={`${field.label}: keep it to one line`}
+                        rows={3}
+                        style={{
+                          width: "100%",
+                          boxSizing: "border-box",
+                          padding: "10px 12px",
+                          borderRadius: 14,
+                          border: `1px solid ${S.border}`,
+                          background: "white",
+                          color: S.text,
+                          fontSize: 13,
+                          fontFamily: "inherit",
+                          lineHeight: 1.5,
+                          resize: "none",
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 18, padding: 18, boxShadow: "0 10px 28px rgba(38, 33, 92, 0.04)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Why we win</div>
+          <textarea value={comp.differentiators || ""} onChange={e => updateField("differentiators")(e.target.value)} placeholder="What is the strongest wedge that should keep showing up in Narrative, GTM, and Sales?" rows={5} style={{ width: "100%", marginTop: 10, boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: "#FBFBFF", color: S.text, fontSize: 13, fontFamily: "inherit", lineHeight: 1.6, resize: "vertical" }} />
+        </div>
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 18, padding: 18, boxShadow: "0 10px 28px rgba(38, 33, 92, 0.04)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Proof / credibility</div>
+          <textarea value={comp.proofPoints || ""} onChange={e => updateField("proofPoints")(e.target.value)} placeholder="What proof makes the comparison believable in market?" rows={5} style={{ width: "100%", marginTop: 10, boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: "#FBFBFF", color: S.text, fontSize: 13, fontFamily: "inherit", lineHeight: 1.6, resize: "vertical" }} />
+        </div>
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 18, padding: 18, boxShadow: "0 10px 28px rgba(38, 33, 92, 0.04)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Messaging risk</div>
+          <textarea value={comp.winLose || ""} onChange={e => updateField("winLose")(e.target.value)} placeholder="What confusion or objections are most likely when buyers compare the options?" rows={5} style={{ width: "100%", marginTop: 10, boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: "#FBFBFF", color: S.text, fontSize: 13, fontFamily: "inherit", lineHeight: 1.6, resize: "vertical" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CompetitionOverviewPanel({ comp }) {
   const sections = [
     ["Competition Overview", comp.competitors || "List the main competitors and status-quo alternatives buyers compare you against."],
@@ -6413,6 +6679,7 @@ const MVP_NAV = [
     items: [
       { id: "strategy", label: "Strategy", icon: "ST" },
       { id: "story", label: "Story", icon: "SY" },
+      { id: "competitiveIntelligence", label: "Competitive Intelligence", icon: "CI" },
     ],
   },
   {
@@ -6473,6 +6740,7 @@ const WORKSPACE_NAV_ICONS = {
 WORKSPACE_NAV_ICONS["Internal Feedback"] = "IF";
 WORKSPACE_NAV_ICONS.internalFeedbackOwner = "IF";
 WORKSPACE_NAV_ICONS.reviewerFeedback = "RV";
+WORKSPACE_NAV_ICONS.competitiveIntelligence = "CI";
 
 const WORKSPACE_SECTION_GUIDANCE = {
   context: {
@@ -6519,6 +6787,11 @@ const WORKSPACE_SECTION_GUIDANCE = {
     summary: "Turn the strategy into a market-facing story the launch can actually carry.",
     improveFocus: ["Shape the launch story", "Connect truth to narrative", "Keep the storyline focused"],
     successSignal: "The market narrative feels launchable and consistent with the product truth.",
+  },
+  competitiveIntelligence: {
+    summary: "Compare the product against the top alternatives so GTM can lead with a clearer wedge and lower messaging risk.",
+    improveFocus: ["Name the top 2 competitors", "Capture the strongest differentiator", "Back the comparison with believable proof"],
+    successSignal: "The team can explain where the product wins, where buyers may get confused, and what proof should carry into launch.",
   },
   productMarketingAssets: {
     summary: "Turn the narrative into PMM-ready deliverables the broader launch can align around.",
@@ -9863,10 +10136,7 @@ export default function App() {
     proofMetrics: "",
     winLose: "",
     alternativeGaps: "",
-    comparisonRows: [
-      { category: "Ease of use", ourProduct: "", competitorOne: "", competitorTwo: "" },
-      { category: "Implementation speed", ourProduct: "", competitorOne: "", competitorTwo: "" },
-    ],
+    comparisonRows: makeDefaultCompetitiveRows(),
   });
   const [pos, setPos] = useState({ statement: "", valueProp: "", tagline: "", taglineOptions: "", keyValue: "" });
   const [msg, setMsg] = useState({ headline: "", pillars: "", elevator: "" });
@@ -10074,6 +10344,7 @@ export default function App() {
     competitionSales: [comp.differentiators, comp.winLose].filter(Boolean).join(" | "),
     strategy: safeStrat.goal,
     story: safeStory.origin,
+    competitiveIntelligence: [safeComp.competitors, safeComp.differentiators, safeComp.proofPoints].filter(Boolean).join(" | "),
     productMarketingAssets: safeAssets.sections?.productMarketing || "",
     salesAssets: safeAssets.sections?.sales || "",
     marketingAssets: safeAssets.sections?.marketing || "",
@@ -10114,8 +10385,16 @@ export default function App() {
       id: "proof-points-gap",
       title: "Proof points are missing",
       body: "Product differentiation exists, but Competitive Intelligence still needs proof points to back it up.",
-      target: "addSection",
-      targetLabel: sectionLabels.addSection,
+      target: "competitiveIntelligence",
+      targetLabel: sectionLabels.competitiveIntelligence || "Competitive Intelligence",
+      severity: "review",
+    } : null,
+    safeStory.origin && !comp.competitors ? {
+      id: "competitive-pressure-gap",
+      title: "Competitive pressure is still unclear",
+      body: "The GTM story exists, but the top alternatives are still missing. Launch messaging may sound generic until the comparison frame is sharper.",
+      target: "competitiveIntelligence",
+      targetLabel: sectionLabels.competitiveIntelligence || "Competitive Intelligence",
       severity: "review",
     } : null,
     pd.audience && !safeAud.primary ? {
@@ -10194,7 +10473,7 @@ export default function App() {
   const currentPageReviewItems = rawReviewItems.filter(item => {
     if (activeGroup === "Product Truth") return ["context", "customer", "product", "market", "productTruth", "addSection"].includes(item.target);
     if (activeGroup === "Core Narrative") return ["positioning", "messaging", "value", "positioningStatementSection", "messagingPillarsSection", "valuePropSection", "headlineSection", "elevatorPitchSection", "taglineSection", "keyValueSection", "addNarrativeSection"].includes(item.target);
-    if (activeGroup === "GTM") return ["strategy", "story"].includes(item.target);
+    if (activeGroup === "GTM") return ["strategy", "story", "competitiveIntelligence"].includes(item.target);
     if (activeGroup === "Assets") return String(item.target || "").includes("Assets") || item.target === "assets";
     if (activeGroup === "Readiness") return true;
     if (activeGroup === "External Feedback") return item.target === "analytics" || item.target === "confidence";
@@ -10300,6 +10579,7 @@ export default function App() {
         !safeStrat.goal ? "Launch goal is still vague, so Assets may overproduce instead of focusing on the first motion." : `Strategy already points toward ${safeStrat.goal}. Keep channels and sequencing aligned with that goal.`,
         !safeStory.origin ? "Launch story is still weak, which makes campaigns and social assets harder to prioritize." : "Story exists. Keep the why-now angle concrete so launch copy does not feel generic.",
         !safeStory.whyNow ? "A clear why-now moment is still missing from GTM." : "Why-now is present. Reuse it across launch email, social, and PMM briefs.",
+        !safeComp.competitors ? "Competitive context is still thin, so GTM may underplay the real alternatives buyers compare against." : "Competitive context is present. Keep the wedge and proof aligned with the latest narrative changes.",
       ].filter(Boolean);
       return {
         eyebrow: "GTM Intelligence",
@@ -10310,6 +10590,7 @@ export default function App() {
           safeStrat.goal ? "Launch goal set" : "Goal gap",
           safeStrat.channels ? "Channels named" : "Channel gap",
           safeStory.whyNow ? "Why-now present" : "Why-now gap",
+          safeComp.competitors ? "Competitors named" : "Competitive gap",
         ].filter(Boolean),
         priorityActions: [
           !safeStrat.goal ? {
@@ -10327,6 +10608,14 @@ export default function App() {
             target: "story",
             targetLabel: sectionLabels.story || "Story",
             notice: "Loop opened Story so you can sharpen the why-now angle before campaigns and social assets reuse it.",
+          } : null,
+          !safeComp.competitors ? {
+            id: "gtm-competitive-gap",
+            label: "Add competitive pressure",
+            prompt: `Find the most important competitive pressure, likely alternatives, and messaging risk the GTM story should reflect. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
+            target: "competitiveIntelligence",
+            targetLabel: sectionLabels.competitiveIntelligence || "Competitive Intelligence",
+            notice: "Loop opened Competitive Intelligence so you can sharpen the wedge before GTM and sales reuse weaker comparison language.",
           } : null,
           {
             id: "gtm-channel-fit",
@@ -10857,6 +11146,7 @@ export default function App() {
       onFieldChange={updateNarrativeField}
       userEdits={userEdits}
     />,
+    competitiveIntelligence: <CompetitiveIntelligencePanel pd={safePd} pos={safePos} msg={safeMsg} strat={safeStrat} story={safeStory} comp={safeComp} setComp={setComp} />,
     ...assetWorkspacePanels,
     alignment: <AlignmentPanel d={{
       ...feedbackDashboardData,
