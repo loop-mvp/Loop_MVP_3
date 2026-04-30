@@ -1,11 +1,9 @@
-# Roadmap
-
-Current roadmap for Loop MVP 3.
-
+# Roadmap Snapshot v2026-04-30-phase3-complete
+This file captures the roadmap state as of `2026-04-30-phase3-complete`.
 ## Roadmap Version
 
-- Current version: `2026-04-30-phase4-complete`
-- Snapshot file: [docs/roadmaps/ROADMAP_v2026-04-30-phase4-complete.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase4-complete.md)
+- Current version: `2026-04-30-phase3-pass-1`
+- Snapshot file: [docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md)
 
 ## How this should be maintained
 
@@ -114,44 +112,6 @@ Status: operationally complete for MVP. The intelligence layer now includes page
 - Readiness now separates launch blockers from content blockers so PMMs can act faster
 - homepage narrative generation remains intentionally stable while the intelligence layer works around the workflow
 - deeper cost-aware AI architecture still comes after this MVP intelligence layer is stable
-
-## Phase 4
-
-Goal: complete the internal feedback loop so PMMs can route reviews cleanly, teams only see relevant sections, and feedback flows back into Readiness without extra coordination overhead.
-
-Status: operationally complete for MVP. Loop now supports default team routing by section, reviewer overrides for named individuals, PMM-only internal feedback oversight, and team-scoped reviewer views that feed Readiness automatically.
-
-### 4.1 Default Review Routing
-
-- auto-route sections and asset review areas to default teams
-- keep PMM override available when a specific reviewer should be added
-- preserve routing and reviewer ownership in project state
-
-### 4.2 Reviewer-Scoped View
-
-- show reviewers only the sections assigned to their team
-- attach only the relevant review parameters to each section
-- support section-level comments plus approve, needs work, delay, and drop decisions
-
-### 4.3 PMM Internal Feedback Overview
-
-- give PMMs one owner-only overview of response progress
-- show assigned teams, delays, dropped items, and sections needing re-review
-- make it easy to reopen the right workspace section or jump into a reviewer view
-
-### 4.4 Readiness Return Flow
-
-- push review decisions back into Readiness automatically
-- keep PMM re-review and resend centered from one control layer
-- keep internal feedback operational without turning it into a second editing workspace
-
-### Phase 4 Completion Notes
-
-- review routing now defaults by section ownership instead of forcing PMM to assign everything manually
-- PMMs can still add a named reviewer beyond the default team assignment
-- Internal Feedback now has distinct owner and reviewer views
-- reviewer feedback is section-scoped and parameter-specific
-- Readiness remains the launch-control layer while Internal Feedback handles review-progress oversight
 
 ## Future Enterprise Direction
 

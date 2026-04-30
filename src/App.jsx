@@ -212,13 +212,31 @@ function nextVersionLabel(version) {
   return `v${major}.${minor + 1}`;
 }
 
-const REVIEW_TEAMS = ["Sales", "Product", "PMM"];
+const REVIEW_TEAMS = ["PMM", "Product", "Sales", "Marketing"];
 const VERSION_CONTEXT_OPTIONS = {
   audienceUser: ["Enterprise Buyer", "Mid-market Buyer", "SMB Buyer", "Founder", "PMM Team", "Sales Team", "Technical Buyer", "Executive Buyer"],
   marketSegment: ["Enterprise", "Mid-market", "SMB", "PLG / Self-Serve", "New Market", "Vertical Expansion", "Existing Expansion"],
   primaryChannel: ["Website", "Sales Conversation", "Launch Campaign", "Email", "Social", "Partner / Ecosystem", "Community", "Customer Expansion"],
   competitiveLens: ["Competitive Replacement", "Category Creation", "New Product Launch", "Expansion Story", "New Use Case", "Differentiation Push"],
   versionPurpose: ["New Audience Narrative", "New Market Narrative", "Channel Narrative", "Competitive Repositioning", "Refresh After Feedback", "Launch Variant"],
+};
+const REVIEW_PARAMETER_META = {
+  clarity: { label: "Clarity" },
+  relevance: { label: "Relevance" },
+  differentiation: { label: "Differentiation" },
+  credibility: { label: "Credibility" },
+  usability: { label: "Usability" },
+};
+const WORKSPACE_REVIEW_PARAMETERS = {
+  "Product Truth": ["clarity", "relevance", "differentiation", "credibility"],
+  "Core Narrative": ["clarity", "relevance", "differentiation", "credibility", "usability"],
+  GTM: ["clarity", "relevance", "credibility", "usability"],
+  Assets: ["clarity", "relevance", "differentiation", "credibility", "usability"],
+};
+const DEFAULT_REVIEWER_ASSIGNMENTS = {
+  Sales: "Sales Reviewer",
+  Product: "Product Reviewer",
+  PMM: "PMM Owner",
 };
 
 function makeEmptyReviewRouting() {
@@ -229,6 +247,7 @@ function makeEmptyReviewRouting() {
       Product: [],
       PMM: [],
     },
+    reviewerAssignments: { ...DEFAULT_REVIEWER_ASSIGNMENTS },
     lastAssignedAt: "",
     sentAt: "",
   };
@@ -236,8 +255,22 @@ function makeEmptyReviewRouting() {
 
 function getReviewTeamForSection(section) {
   if (["problem", "solution"].includes(section.id)) return "Product";
-  if (["positioning", "messaging", "elevator"].includes(section.id)) return "Sales";
+  if (["primaryAudience", "differentiation", "positioning", "valueProposition", "messaging"].includes(section.id)) return "PMM";
+  if (["headline", "elevator"].includes(section.id)) return "Sales";
+  if (["gtmStrategy", "keyChannels", "launchStrategy"].includes(section.id)) return "Marketing";
+  if (String(section.workspace || "").includes("Assets")) {
+    if (section.id === "salesAssetsReview") return "Sales";
+    if (section.id === "marketingAssetsReview" || section.id === "socialAssetsReview") return "Marketing";
+    return "PMM";
+  }
   return "PMM";
+}
+
+function getReviewParametersForSection(section) {
+  const workspace = section?.workspace === "Assets"
+    ? "Assets"
+    : section?.workspace;
+  return WORKSPACE_REVIEW_PARAMETERS[workspace] || ["clarity", "relevance", "credibility", "usability"];
 }
 
 function getReadinessStatusMeta(status = "") {
@@ -337,18 +370,20 @@ function computeReadinessGate(board = {}, assetState = {}, reviewAnalytics = {})
   const normalizedBoard = normalizeReadinessBoard(board);
   const normalizedAssets = normalizeAssetsState(assetState);
   const items = normalizedBoard.items || {};
-  const blockers = [];
+  const contentBlockers = [];
+  const launchBlockers = [];
+  const reviewBlockers = [];
   const requiredWorkspaceIds = ["productTruth", "narrative", "gtm"];
 
   requiredWorkspaceIds.forEach(itemId => {
     const item = items[itemId];
     const label = item?.label || itemId;
     if (!item || item.status === "Draft") {
-      blockers.push(`${label} has not been moved into Readiness yet.`);
+      launchBlockers.push(`${label} has not been moved into Readiness yet.`);
       return;
     }
     if (item.status !== "Approved") {
-      blockers.push(`${label} must be approved before Go Live.`);
+      contentBlockers.push(`${label} must be approved before Go Live.`);
     }
   });
 
@@ -358,7 +393,7 @@ function computeReadinessGate(board = {}, assetState = {}, reviewAnalytics = {})
   );
 
   if (!activeAssetConfigs.length) {
-    blockers.push("At least one asset group must be prepared before Go Live.");
+    launchBlockers.push("At least one asset group must be prepared before Go Live.");
   }
 
   activeAssetConfigs.forEach(config => {
@@ -371,22 +406,30 @@ function computeReadinessGate(board = {}, assetState = {}, reviewAnalytics = {})
     else if (matchingAssets.length || String(normalizedAssets.sections?.[config.noteKey] || "").trim()) inferredStatus = "Ready for Review";
     const effectiveStatus = resolveReadinessStatus(item?.status, inferredStatus, !!item?.dropped);
     if (!item || effectiveStatus === "Draft") {
-      blockers.push(`${config.label} assets have not been moved into Readiness yet.`);
+      launchBlockers.push(`${config.label} assets have not been moved into Readiness yet.`);
       return;
     }
     if (!["Approved", "Dropped"].includes(effectiveStatus)) {
-      blockers.push(`${config.label} assets must be approved or dropped before Go Live.`);
+      contentBlockers.push(`${config.label} assets must be approved or dropped before Go Live.`);
     }
   });
 
   if ((reviewAnalytics?.totals?.pending || 0) > 0) {
-    blockers.push("Some routed review sections are still pending.");
+    reviewBlockers.push("Some routed review sections are still pending.");
   }
 
-  const uniqueBlockers = Array.from(new Set(blockers));
+  const blockers = Array.from(new Set([
+    ...launchBlockers,
+    ...contentBlockers,
+    ...reviewBlockers,
+  ]));
   return {
-    ready: uniqueBlockers.length === 0,
-    blockers: uniqueBlockers,
+    ready: blockers.length === 0,
+    blockers,
+    launchBlockers: Array.from(new Set(launchBlockers)),
+    contentBlockers: Array.from(new Set(contentBlockers)),
+    reviewBlockers: Array.from(new Set(reviewBlockers)),
+    primaryBlocker: blockers[0] || "",
     activeAssetGroupCount: activeAssetConfigs.length,
   };
 }
@@ -427,6 +470,7 @@ function buildReadinessBoardForWorkspaceMove(board = {}, workspace = "", assetsS
 
 function buildReviewableSections(source = {}) {
   const snapshot = hydrateDraftSnapshot(source);
+  const assetSections = normalizeAssetsState(snapshot.assets || {}).sections || {};
   const sections = [
     { id: "problem", workspace: "Product Truth", label: "Problem", content: snapshot.pd?.problem || snapshot.pd?.problemStatement || "" },
     { id: "solution", workspace: "Product Truth", label: "Solution", content: snapshot.pd?.solution || "" },
@@ -440,13 +484,45 @@ function buildReviewableSections(source = {}) {
     { id: "gtmStrategy", workspace: "GTM", label: "GTM Strategy", content: snapshot.strat?.goal || "" },
     { id: "keyChannels", workspace: "GTM", label: "Key Channels", content: snapshot.strat?.channels || "" },
     { id: "launchStrategy", workspace: "GTM", label: "Launch Strategy", content: snapshot.strat?.hooks || "" },
+    { id: "productMarketingAssetsReview", workspace: "Assets", label: "Product Marketing Assets", content: assetSections.productMarketing || "" },
+    { id: "salesAssetsReview", workspace: "Assets", label: "Sales Assets", content: assetSections.sales || "" },
+    { id: "marketingAssetsReview", workspace: "Assets", label: "Marketing Assets", content: assetSections.marketing || "" },
+    { id: "socialAssetsReview", workspace: "Assets", label: "Social Assets", content: assetSections.social || "" },
+    { id: "generalAssetsReview", workspace: "Assets", label: "General Assets", content: assetSections.general || "" },
   ];
 
   return sections.map(section => ({
     ...section,
     content: String(section.content || "").trim(),
     suggestedTeam: getReviewTeamForSection(section),
+    reviewParameters: getReviewParametersForSection(section),
   }));
+}
+
+function getWorkspacePanelForReviewSection(sectionId = "", workspace = "") {
+  if (workspace === "Product Truth") {
+    if (["problem", "solution"].includes(sectionId)) return "product";
+    if (["primaryAudience"].includes(sectionId)) return "customer";
+    if (["differentiation"].includes(sectionId)) return "market";
+    return "context";
+  }
+  if (workspace === "Core Narrative") {
+    if (["positioning"].includes(sectionId)) return "positioning";
+    if (["valueProposition"].includes(sectionId)) return "value";
+    return "messaging";
+  }
+  if (workspace === "GTM") {
+    if (["gtmStrategy", "keyChannels"].includes(sectionId)) return "strategy";
+    return "story";
+  }
+  if (workspace === "Assets") {
+    if (sectionId === "productMarketingAssetsReview") return "productMarketingAssets";
+    if (sectionId === "salesAssetsReview") return "salesAssets";
+    if (sectionId === "marketingAssetsReview") return "marketingAssets";
+    if (sectionId === "socialAssetsReview") return "socialAssets";
+    return "generalAssets";
+  }
+  return "reviewCenter";
 }
 
 function normalizeResourceCategoryLabel(workspace = "") {
@@ -554,6 +630,10 @@ function normalizeReviewRouting(reviewRouting = {}, reviewSections = []) {
   return {
     selectedTeam: REVIEW_TEAMS.includes(reviewRouting.selectedTeam) ? reviewRouting.selectedTeam : fallback.selectedTeam,
     assignments,
+    reviewerAssignments: {
+      ...DEFAULT_REVIEWER_ASSIGNMENTS,
+      ...(reviewRouting.reviewerAssignments || {}),
+    },
     lastAssignedAt: reviewRouting.lastAssignedAt || "",
     sentAt: reviewRouting.sentAt || "",
   };
@@ -573,11 +653,14 @@ function makeDefaultSectionReview(section, reviewerTeam = "Sales") {
     sectionName: section.label,
     content: section.content || "",
     reviewerTeam,
+    reviewerName: DEFAULT_REVIEWER_ASSIGNMENTS[reviewerTeam] || reviewerTeam,
+    reviewParameters: getReviewParametersForSection(section),
     scores: {
       clarity: 0,
       relevance: 0,
       differentiation: 0,
-      value: 0,
+      credibility: 0,
+      usability: 0,
     },
     status: "in_review",
     decision: "",
@@ -607,13 +690,16 @@ function normalizeSectionReviews(sectionReviews = {}, reviewRouting = makeEmptyR
       sectionName: section.label,
       content: section.content || "",
       reviewerTeam,
+      reviewerName: existing?.reviewerName || (reviewRouting.reviewerAssignments?.[reviewerTeam] || DEFAULT_REVIEWER_ASSIGNMENTS[reviewerTeam] || reviewerTeam),
+      reviewParameters: existing?.reviewParameters || getReviewParametersForSection(section),
       scores: {
         clarity: clampReviewScore(existing?.scores?.clarity),
         relevance: clampReviewScore(existing?.scores?.relevance),
         differentiation: clampReviewScore(existing?.scores?.differentiation),
-        value: clampReviewScore(existing?.scores?.value),
+        credibility: clampReviewScore(existing?.scores?.credibility),
+        usability: clampReviewScore(existing?.scores?.usability),
       },
-      status: existing?.status === "approved" ? "approved" : "in_review",
+      status: ["approved", "delayed", "dropped", "in_review"].includes(existing?.status) ? existing.status : "in_review",
       decision: existing?.decision || "",
       comment: existing?.comment || "",
       updatedAt: existing?.updatedAt || "",
@@ -628,12 +714,16 @@ function summarizeSectionReviewState(sectionReviews = {}, reviewRouting = makeEm
   const activeReviews = assignedSectionIds.map(sectionId => sectionReviews?.[sectionId]).filter(Boolean);
   const approvedCount = activeReviews.filter(review => review.status === "approved").length;
   const improveCount = activeReviews.filter(review => review.decision === "improve").length;
+  const delayedCount = activeReviews.filter(review => review.decision === "delay").length;
+  const droppedCount = activeReviews.filter(review => review.decision === "drop" || review.status === "dropped").length;
 
   if (!activeReviews.length) {
     return {
       totalCount: 0,
       approvedCount: 0,
       improveCount: 0,
+      delayedCount: 0,
+      droppedCount: 0,
       pendingCount: 0,
       status: "Requested",
     };
@@ -644,16 +734,20 @@ function summarizeSectionReviewState(sectionReviews = {}, reviewRouting = makeEm
       totalCount: activeReviews.length,
       approvedCount,
       improveCount,
+      delayedCount,
+      droppedCount,
       pendingCount: 0,
       status: "Approved",
     };
   }
 
-  const pendingCount = activeReviews.length - approvedCount;
+  const pendingCount = activeReviews.filter(review => !["approved", "dropped"].includes(review.status)).length;
   return {
       totalCount: activeReviews.length,
       approvedCount,
       improveCount,
+      delayedCount,
+      droppedCount,
       pendingCount,
       status: improveCount > 0 || pendingCount > 0 ? "In Review" : "Requested",
     };
@@ -681,20 +775,27 @@ function buildReviewAnalytics(sectionReviews = {}, assignedSections = []) {
     .map(section => sectionReviews?.[section.sectionId])
     .filter(Boolean);
 
-  const averageScore = parameter => Number(average(reviews.map(review => clampReviewScore(review.scores?.[parameter]))).toFixed(1));
+  const averageScore = parameter => Number(average(
+    reviews
+      .filter(review => (review.reviewParameters || []).includes(parameter))
+      .map(review => clampReviewScore(review.scores?.[parameter]))
+  ).toFixed(1));
 
   return {
     totals: {
       routed: assignedSections.length,
       approved: reviews.filter(review => review.status === "approved").length,
       improve: reviews.filter(review => review.decision === "improve").length,
-      pending: reviews.filter(review => review.status !== "approved").length,
+      delayed: reviews.filter(review => review.decision === "delay").length,
+      dropped: reviews.filter(review => review.decision === "drop" || review.status === "dropped").length,
+      pending: reviews.filter(review => review.status !== "approved" && review.status !== "dropped").length,
     },
     scores: {
       clarity: averageScore("clarity"),
       relevance: averageScore("relevance"),
       differentiation: averageScore("differentiation"),
-      value: averageScore("value"),
+      credibility: averageScore("credibility"),
+      usability: averageScore("usability"),
     },
     byTeam: REVIEW_TEAMS.map(team => ({
       team,
@@ -1932,24 +2033,21 @@ function calculateFeedbackConfidence(sectionReviews = {}) {
   if (!reviews.length) return 0;
 
   const weightedAverage = average(reviews.map(review => {
-    const scores = review.scores || {};
-    return (
-      clampReviewScore(scores.clarity) * 0.25 +
-      clampReviewScore(scores.relevance) * 0.25 +
-      clampReviewScore(scores.differentiation) * 0.3 +
-      clampReviewScore(scores.value) * 0.2
-    );
+    const activeParameters = review.reviewParameters || Object.keys(REVIEW_PARAMETER_META);
+    const values = activeParameters.map(parameter => clampReviewScore(review.scores?.[parameter]));
+    return average(values);
   }));
 
   return Math.max(0, Math.min(100, Math.round((weightedAverage / 10) * 100)));
 }
 
 async function normalizeFeedback(sectionReview) {
+  const rankedParameters = (sectionReview.reviewParameters || Object.keys(REVIEW_PARAMETER_META))
+    .sort((a, b) => clampReviewScore(sectionReview.scores?.[a]) - clampReviewScore(sectionReview.scores?.[b]));
   const fallback = {
     dominantIssue: sectionReview.decision === "improve" ? "Needs stronger narrative quality" : "Approved with no major concerns",
     severity: sectionReview.decision === "improve" ? "medium" : "low",
-    parameterAffected: ["clarity", "relevance", "differentiation", "value"]
-      .sort((a, b) => clampReviewScore(sectionReview.scores?.[a]) - clampReviewScore(sectionReview.scores?.[b]))[0] || "clarity",
+    parameterAffected: rankedParameters[0] || "clarity",
     summary: sectionReview.comment || `${sectionReview.sectionName} was reviewed by ${sectionReview.reviewerTeam}.`,
   };
 
@@ -1959,7 +2057,7 @@ Return ONLY valid JSON with this exact shape:
 {
   "dominantIssue": "string",
   "severity": "low|medium|high",
-  "parameterAffected": "clarity|relevance|differentiation|value",
+  "parameterAffected": "clarity|relevance|differentiation|credibility|usability",
   "summary": "string"
 }
 
@@ -1969,7 +2067,8 @@ Scores:
 Clarity: ${clampReviewScore(sectionReview.scores?.clarity)}
 Relevance: ${clampReviewScore(sectionReview.scores?.relevance)}
 Differentiation: ${clampReviewScore(sectionReview.scores?.differentiation)}
-Value: ${clampReviewScore(sectionReview.scores?.value)}
+Credibility: ${clampReviewScore(sectionReview.scores?.credibility)}
+Usability: ${clampReviewScore(sectionReview.scores?.usability)}
 
 Comment:
 ${sectionReview.comment || "No additional comment."}
@@ -1992,7 +2091,7 @@ async function aggregateFeedback(allSections) {
     weakestParameter: allSections
       .map(item => item.signal?.parameterAffected)
       .find(Boolean) || "clarity",
-    strongestParameter: "value",
+    strongestParameter: "credibility",
     crossSectionPatterns: allSections
       .filter(item => item.signal?.summary)
       .map(item => item.signal.summary)
@@ -2098,7 +2197,7 @@ function buildProjectReportHtml(data) {
     reviewInsights = {},
     reviewAnalytics = {
       totals: { approved: 0, improve: 0, pending: 0, routed: 0 },
-      scores: { clarity: 0, relevance: 0, differentiation: 0, value: 0 },
+      scores: { clarity: 0, relevance: 0, differentiation: 0, credibility: 0, usability: 0 },
       byTeam: [],
     },
     pmmActionQueue = [],
@@ -2308,7 +2407,8 @@ function buildProjectReportHtml(data) {
             ${buildReportRow("Average Clarity", reviewAnalytics.scores.clarity)}
             ${buildReportRow("Average Relevance", reviewAnalytics.scores.relevance)}
             ${buildReportRow("Average Differentiation", reviewAnalytics.scores.differentiation)}
-            ${buildReportRow("Average Value", reviewAnalytics.scores.value)}
+            ${buildReportRow("Average Credibility", reviewAnalytics.scores.credibility)}
+            ${buildReportRow("Average Usability", reviewAnalytics.scores.usability)}
           </table>
           <table>
             <thead>
@@ -4681,9 +4781,10 @@ function ProjectReviewCenter({
   const readinessRows = [...readinessWorkspaceRows, ...readinessAssetRows];
   const [expandedReadinessRowId, setExpandedReadinessRowId] = useState("");
   const gridTemplate = compactView
-    ? "minmax(0, 1.7fr) minmax(0, 0.9fr) minmax(0, 0.95fr) repeat(4, minmax(0, 0.72fr)) minmax(0, 0.72fr) minmax(0, 0.9fr)"
-    : "minmax(240px, 1.5fr) minmax(120px, 0.8fr) minmax(110px, 0.8fr) repeat(4, minmax(84px, 0.55fr)) minmax(96px, 0.65fr) minmax(120px, 0.8fr)";
+    ? "minmax(0, 1.55fr) minmax(0, 0.8fr) minmax(0, 0.9fr) repeat(5, minmax(0, 0.62fr)) minmax(0, 0.72fr) minmax(0, 0.9fr)"
+    : "minmax(220px, 1.45fr) minmax(110px, 0.75fr) minmax(110px, 0.8fr) repeat(5, minmax(78px, 0.5fr)) minmax(92px, 0.6fr) minmax(110px, 0.75fr)";
   const boardMinWidth = compactView ? "auto" : 1120;
+  const scoreColumns = ["clarity", "relevance", "differentiation", "credibility", "usability"];
 
   return (
     <div style={sharedShellStyle}>
@@ -4846,7 +4947,8 @@ function ProjectReviewCenter({
                   <div>Clarity</div>
                   <div>Relevance</div>
                   <div>Differentiation</div>
-                  <div>Value</div>
+                  <div>Credibility</div>
+                  <div>Usability</div>
                   <div>Overall</div>
                   <div>Status</div>
                 </div>
@@ -4860,12 +4962,18 @@ function ProjectReviewCenter({
                 {allSections.map(section => {
                   const review = sectionReviews[section.sectionId] || makeDefaultSectionReview(section, section.reviewerTeam);
                   const isExpanded = currentExpandedSectionId === section.sectionId;
-                  const statusLabel = review.status === "approved" ? "Approved" : "In Review";
+                  const activeParameters = review.reviewParameters || section.reviewParameters || scoreColumns;
+                  const statusLabel = review.status === "approved"
+                    ? "Approved"
+                    : review.decision === "improve"
+                      ? "Needs Work"
+                      : review.decision === "delay"
+                        ? "Delayed"
+                        : review.decision === "drop" || review.status === "dropped"
+                          ? "Dropped"
+                          : "In Review";
                   const overallScore = Number((
-                    (Number(review.scores.clarity || 0) +
-                      Number(review.scores.relevance || 0) +
-                      Number(review.scores.differentiation || 0) +
-                      Number(review.scores.value || 0)) / 4
+                    average(activeParameters.map(parameter => Number(review.scores?.[parameter] || 0)))
                   ).toFixed(1));
                   const suggestionForSection = (reviewInsights.suggestions || []).find(item => item.section === section.sectionName);
                   return (
@@ -4899,15 +5007,15 @@ function ProjectReviewCenter({
                             {REVIEW_TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
                           </select>
                         </div>
-                        {["clarity", "relevance", "differentiation", "value"].map(parameter => (
+                        {scoreColumns.map(parameter => (
                           <div key={parameter} style={{ justifySelf: "stretch", minWidth: 0, padding: compactView ? "9px 8px" : "10px 12px", borderRadius: 999, border: `1px solid ${S.border}`, background: "#FBFAFF", fontSize: compactView ? 12 : 13, fontWeight: 700, color: S.text, textAlign: compactView ? "center" : "left" }}>
-                            {review.scores[parameter] || 0}
+                            {activeParameters.includes(parameter) ? (review.scores[parameter] || 0) : "—"}
                           </div>
                         ))}
                         <div style={{ justifySelf: "stretch", minWidth: 0, padding: compactView ? "9px 8px" : "10px 12px", borderRadius: 999, border: `1px solid ${S.border}`, background: "#F7F4FF", fontSize: compactView ? 12 : 13, fontWeight: 800, color: S.text, textAlign: compactView ? "center" : "left" }}>
                           {overallScore || 0}
                         </div>
-                        <div style={{ justifySelf: "stretch", minWidth: 0, padding: compactView ? "9px 8px" : "10px 12px", borderRadius: 999, background: review.status === "approved" ? "#ECFFF3" : "#FFF7E8", color: review.status === "approved" ? "#177A51" : "#AE7B10", fontSize: compactView ? 11 : 12, fontWeight: 800, textAlign: "center" }}>
+                        <div style={{ justifySelf: "stretch", minWidth: 0, padding: compactView ? "9px 8px" : "10px 12px", borderRadius: 999, background: review.status === "approved" ? "#ECFFF3" : review.decision === "improve" ? "#FFF1F0" : review.decision === "delay" ? "#FFF7E8" : review.decision === "drop" || review.status === "dropped" ? "#F3F4F6" : "#FFF7E8", color: review.status === "approved" ? "#177A51" : review.decision === "improve" ? "#B44332" : review.decision === "delay" ? "#AE7B10" : review.decision === "drop" || review.status === "dropped" ? "#4B5563" : "#AE7B10", fontSize: compactView ? 11 : 12, fontWeight: 800, textAlign: "center" }}>
                           {statusLabel}
                         </div>
                       </div>
@@ -4921,15 +5029,10 @@ function ProjectReviewCenter({
                             </div>
                           </div>
 
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
-                            {[
-                              ["clarity", "Clarity"],
-                              ["relevance", "Relevance"],
-                              ["differentiation", "Differentiation"],
-                              ["value", "Value"],
-                            ].map(([parameter, label]) => (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+                            {activeParameters.map(parameter => (
                               <label key={parameter} style={{ display: "grid", gap: 8 }}>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{REVIEW_PARAMETER_META[parameter]?.label || parameter}</span>
                                 <select
                                   value={review.scores[parameter] || ""}
                                   onChange={event => onUpdateScore(section.sectionId, parameter, event.target.value)}
@@ -5120,7 +5223,8 @@ function ProjectReviewCenter({
               ["Clarity", reviewAnalytics.scores.clarity],
               ["Relevance", reviewAnalytics.scores.relevance],
               ["Differentiation", reviewAnalytics.scores.differentiation],
-              ["Value", reviewAnalytics.scores.value],
+              ["Credibility", reviewAnalytics.scores.credibility],
+              ["Usability", reviewAnalytics.scores.usability],
             ].map(([label, value]) => (
               <div key={label} style={{ padding: "12px 10px", borderRadius: 14, background: "#F7F4FF", border: `1px solid ${S.border}` }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
@@ -6198,6 +6302,13 @@ const MVP_NAV = [
     ],
   },
   {
+    group: "Internal Feedback",
+    items: [
+      { id: "internalFeedbackOwner", label: "Owner View", icon: "IF" },
+      { id: "reviewerFeedback", label: "Reviewer View", icon: "RV" },
+    ],
+  },
+  {
     group: "External Feedback",
     items: [
       { id: "analytics", label: "Signals", icon: "EF" },
@@ -6229,6 +6340,9 @@ const WORKSPACE_NAV_ICONS = {
   reviewCenter: "RD",
   analytics: "EF",
 };
+WORKSPACE_NAV_ICONS["Internal Feedback"] = "IF";
+WORKSPACE_NAV_ICONS.internalFeedbackOwner = "IF";
+WORKSPACE_NAV_ICONS.reviewerFeedback = "RV";
 
 const WORKSPACE_SECTION_GUIDANCE = {
   context: {
@@ -7492,6 +7606,7 @@ function ReviewRoutingPage({
   onSelectTeam,
   onAssignSection,
   onRemoveSection,
+  onUpdateReviewer,
   onAiAssign,
   onBack,
   onSend,
@@ -7588,9 +7703,17 @@ function ReviewRoutingPage({
                   {team} ({reviewRouting.assignments?.[team]?.length || 0})
                 </button>
               ))}
-              <div style={{ marginLeft: "auto", fontSize: 12, color: S.muted }}>
-                For MVP, the same user reviews on behalf of all selected teams.
-              </div>
+              <label style={{ marginLeft: "auto", display: "grid", gap: 6, minWidth: 220 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Reviewer Override
+                </span>
+                <input
+                  value={reviewRouting.reviewerAssignments?.[activeTeam] || DEFAULT_REVIEWER_ASSIGNMENTS[activeTeam] || activeTeam}
+                  onChange={event => onUpdateReviewer(activeTeam, event.target.value)}
+                  placeholder={`Default ${activeTeam} reviewer`}
+                  style={{ padding: "10px 12px", borderRadius: 12, border: `1px solid ${S.border}`, background: "white", fontSize: 13, fontFamily: "inherit" }}
+                />
+              </label>
             </div>
 
             <div
@@ -7630,11 +7753,252 @@ function ReviewRoutingPage({
                   <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>
                     {section.content}
                   </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {(section.reviewParameters || []).map(parameter => (
+                      <span key={parameter} style={{ padding: "6px 10px", borderRadius: 999, background: "#F5F3FF", color: P[700], fontSize: 11, fontWeight: 800 }}>
+                        {REVIEW_PARAMETER_META[parameter]?.label || parameter}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InternalFeedbackOverviewPage({
+  reviewRouting,
+  assignedSections,
+  sectionReviews,
+  reviewAnalytics,
+  pmmActionQueue,
+  onOpenSection,
+  onOpenReviewerTeam,
+  onSendReview,
+}) {
+  const teamRows = REVIEW_TEAMS.map(team => {
+    const teamSections = assignedSections.filter(section => section.reviewerTeam === team);
+    const teamReviews = teamSections.map(section => sectionReviews?.[section.sectionId]).filter(Boolean);
+    return {
+      team,
+      reviewerName: reviewRouting.reviewerAssignments?.[team] || DEFAULT_REVIEWER_ASSIGNMENTS[team] || team,
+      count: teamSections.length,
+      approved: teamReviews.filter(review => review.status === "approved").length,
+      needsWork: teamReviews.filter(review => review.decision === "improve").length,
+      delayed: teamReviews.filter(review => review.decision === "delay").length,
+      dropped: teamReviews.filter(review => review.decision === "drop" || review.status === "dropped").length,
+    };
+  });
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ borderRadius: 24, border: `1px solid ${S.border}`, background: "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,243,255,0.96) 100%)", padding: 22 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Internal Feedback</div>
+        <div style={{ marginTop: 8, fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>PMM-only review oversight</div>
+        <div style={{ marginTop: 10, maxWidth: 820, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
+          Track who is reviewing what, which sections are delayed, and what needs to be revised before the next review cycle starts.
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+        {[
+          { label: "Sections Routed", value: reviewAnalytics.totals.routed, note: "Assigned sections and asset groups currently out for review." },
+          { label: "Approved", value: reviewAnalytics.totals.approved, note: "Sections cleared by their reviewers." },
+          { label: "Needs Work", value: reviewAnalytics.totals.improve, note: "Returned sections that PMM should revise." },
+          { label: "Pending", value: reviewAnalytics.totals.pending, note: "Sections still waiting on a completed reviewer response." },
+        ].map(card => (
+          <div key={card.label} style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 18, padding: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{card.label}</div>
+            <div style={{ marginTop: 10, fontSize: 24, fontWeight: 800, color: P[900] }}>{card.value}</div>
+            <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: S.muted }}>{card.note}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 20, display: "grid", gap: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Team Response</div>
+            <div style={{ marginTop: 6, fontSize: 14, color: S.muted }}>Default team routing is automatic, but PMM can still override the reviewer when needed.</div>
+          </div>
+          <button onClick={onSendReview} style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+            Send / Resend Review
+          </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          {teamRows.map(row => (
+            <div key={row.team} style={{ borderRadius: 18, border: `1px solid ${S.border}`, background: "#FCFBFF", padding: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: P[900] }}>{row.team}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: S.muted }}>{row.reviewerName}</div>
+                </div>
+                <button onClick={() => onOpenReviewerTeam(row.team)} style={{ border: `1px solid ${S.border}`, background: "white", color: P[700], borderRadius: 10, padding: "8px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  Open Reviewer View
+                </button>
+              </div>
+              <div style={{ fontSize: 13, color: S.text }}>{row.count} section{row.count === 1 ? "" : "s"} assigned</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ padding: "6px 10px", borderRadius: 999, background: "#ECFFF3", color: "#177A51", fontSize: 11, fontWeight: 800 }}>{row.approved} approved</span>
+                <span style={{ padding: "6px 10px", borderRadius: 999, background: "#FFF1F0", color: "#B44332", fontSize: 11, fontWeight: 800 }}>{row.needsWork} needs work</span>
+                <span style={{ padding: "6px 10px", borderRadius: 999, background: "#FFF7E8", color: "#C2410C", fontSize: 11, fontWeight: 800 }}>{row.delayed} delayed</span>
+                <span style={{ padding: "6px 10px", borderRadius: 999, background: "#F3F4F6", color: "#4B5563", fontSize: 11, fontWeight: 800 }}>{row.dropped} dropped</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(280px, 0.8fr)", gap: 16 }}>
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 20, display: "grid", gap: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Re-review Queue</div>
+          {!pmmActionQueue.length && (
+            <div style={{ padding: "14px 16px", borderRadius: 16, background: "#FCFBFF", border: `1px dashed ${S.border}`, fontSize: 13, lineHeight: 1.6, color: S.muted }}>
+              Nothing is waiting for PMM revision right now.
+            </div>
+          )}
+          {pmmActionQueue.map(item => (
+            <div key={item.id} style={{ borderRadius: 16, border: `1px solid ${S.border}`, background: "#FCFBFF", padding: 14, display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: P[900] }}>{item.sectionName}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: S.muted }}>{item.workspace}</div>
+                </div>
+                <button onClick={() => onOpenSection(item.sectionId)} style={{ border: "none", background: P[600], color: "white", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  Open Section
+                </button>
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: S.text }}>{item.reason}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 20, display: "grid", gap: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Common Issues</div>
+          {(reviewAnalytics.scores?.clarity || reviewAnalytics.scores?.relevance || reviewAnalytics.scores?.credibility || reviewAnalytics.scores?.usability) ? (
+            <>
+              {Object.entries(REVIEW_PARAMETER_META).map(([key, meta]) => (
+                <div key={key} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "10px 12px", borderRadius: 14, background: "#FCFBFF", border: `1px solid ${S.border}` }}>
+                  <span style={{ fontSize: 13, color: S.text }}>{meta.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: P[900] }}>{reviewAnalytics.scores?.[key] || 0}</span>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div style={{ padding: "14px 16px", borderRadius: 16, background: "#FCFBFF", border: `1px dashed ${S.border}`, fontSize: 13, lineHeight: 1.6, color: S.muted }}>
+              Internal feedback scores will appear here once the first team submits its review.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewerFeedbackPage({
+  reviewRouting,
+  reviewSections,
+  sectionReviews,
+  onSelectTeam,
+  onUpdateReviewer,
+  onUpdateScore,
+  onUpdateComment,
+  onChooseImprove,
+  onChooseApprove,
+  onChooseDelay,
+  onChooseDrop,
+  onSubmitFeedback,
+}) {
+  const activeTeam = reviewRouting.selectedTeam || "PMM";
+  const assignedSections = (reviewRouting.assignments?.[activeTeam] || [])
+    .map(id => reviewSections.find(section => section.id === id))
+    .filter(Boolean);
+  const reviewerName = reviewRouting.reviewerAssignments?.[activeTeam] || DEFAULT_REVIEWER_ASSIGNMENTS[activeTeam] || activeTeam;
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ borderRadius: 24, border: `1px solid ${S.border}`, background: "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,243,255,0.96) 100%)", padding: 22 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Reviewer View</div>
+        <div style={{ marginTop: 8, fontSize: 28, fontWeight: 800, color: P[900], letterSpacing: "-0.04em" }}>Scoped internal feedback for {activeTeam}</div>
+        <div style={{ marginTop: 10, maxWidth: 760, fontSize: 14, lineHeight: 1.7, color: S.muted }}>
+          This view only shows the sections assigned to the selected team. Reviewers score the relevant parameters, leave comments, and submit their response without seeing the full PMM workspace.
+        </div>
+      </div>
+
+      <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {REVIEW_TEAMS.map(team => (
+            <button key={team} onClick={() => onSelectTeam(team)} style={{ border: team === activeTeam ? "none" : `1px solid ${S.border}`, background: team === activeTeam ? P[600] : "white", color: team === activeTeam ? "white" : P[700], borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              {team} ({reviewRouting.assignments?.[team]?.length || 0})
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Reviewer</span>
+            <input value={reviewerName} onChange={event => onUpdateReviewer(activeTeam, event.target.value)} style={{ padding: "10px 12px", borderRadius: 12, border: `1px solid ${S.border}`, background: "white", fontSize: 13, fontFamily: "inherit" }} />
+          </label>
+          <button onClick={onSubmitFeedback} style={{ alignSelf: "end", border: "none", background: P[600], color: "white", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+            Submit Team Feedback
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gap: 14 }}>
+        {!assignedSections.length && (
+          <div style={{ padding: "18px 16px", borderRadius: 18, background: "white", border: `1px dashed ${S.border}`, fontSize: 13, lineHeight: 1.7, color: S.muted }}>
+            No sections are assigned to {activeTeam} yet. PMM can auto-route by default team ownership and override this assignment if needed.
+          </div>
+        )}
+        {assignedSections.map(section => {
+          const review = sectionReviews?.[section.id] || makeDefaultSectionReview(section, activeTeam);
+          const decisionMeta = getReadinessStatusMeta(review.status === "approved" ? "Approved" : review.decision === "improve" ? "Needs Work" : review.decision === "delay" ? "Delayed" : review.decision === "drop" ? "Dropped" : "In Review");
+          return (
+            <div key={section.id} style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 22, padding: 18, display: "grid", gap: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: P[900] }}>{section.label}</div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: S.muted }}>{section.workspace}</div>
+                </div>
+                <div style={{ padding: "8px 10px", borderRadius: 999, background: decisionMeta.bg, color: decisionMeta.color, fontSize: 11, fontWeight: 800 }}>
+                  {decisionMeta.label}
+                </div>
+              </div>
+
+              <div style={{ padding: "14px 16px", borderRadius: 16, background: "#FCFBFF", border: `1px solid ${S.border}`, fontSize: 13, lineHeight: 1.7, color: S.text }}>
+                {section.content || "No content has been added to this section yet. Review ownership is still tracked so the right team can respond once content appears."}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+                {(review.reviewParameters || section.reviewParameters || []).map(parameter => (
+                  <label key={parameter} style={{ display: "grid", gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>{REVIEW_PARAMETER_META[parameter]?.label || parameter}</span>
+                    <select value={review.scores?.[parameter] || ""} onChange={event => onUpdateScore(section.id, parameter, event.target.value)} style={{ padding: "12px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: "white", fontSize: 14, fontFamily: "inherit" }}>
+                      <option value="">Select score</option>
+                      {[1,2,3,4,5,6,7,8,9,10].map(score => <option key={score} value={score}>{score}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: P[700], textTransform: "uppercase", letterSpacing: "0.08em" }}>Comment</span>
+                <textarea value={review.comment || ""} onChange={event => onUpdateComment(section.id, event.target.value)} rows={4} placeholder={`What should ${activeTeam} change, approve, or watch in this section?`} style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", borderRadius: 16, border: `1px solid ${S.border}`, background: "white", fontSize: 14, lineHeight: 1.65, resize: "vertical", fontFamily: "inherit" }} />
+              </label>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button onClick={() => onChooseApprove(section.id)} style={{ border: "none", background: "#177A51", color: "white", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Approve</button>
+                <button onClick={() => onChooseImprove(section.id)} style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Needs Work</button>
+                <button onClick={() => onChooseDelay(section.id)} style={{ border: `1px solid ${S.border}`, background: "#FFF7E8", color: "#C2410C", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Delay</button>
+                <button onClick={() => onChooseDrop(section.id)} style={{ border: `1px solid ${S.border}`, background: "#F3F4F6", color: "#4B5563", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Drop</button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -9676,6 +10040,8 @@ export default function App() {
     ...sectionFlagCounts,
     assets: resourceAssetNotifications,
     reviewCenter: internalFeedbackNotifications,
+    internalFeedbackOwner: internalFeedbackNotifications,
+    reviewerFeedback: currentReviewRouting.assignments?.[currentReviewRouting.selectedTeam || "PMM"]?.length || 0,
     analytics: marketFeedbackNotifications,
     confidence: readinessNotifications,
   };
@@ -9726,6 +10092,7 @@ export default function App() {
             prompt: `Tighten the audience framing in Product Truth so the narrative stays buyer-specific. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "customer",
             targetLabel: sectionLabels.customer || "Customer",
+            notice: "Loop opened Customer so you can tighten the audience framing where downstream teams will feel it most.",
           } : null,
           !safeComp.proofPoints ? {
             id: "truth-proof",
@@ -9733,6 +10100,7 @@ export default function App() {
             prompt: `Find the missing proof signals in Product Truth and suggest concrete evidence to add before launch. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "product",
             targetLabel: sectionLabels.product || "Product",
+            notice: "Loop opened Product so you can add proof before the narrative and assets harden around weak claims.",
           } : null,
           {
             id: "truth-drift",
@@ -9740,6 +10108,7 @@ export default function App() {
             prompt: `Check for drift between Product Truth and Core Narrative, then explain what should be tightened first. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "positioning",
             targetLabel: sectionLabels.positioning || "Positioning",
+            notice: "Loop opened Positioning so you can check whether the narrative still reflects the latest product truth.",
           },
         ].filter(Boolean),
         recommendation: currentPageReviewItems.length
@@ -9770,6 +10139,7 @@ export default function App() {
             prompt: `Sharpen the positioning statement so Product Truth and GTM stay aligned. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "positioning",
             targetLabel: sectionLabels.positioning || "Positioning",
+            notice: "Loop opened Positioning so you can tighten the strategic frame before GTM and assets drift further.",
           } : null,
           !safeMsg.headline ? {
             id: "narrative-headline",
@@ -9777,6 +10147,7 @@ export default function App() {
             prompt: `Find the strongest lead message for Core Narrative and suggest a clearer headline hierarchy. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "messaging",
             targetLabel: sectionLabels.messaging || "Messaging",
+            notice: "Loop opened Messaging so you can define the lead message before more assets are generated.",
           } : null,
           {
             id: "narrative-drift",
@@ -9784,6 +10155,7 @@ export default function App() {
             prompt: `Pressure-test the narrative for drift across positioning, messaging, and value, then recommend the most important fix. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "value",
             targetLabel: sectionLabels.value || "Value",
+            notice: "Loop opened Value so you can pressure-test whether the current story still matches the positioning and message hierarchy.",
           },
         ].filter(Boolean),
         recommendation: currentPageReviewItems.length
@@ -9814,6 +10186,7 @@ export default function App() {
             prompt: `Clarify the first GTM goal so launch work focuses on one motion instead of spreading too wide. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "strategy",
             targetLabel: sectionLabels.strategy || "Strategy",
+            notice: "Loop opened Strategy so you can narrow the first launch motion before the asset layer expands.",
           } : null,
           !safeStory.whyNow ? {
             id: "gtm-why-now",
@@ -9821,6 +10194,7 @@ export default function App() {
             prompt: `Strengthen the why-now angle in GTM so launch storytelling feels timely and specific. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "story",
             targetLabel: sectionLabels.story || "Story",
+            notice: "Loop opened Story so you can sharpen the why-now angle before campaigns and social assets reuse it.",
           } : null,
           {
             id: "gtm-channel-fit",
@@ -9828,6 +10202,7 @@ export default function App() {
             prompt: `Check whether GTM strategy, channels, and story all point to the same launch outcome. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "strategy",
             targetLabel: sectionLabels.strategy || "Strategy",
+            notice: "Loop opened Strategy so you can compare the launch goal and channels in one place.",
           },
         ].filter(Boolean),
         recommendation: currentPageReviewItems.length
@@ -9858,6 +10233,7 @@ export default function App() {
             prompt: `Recommend the first launch-critical asset group to build and explain why it should come before the others. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "productMarketingAssets",
             targetLabel: sectionLabels.productMarketingAssets || "Product Marketing Assets",
+            notice: "Loop opened Product Marketing Assets so you can start with the asset group that usually anchors launch execution.",
           } : null,
           {
             id: "assets-stale-check",
@@ -9865,6 +10241,7 @@ export default function App() {
             prompt: `Check whether the current assets are drifting from Product Truth, Narrative, or GTM and suggest what should be refreshed first. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "assets",
             targetLabel: sectionLabels.assets || "Assets",
+            notice: "Loop kept you in Assets so you can inspect which outputs may now be stale against the current story.",
           },
           {
             id: "assets-readiness",
@@ -9872,6 +10249,7 @@ export default function App() {
             prompt: `Prioritize which asset groups should move into Readiness first and which can wait without hurting launch quality. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`,
             target: "reviewCenter",
             targetLabel: sectionLabels.reviewCenter || "Readiness",
+            notice: "Loop opened Readiness so you can sequence only the launch-critical asset groups first.",
           },
         ].filter(Boolean),
         recommendation: filledAssetGroupCount
@@ -9885,7 +10263,7 @@ export default function App() {
         reviewAnalytics.totals.pending ? `${reviewAnalytics.totals.pending} section review item${reviewAnalytics.totals.pending === 1 ? "" : "s"} are still pending in the deeper grid.` : "No pending section reviews are blocking the board right now.",
         readinessGate.ready
           ? "Go Live conditions are satisfied from the current Readiness board state."
-          : readinessGate.blockers[0] || "Readiness still has a launch blocker to resolve.",
+          : readinessGate.primaryBlocker || "Readiness still has a launch blocker to resolve.",
       ];
       return {
         eyebrow: "Readiness Intelligence",
@@ -9895,6 +10273,8 @@ export default function App() {
         focusTags: [
           `${readinessApprovedCount} approved`,
           `${readinessInReviewCount} in review`,
+          `${readinessGate.launchBlockers.length} launch blocker${readinessGate.launchBlockers.length === 1 ? "" : "s"}`,
+          `${readinessGate.contentBlockers.length} content blocker${readinessGate.contentBlockers.length === 1 ? "" : "s"}`,
           readinessGate.ready ? "Go Live ready" : "Launch blocked",
         ].filter(Boolean),
         priorityActions: [
@@ -9904,6 +10284,7 @@ export default function App() {
             prompt: `Summarize the current launch blockers in Readiness and suggest the best order to resolve them. Current page: ${activeGroup}.`,
             target: "reviewCenter",
             targetLabel: sectionLabels.reviewCenter || "Readiness",
+            notice: "Loop kept you in Readiness so you can resolve the items already marked Needs Work first.",
           } : null,
           readinessInReviewCount ? {
             id: "readiness-review-order",
@@ -9911,6 +10292,7 @@ export default function App() {
             prompt: `Decide which in-review items should be closed first so the launch can move faster with less risk. Current page: ${activeGroup}.`,
             target: "reviewCenter",
             targetLabel: sectionLabels.reviewCenter || "Readiness",
+            notice: "Loop kept you in Readiness so you can finish the active review cycle before sending more work out.",
           } : null,
           !readinessGate.ready ? {
             id: "readiness-go-live-gap",
@@ -9918,6 +10300,23 @@ export default function App() {
             prompt: `Explain what is still blocking Go Live from the current Readiness board and which items could be delayed or dropped safely. Current page: ${activeGroup}.`,
             target: "reviewCenter",
             targetLabel: sectionLabels.reviewCenter || "Readiness",
+            notice: readinessGate.primaryBlocker || "Readiness still has a blocker before Go Live.",
+          } : null,
+          readinessGate.launchBlockers.length ? {
+            id: "readiness-launch-blockers",
+            label: "Review launch blockers",
+            prompt: `Summarize only the launch blockers in Readiness, separate from content issues, and explain the fastest path to Go Live. Current page: ${activeGroup}.`,
+            target: "reviewCenter",
+            targetLabel: sectionLabels.reviewCenter || "Readiness",
+            notice: readinessGate.launchBlockers[0] || "Loop highlighted the launch blockers still preventing Go Live.",
+          } : null,
+          readinessGate.contentBlockers.length ? {
+            id: "readiness-content-blockers",
+            label: "Review content blockers",
+            prompt: `Summarize only the content blockers in Readiness and explain which sections or assets need the most attention next. Current page: ${activeGroup}.`,
+            target: "reviewCenter",
+            targetLabel: sectionLabels.reviewCenter || "Readiness",
+            notice: readinessGate.contentBlockers[0] || "Loop highlighted the content quality blockers still affecting launch readiness.",
           } : null,
         ].filter(Boolean),
         recommendation: readinessNeedsWorkCount
@@ -9952,6 +10351,7 @@ export default function App() {
             prompt: `Summarize the strongest external feedback patterns shaping narrative health and suggest what should change in the next version. Current page: ${activeGroup}.`,
             target: "analytics",
             targetLabel: sectionLabels.analytics || "External Feedback",
+            notice: "Loop opened External Feedback so you can review the strongest post-launch patterns in one place.",
           } : null,
           !feedbackEntries.length ? {
             id: "external-capture-plan",
@@ -9959,6 +10359,7 @@ export default function App() {
             prompt: `Recommend the first external feedback signals to capture after launch so narrative health can be assessed honestly. Current page: ${activeGroup}.`,
             target: "analytics",
             targetLabel: sectionLabels.analytics || "External Feedback",
+            notice: "Loop opened External Feedback so you can start collecting the first market signals in a lightweight way.",
           } : null,
         ].filter(Boolean),
         recommendation: feedbackEntries.length
@@ -10342,6 +10743,8 @@ export default function App() {
     competitionComparison: <CompetitionComparisonPanel comp={comp} setComp={setComp} compact={!useCanvasColumns} layout={competitionComparisonLayout} setLayout={setCompetitionComparisonLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitionComparison" />,
     competitionSales: <CompetitionSalesPanel comp={comp} setComp={setComp} compact={!useCanvasColumns} layout={competitionSalesLayout} setLayout={setCompetitionSalesLayout} starredTiles={starredTiles} onToggleStar={toggleStarredTile} starContext="competitionSales" />,
     reviewCenter: <ProjectReviewCenter reviewState={projectReview.status} reviewTeams={projectReview.teams} reviewSections={reviewSections} reviewRouting={currentReviewRouting} assignedSections={assignedReviewSections} sectionReviews={currentSectionReviews} reviewInsights={reviewInsights} confidenceScore={feedbackConfidenceScore} reviewAnalytics={reviewAnalytics} pmmActionQueue={pmmActionQueue} assetState={safeAssets} readinessBoard={readinessBoard} onAssignTeam={assignSectionToReviewTeam} onUpdateScore={updateSectionReviewScore} onUpdateComment={updateSectionReviewComment} onChooseImprove={markSectionReviewForImprove} onChooseApprove={approveSectionReview} onSubmitFeedback={submitCurrentTeamReview} onSendReview={sendReviewRouting} onOpenReadinessItem={openReadinessBoardItem} onSendReadinessItem={sendReadinessBoardItemForReview} onDropReadinessItem={markReadinessBoardItemDropped} feedbackCount={feedbackEntries.length} compactView={compressedCenterTables} />,
+    internalFeedbackOwner: <InternalFeedbackOverviewPage reviewRouting={currentReviewRouting} assignedSections={assignedReviewSections} sectionReviews={currentSectionReviews} reviewAnalytics={reviewAnalytics} pmmActionQueue={pmmActionQueue} onOpenSection={openWorkspaceSectionFromFeedback} onOpenReviewerTeam={openInternalFeedbackReviewer} onSendReview={sendReviewRouting} />,
+    reviewerFeedback: <ReviewerFeedbackPage reviewRouting={currentReviewRouting} reviewSections={reviewSections} sectionReviews={currentSectionReviews} onSelectTeam={selectRoutingTeam} onUpdateReviewer={updateReviewTeamOwner} onUpdateScore={updateSectionReviewScore} onUpdateComment={updateSectionReviewComment} onChooseImprove={markSectionReviewForImprove} onChooseApprove={approveSectionReview} onChooseDelay={markSectionReviewDelayed} onChooseDrop={markSectionReviewDropped} onSubmitFeedback={submitCurrentTeamReview} />,
   };
 
   const groupOverviewMap = {};
@@ -10775,6 +11178,12 @@ export default function App() {
 
   function handleQuickAction(action) {
     const promptText = action.prompt || `${action.label}. Current section: ${activeLabel}. Current content: ${activeSummary || "No content yet."}`;
+    if (action.target) {
+      setActive(action.target);
+      if (action.notice) {
+        setPlatformNotice(action.notice);
+      }
+    }
     setAiTab("changes");
     setAiPrompt(promptText);
     runAssistantPrompt(promptText);
@@ -11663,7 +12072,7 @@ If section is gtm return:
   const activeWorkspace = workspaceTabs.includes(activeGroup) ? activeGroup : "Product Truth";
   const displayedWorkspaceName = activeGroup || activeWorkspace;
   const sidebarGroups = MVP_NAV.filter(group =>
-    ["Product Truth", "Core Narrative", "GTM", "Assets", "Readiness", "External Feedback"].includes(group.group)
+    ["Product Truth", "Core Narrative", "GTM", "Assets", "Readiness", "Internal Feedback", "External Feedback"].includes(group.group)
   );
   const nextWorkspaceOverviewId = getNextWorkspaceOverviewId(displayedWorkspaceName);
   const nextWorkspaceGroup = nextWorkspaceOverviewId
@@ -12396,6 +12805,31 @@ If section is gtm return:
     setReviewRouting(prev => ({ ...normalizeReviewRouting(prev, reviewSections), selectedTeam: team }));
   }
 
+  function updateReviewTeamOwner(team, reviewerName) {
+    setReviewRouting(prev => ({
+      ...normalizeReviewRouting(prev, reviewSections),
+      reviewerAssignments: {
+        ...normalizeReviewRouting(prev, reviewSections).reviewerAssignments,
+        [team]: reviewerName,
+      },
+    }));
+  }
+
+  function openInternalFeedbackReviewer(team = "PMM") {
+    setReviewRouting(prev => ({
+      ...normalizeReviewRouting(prev, reviewSections),
+      selectedTeam: REVIEW_TEAMS.includes(team) ? team : (prev.selectedTeam || "PMM"),
+    }));
+    setScreen("workspace");
+    setActive("reviewerFeedback");
+  }
+
+  function openWorkspaceSectionFromFeedback(sectionId = "") {
+    const matchingSection = reviewSections.find(section => section.id === sectionId);
+    setScreen("workspace");
+    setActive(matchingSection ? getWorkspacePanelForReviewSection(matchingSection.id, matchingSection.workspace) : "reviewCenter");
+  }
+
   function assignSectionToReviewTeam(sectionId, team) {
     setReviewRouting(prev => {
       const next = normalizeReviewRouting(prev, reviewSections);
@@ -12425,12 +12859,13 @@ If section is gtm return:
       assignments[section.suggestedTeam] = [...assignments[section.suggestedTeam], section.id];
     });
     setReviewRouting({
-      selectedTeam: "Sales",
+      selectedTeam: "PMM",
       assignments,
+      reviewerAssignments: { ...DEFAULT_REVIEWER_ASSIGNMENTS },
       lastAssignedAt: new Date().toISOString(),
       sentAt: reviewRouting.sentAt || "",
     });
-    setPlatformNotice("Loop assigned sections to Sales, Product, and PMM using the current routing rules.");
+    setPlatformNotice("Loop auto-routed sections to their default review teams. You can still override the team or assign a specific reviewer if needed.");
   }
 
   function requestProjectReview() {
@@ -12444,15 +12879,18 @@ If section is gtm return:
       });
       return {
         ...normalized,
+        reviewerAssignments: {
+          ...DEFAULT_REVIEWER_ASSIGNMENTS,
+          ...(normalized.reviewerAssignments || {}),
+        },
         selectedTeam: normalized.selectedTeam || "Sales",
         assignments,
         lastAssignedAt: new Date().toISOString(),
       };
     });
-    setScreen("workspace");
-    setActive("reviewCenter");
+    setScreen("reviewRouting");
     setWorkflowStage("review");
-    setPlatformNotice("Loop opened Readiness with suggested team assignments. Adjust owners inline if you want, then click Send Review.");
+    setPlatformNotice("Loop opened review routing with default team ownership. Adjust the routed sections or add a specific reviewer before sending.");
   }
 
   async function moveCurrentWorkspaceToReadiness() {
@@ -12508,11 +12946,11 @@ If section is gtm return:
       lastAction: `Review routing finalized for ${routedTeams.join(", ")}`,
     }));
     setWorkflowStage("review");
-    setActive("reviewCenter");
+    setActive("internalFeedbackOwner");
     logWorkflowEvent("Project sent for review", `Loop routed sections to ${routedTeams.join(", ")} and opened the review workspace.`);
     await syncCurrentProjectSnapshot(true);
     setScreen("workspace");
-    setPlatformNotice("Review routing saved. Loop opened the review workspace for the selected team sections.");
+    setPlatformNotice("Review routing saved. Loop opened Internal Feedback so PMM can track team responses and resend review if needed.");
   }
 
   function updateSectionReviewScore(sectionId, parameter, value) {
@@ -12567,6 +13005,36 @@ If section is gtm return:
     }));
   }
 
+  function markSectionReviewDelayed(sectionId) {
+    setSectionReviews(prev => {
+      const next = normalizeSectionReviews(prev, currentReviewRouting, reviewSections);
+      const existing = next[sectionId];
+      if (!existing) return prev;
+      next[sectionId] = {
+        ...existing,
+        status: "delayed",
+        decision: "delay",
+        updatedAt: new Date().toISOString(),
+      };
+      return next;
+    });
+  }
+
+  function markSectionReviewDropped(sectionId) {
+    setSectionReviews(prev => {
+      const next = normalizeSectionReviews(prev, currentReviewRouting, reviewSections);
+      const existing = next[sectionId];
+      if (!existing) return prev;
+      next[sectionId] = {
+        ...existing,
+        status: "dropped",
+        decision: "drop",
+        updatedAt: new Date().toISOString(),
+      };
+      return next;
+    });
+  }
+
   function approveSectionReview(sectionId) {
     setSectionReviews(prev => {
       const next = normalizeSectionReviews(prev, currentReviewRouting, reviewSections);
@@ -12596,11 +13064,13 @@ If section is gtm return:
 
     const approvedCount = activeReviews.filter(review => review.status === "approved").length;
     const improveCount = activeReviews.filter(review => review.decision === "improve").length;
-    const teamStatus = approvedCount === activeReviews.length ? "Approved" : "In Review";
+    const delayedCount = activeReviews.filter(review => review.decision === "delay").length;
+    const droppedCount = activeReviews.filter(review => review.decision === "drop" || review.status === "dropped").length;
+    const teamStatus = approvedCount === activeReviews.length ? "Approved" : delayedCount > 0 ? "Delayed" : "In Review";
     const feedbackEntry = {
       id: `review-${activeTeam.toLowerCase()}-${Date.now()}`,
       source: `${activeTeam} Review`,
-      note: `${activeTeam} reviewed ${activeReviews.length} section${activeReviews.length === 1 ? "" : "s"}: ${approvedCount} approved, ${improveCount} flagged for improvement.`,
+      note: `${activeTeam} reviewed ${activeReviews.length} section${activeReviews.length === 1 ? "" : "s"}: ${approvedCount} approved, ${improveCount} needs work, ${delayedCount} delayed, ${droppedCount} dropped.`,
       createdAt: new Date().toISOString(),
       kind: "section-review",
       sectionIds: activeSectionIds,
@@ -12642,8 +13112,15 @@ If section is gtm return:
     ));
     updateReadinessBoardItems(reviewedWorkspaceIds, item => ({
       ...item,
-      status: improveCount > 0 ? "Needs Work" : "Approved",
-      lastAction: improveCount > 0 ? `${activeTeam} flagged changes in ${item.label}` : `${activeTeam} approved ${item.label}`,
+      status: improveCount > 0 ? "Needs Work" : delayedCount > 0 ? "Delayed" : droppedCount > 0 ? "Dropped" : "Approved",
+      dropped: droppedCount > 0 ? true : item.dropped,
+      lastAction: improveCount > 0
+        ? `${activeTeam} flagged changes in ${item.label}`
+        : delayedCount > 0
+          ? `${activeTeam} delayed ${item.label}`
+          : droppedCount > 0
+            ? `${activeTeam} dropped ${item.label} from review`
+            : `${activeTeam} approved ${item.label}`,
     }));
     setProjectReview(prev => ({
       ...prev,
@@ -12676,7 +13153,7 @@ If section is gtm return:
         if (factor.id === "launch") {
           return {
             ...factor,
-            score: String(Math.max(1, Math.min(10, Math.round(average(activeReviews.map(review => clampReviewScore(review.scores?.value))))))),
+            score: String(Math.max(1, Math.min(10, Math.round(average(activeReviews.map(review => clampReviewScore(review.scores?.usability || review.scores?.credibility))))))),
           };
         }
         return factor;
@@ -13348,7 +13825,7 @@ If section is gtm return:
 
     if (workflowStage === "review") {
       if (!readinessGate.ready) {
-        setPlatformNotice(readinessGate.blockers[0] || "Readiness still has blockers before Go Live.");
+        setPlatformNotice(readinessGate.primaryBlocker || "Readiness still has blockers before Go Live.");
         return;
       }
       setProjectReview(prev => ({ ...prev, status: "Approved", lastAction: "Readiness cleared and launch approved" }));
@@ -13388,7 +13865,7 @@ If section is gtm return:
     gtm: { label: "Continue to Assets", onClick: handleAdvanceWorkflow },
     assets: { label: "Move to Readiness", onClick: handleAdvanceWorkflow },
     review: projectReview.required
-      ? { label: "Go Live", onClick: handleAdvanceWorkflow, disabled: !readinessGate.ready, note: readinessGate.blockers[0] || "" }
+      ? { label: "Go Live", onClick: handleAdvanceWorkflow, disabled: !readinessGate.ready, note: readinessGate.primaryBlocker || "" }
       : { label: "Send for Review", onClick: requestProjectReview },
     launch: { label: "Capture External Feedback", onClick: handleAdvanceWorkflow },
     feedback: { label: "Close the Loop", onClick: handleAdvanceWorkflow },
@@ -13502,6 +13979,7 @@ If section is gtm return:
           onSelectTeam={selectRoutingTeam}
           onAssignSection={assignSectionToReviewTeam}
           onRemoveSection={removeSectionFromReview}
+          onUpdateReviewer={updateReviewTeamOwner}
           onAiAssign={runAiReviewAssignment}
           onBack={() => {
             setPlatformNotice("");

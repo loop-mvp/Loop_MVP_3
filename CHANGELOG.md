@@ -2,6 +2,31 @@
 
 This file tracks meaningful product, platform, and documentation changes in Loop MVP 3.
 
+## 2026-04-30
+
+### Platform
+
+- Completed the MVP Phase 3 intelligence pass in the workspace right rail.
+- Added more operational page actions so AI guidance can open the relevant section before running the prompt.
+- Tightened Readiness logic so launch blockers, content blockers, and review blockers are separated more clearly for Go Live decisions.
+
+### AI / Workflow
+
+- Added stronger drift and gap signals for:
+  - audience / persona gaps
+  - message hierarchy gaps
+  - channel priority gaps
+  - why-now gaps
+- Expanded page intelligence so Product Truth, Core Narrative, GTM, Assets, Readiness, and External Feedback each carry:
+  - focus tags
+  - priority actions
+  - more actionable recommendations
+- Kept the homepage narrative generation flow stable while making the workflow intelligence more useful and more operational.
+
+### Documentation / Repo
+
+- Updated [docs/ROADMAP.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/ROADMAP.md) to mark Phase 3 operationally complete for MVP.
+
 ## 2026-04-29
 
 ### Platform
@@ -100,3 +125,34 @@ This file tracks meaningful product, platform, and documentation changes in Loop
 
 - Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase3-pass-1.md)
 - Roadmap snapshot created.
+
+## 2026-04-30-phase3-complete
+
+### Documentation / Repo
+
+- Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-phase3-complete.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase3-complete.md)
+- Roadmap snapshot created.
+
+## 2026-04-30-phase4-complete
+
+### Platform / Runtime
+
+- Completed the MVP internal feedback system inside [src/App.jsx](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/src/App.jsx):
+  - default review routing now follows section ownership by team
+  - PMM can still override the default by adding a named reviewer
+  - reviewer-scoped feedback view now shows only assigned sections and section-relevant parameters
+  - PMM-only Internal Feedback overview now tracks team response, delays, dropped items, and re-review work
+  - sending review now routes PMM into the internal-feedback control flow instead of dropping them back into a generic board
+- Updated legacy review scoring surfaces to use:
+  - `Clarity`
+  - `Relevance`
+  - `Differentiation`
+  - `Credibility`
+  - `Usability`
+  instead of the older generic `Value` field.
+- Added section-to-workspace routing helpers so PMM can jump back to the correct workspace section from Internal Feedback.
+
+### Documentation / Repo
+
+- Phase 4 added to the live roadmap in [docs/ROADMAP.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/ROADMAP.md)
+- Roadmap snapshot updated: [docs/roadmaps/ROADMAP_v2026-04-30-phase4-complete.md](C:/Users/mayanktrivedi/loop/loop-app-codex-main/Loop_MVP_3/docs/roadmaps/ROADMAP_v2026-04-30-phase4-complete.md)
