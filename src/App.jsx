@@ -10356,6 +10356,13 @@ export default function App() {
     assets: safeAssets.notes,
   };
   const sectionLabels = { productTruth: "Product Truth", narrative: "Core Narrative", ...Object.fromEntries(MVP_NAV.flatMap(group => group.items).map(item => [item.id, item.label])) };
+  const groupOverviewMap = {};
+  const activeGroup = Object.entries(groupOverviewMap).find(([, id]) => id === active)?.[0] || MVP_NAV.find(g => g.items.some(i => i.id === active))?.group || "";
+  const activeItem = MVP_NAV.flatMap(g => g.items).find(i => i.id === active) || null;
+  const activeLabel = activeItem?.label || "";
+  const activePath = activeGroup && activeLabel ? `${activeGroup} / ${activeLabel}` : activeLabel || activeGroup || "Workspace";
+  const activeGuidance = WORKSPACE_SECTION_GUIDANCE[active] || null;
+  const activeSummary = previewMap[active];
   const rawReviewItems = [
     !pos.statement && pd.problem ? {
       id: "positioning-needs-update",
@@ -11169,13 +11176,6 @@ export default function App() {
     reviewerFeedback: <ReviewerFeedbackPage reviewRouting={currentReviewRouting} reviewSections={reviewSections} sectionReviews={currentSectionReviews} onSelectTeam={selectRoutingTeam} onUpdateReviewer={updateReviewTeamOwner} onUpdateScore={updateSectionReviewScore} onUpdateComment={updateSectionReviewComment} onChooseImprove={markSectionReviewForImprove} onChooseApprove={approveSectionReview} onChooseDelay={markSectionReviewDelayed} onChooseDrop={markSectionReviewDropped} onSubmitFeedback={submitCurrentTeamReview} />,
   };
 
-  const groupOverviewMap = {};
-  const activeGroup = Object.entries(groupOverviewMap).find(([, id]) => id === active)?.[0] || MVP_NAV.find(g => g.items.some(i => i.id === active))?.group || "";
-  const activeItem = MVP_NAV.flatMap(g => g.items).find(i => i.id === active) || null;
-  const activeLabel = activeItem?.label || "";
-  const activePath = activeGroup && activeLabel ? `${activeGroup} / ${activeLabel}` : activeLabel || activeGroup || "Workspace";
-  const activeGuidance = WORKSPACE_SECTION_GUIDANCE[active] || null;
-  const activeSummary = previewMap[active];
   function dismissReviewItem(itemId) {
     setReviewDismissed(prev => ({ ...prev, [itemId]: true }));
   }
@@ -11596,6 +11596,20 @@ export default function App() {
     } finally {
       setAiLoading(false);
     }
+  }
+
+  // Keep the homepage lightweight so local boot does not depend on
+  // the heavier workspace/readiness derivations below.
+  if (screen === "home") {
+    return (
+      <MainWebsitePageSimple
+        onOpenLoop={() => { setPlatformNotice(""); handleOpenLoopPlatform(); }}
+        pd={pd}
+        setPd={setPd}
+        onSaveProject={() => { setPlatformNotice(""); handleGenerateNarrativeReliable(); }}
+        onViewProjects={() => { setPlatformNotice(""); handleViewProjectsFromHome(); }}
+      />
+    );
   }
 
   function handleQuickAction(action) {
@@ -12729,7 +12743,7 @@ If section is gtm return:
         </button>
 
         {(groupOverviewMap[group] || !collapsed[group]) && (
-          <div style={{ marginTop: 6, display: "grid", gap: 4 }}>
+          <div style={{ marginTop: 6, marginLeft: 18, display: "grid", gap: 4 }}>
             {items.map(item => (
               <button
                 key={item.id}
@@ -12740,7 +12754,7 @@ If section is gtm return:
                   alignItems: "center",
                   gap: 10,
                   width: "100%",
-                  padding: "8px 12px",
+                  padding: "8px 12px 8px 10px",
                   background: active === item.id ? "rgba(147, 120, 255, 0.12)" : "transparent",
                   border: "none",
                   borderRadius: 14,
@@ -12790,6 +12804,7 @@ If section is gtm return:
       assets,
       analytics,
       confidence,
+      brand,
       workspaceSaves,
       projectReview,
       readinessBoard,
@@ -12802,6 +12817,8 @@ If section is gtm return:
       narrativeUiState,
       active,
       workflowStage,
+      workflowEvents,
+      versionDraft,
       launchComplete,
       feedbackCaptured,
       reviewDismissed,
@@ -12914,6 +12931,20 @@ If section is gtm return:
     setAssets(normalizeAssetsState(s.assets));
     setAnalytics(normalizeAnalyticsState(s.analytics));
     setConfidence(normalizeConfidenceState(s.confidence));
+    setBrand(s.brand || {
+      tagline: "",
+      tones: ["Professional", "Friendly"],
+      colors: [
+        { label: "Primary", value: "#7C4DFF" },
+        { label: "Accent", value: "#4F46E5" },
+      ],
+      headingFont: "Sora",
+      bodyFont: "DM Sans",
+      logoName: "",
+      dos: "",
+      donts: "",
+      legal: "",
+    });
     setAiDraft(s.aiDraft || makeEmptyAiDraft());
     setUserEdits(s.userEdits || {});
     setNarrativeUiState(s.narrativeUiState || { isGenerated: false, improveMode: false, isGenerating: false, enhancingSection: "" });
@@ -12935,6 +12966,8 @@ If section is gtm return:
     setFeedbackEntries(s.feedbackEntries || []);
     setActive(normalizeWorkspaceActive(s.active || "context"));
     setWorkflowStage(normalizeWorkflowStage(s.workflowStage || "productTruth"));
+    setWorkflowEvents(s.workflowEvents || []);
+    setVersionDraft(s.versionDraft || { sourceProjectId: "", mode: "minor" });
     setLaunchComplete(!!s.launchComplete);
     setFeedbackCaptured(!!s.feedbackCaptured);
     setReviewDismissed(s.reviewDismissed || {});
