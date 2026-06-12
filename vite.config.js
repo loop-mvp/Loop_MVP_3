@@ -1,3 +1,5 @@
+/* global Buffer, process */
+
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -48,6 +50,7 @@ function localApiPlugin() {
   return {
     name: 'loop-local-api',
     configureServer(server) {
+      server.middlewares.use('/api/openai', jsonResponseMiddleware(() => import('./api/openai.js')))
       server.middlewares.use('/api/website-context', jsonResponseMiddleware(() => import('./api/website-context.js')))
     },
   }

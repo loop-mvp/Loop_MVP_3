@@ -8,6 +8,7 @@ import AlignmentScore from "./feedback/AlignmentScore";
 import ConfidenceScoreCard from "./feedback/ConfidenceScoreCard";
 import NarrativeIntelligence from "./feedback/NarrativeIntelligence";
 import AIInsights from "./feedback/AIInsights";
+import { applyGeneratedAssetToSections, buildGeneratedAssetRow } from "./assetPipeline";
 import { analyzeWebsiteNarrative, generateOpenAiText } from "./openaiClient";
 import { deleteLoopProject as deleteRemoteLoopProject, isSupabaseConfigured, listLoopProjects, saveLoopProject } from "./projectStore";
 
@@ -578,12 +579,14 @@ function buildWorkspaceAssetSuggestion(suggestion, sourceSection = "Workspace") 
   const lowerSource = String(sourceSection || "").toLowerCase();
 
   let category = suggestion?.category || "Marketing";
-  let type = suggestion?.type || "Messaging";
+  let type =
+    suggestion?.assetType ||
+    (suggestion?.type && suggestion.type !== "asset" && suggestion.type !== "section" ? suggestion.type : "") ||
+    "Messaging";
   let kit = suggestion?.kit || "Marketing Kit";
 
-  if (suggestion?.category && suggestion?.type && suggestion?.kit) {
+  if (suggestion?.category && type && suggestion?.kit) {
     category = suggestion.category;
-    type = suggestion.type;
     kit = suggestion.kit;
   } else if (
     lowerTitle.includes("sales") ||
@@ -974,7 +977,7 @@ async function generateSuggestedAssetContent(suggestion, source = {}) {
   const prompt = `You are creating a launch-ready ${suggestion.assetName} for Loop.
 Return plain text only. No markdown fences.
 
-Asset Type: ${suggestion.type}
+Asset Type: ${suggestion.assetType || suggestion.type}
 Category: ${suggestion.category}
 Source Section: ${suggestion.sourceSection}
 Product: ${pd.name || "Unnamed product"}
@@ -3835,7 +3838,7 @@ function BuildNarrativeWorkspacePanel({
     },
   } : {};
 
-  const workspaceSuggestions = {
+  const UNUSED_WORKSPACE_SUGGESTIONS = {
     productTruth: [
       { type: "section", icon: "◎", title: "Problem Statement", description: "Sharpen the core problem into a tighter statement for the team." },
       { type: "section", icon: "⊙", title: "Audience Fit", description: "Clarify who feels this problem most and why it matters now." },
@@ -4687,7 +4690,7 @@ function NarrativeOverviewPanel({ pos, msg, aud }) {
   );
 }
 
-function CompetitiveIntelligencePanel({ pd, pos, msg, strat, story, comp, setComp }) {
+function CompetitiveIntelligencePanel({ pd, pos, strat, story, comp, setComp }) {
   const [expandedRow, setExpandedRow] = useState(DEFAULT_COMPETITIVE_PARAMETERS[0]);
   const [suggesting, setSuggesting] = useState(false);
   const competitorNames = extractTopCompetitorNames(comp.competitors || "");
@@ -6024,7 +6027,7 @@ function AssetsPanel({ d, set, pd, msg, strat, aiDraft, compactView = false, onN
       sourceLabel:
         suggestion.category === "Sales"
           ? "Narrative or Product Truth"
-          : suggestion.type === "Campaign" || suggestion.assetName.toLowerCase().includes("launch")
+          : (suggestion.assetType || suggestion.type) === "Campaign" || suggestion.assetName.toLowerCase().includes("launch")
             ? "GTM Readiness"
             : "Narrative",
     }));
@@ -6585,9 +6588,9 @@ const ASSET_WORKSPACE_CONFIG = [
     placeholder: "Capture the PMM-ready outputs this narrative needs first: launch brief, message house, proof points, positioning brief, and other reusable strategy assets.",
     helper: "Keep this focused on the strategic PMM layer that other teams will reuse.",
     suggestions: [
-      { type: "asset", icon: "▣", title: "Launch Brief", description: "Package the launch story, audience, proof, and GTM direction into one PMM brief.", category: "Product Marketing", type: "Brief", kit: "PMM Kit", team: "Product Marketing" },
-      { type: "asset", icon: "◈", title: "Message House", description: "Generate a structured message house with positioning, pillars, proof, and fallback language.", category: "Product Marketing", type: "Messaging", kit: "PMM Kit", team: "Product Marketing" },
-      { type: "asset", icon: "✦", title: "Proof Point Library", description: "Create a reusable list of claims, outcomes, and proof the rest of the launch can borrow from.", category: "Product Marketing", type: "Enablement", kit: "PMM Kit", team: "Product Marketing" },
+      { type: "asset", icon: "▣", title: "Launch Brief", description: "Package the launch story, audience, proof, and GTM direction into one PMM brief.", category: "Product Marketing", assetType: "Brief", kit: "PMM Kit", team: "Product Marketing" },
+      { type: "asset", icon: "◈", title: "Message House", description: "Generate a structured message house with positioning, pillars, proof, and fallback language.", category: "Product Marketing", assetType: "Messaging", kit: "PMM Kit", team: "Product Marketing" },
+      { type: "asset", icon: "✦", title: "Proof Point Library", description: "Create a reusable list of claims, outcomes, and proof the rest of the launch can borrow from.", category: "Product Marketing", assetType: "Enablement", kit: "PMM Kit", team: "Product Marketing" },
     ],
   },
   {
@@ -6601,9 +6604,9 @@ const ASSET_WORKSPACE_CONFIG = [
     placeholder: "List the most important sales-ready outputs this narrative should produce: pitch, outbound email, one-pager, objection handling, and sales proof.",
     helper: "Prioritize assets that help someone sell this story in a real conversation.",
     suggestions: [
-      { type: "asset", icon: "✉", title: "Outbound Email", description: "Generate a short outbound draft that turns the message into a credible first-touch sales email.", category: "Sales", type: "Enablement", kit: "Sales Kit", team: "Sales" },
-      { type: "asset", icon: "◆", title: "Objection Handling", description: "Create seller-ready rebuttals for likely concerns, confusion, or competitive pushback.", category: "Sales", type: "Enablement", kit: "Sales Kit", team: "Sales" },
-      { type: "asset", icon: "▤", title: "Sales One-Pager", description: "Turn the story into a single-page summary a rep or founder can actually use.", category: "Sales", type: "Sales", kit: "Sales Kit", team: "Sales" },
+      { type: "asset", icon: "✉", title: "Outbound Email", description: "Generate a short outbound draft that turns the message into a credible first-touch sales email.", category: "Sales", assetType: "Enablement", kit: "Sales Kit", team: "Sales" },
+      { type: "asset", icon: "◆", title: "Objection Handling", description: "Create seller-ready rebuttals for likely concerns, confusion, or competitive pushback.", category: "Sales", assetType: "Enablement", kit: "Sales Kit", team: "Sales" },
+      { type: "asset", icon: "▤", title: "Sales One-Pager", description: "Turn the story into a single-page summary a rep or founder can actually use.", category: "Sales", assetType: "Sales", kit: "Sales Kit", team: "Sales" },
     ],
   },
   {
@@ -6617,9 +6620,9 @@ const ASSET_WORKSPACE_CONFIG = [
     placeholder: "Outline the highest-priority marketing outputs: homepage hero, landing page copy, launch email, campaign copy, and CTA variations.",
     helper: "Keep this tied to the first launch motion rather than every possible marketing deliverable.",
     suggestions: [
-      { type: "asset", icon: "◫", title: "Homepage Hero", description: "Generate a sharper homepage hero and subheadline based on the approved message.", category: "Marketing", type: "Messaging", kit: "Marketing Kit", team: "Marketing" },
-      { type: "asset", icon: "✉", title: "Launch Email", description: "Write a launch email that explains what changed, why it matters, and what to do next.", category: "Marketing", type: "Campaign", kit: "Marketing Kit", team: "Marketing" },
-      { type: "asset", icon: "↗", title: "Campaign Copy", description: "Turn the GTM story into a short campaign-ready messaging draft for demand gen or launch distribution.", category: "Marketing", type: "Campaign", kit: "Marketing Kit", team: "Marketing" },
+      { type: "asset", icon: "◫", title: "Homepage Hero", description: "Generate a sharper homepage hero and subheadline based on the approved message.", category: "Marketing", assetType: "Messaging", kit: "Marketing Kit", team: "Marketing" },
+      { type: "asset", icon: "✉", title: "Launch Email", description: "Write a launch email that explains what changed, why it matters, and what to do next.", category: "Marketing", assetType: "Campaign", kit: "Marketing Kit", team: "Marketing" },
+      { type: "asset", icon: "↗", title: "Campaign Copy", description: "Turn the GTM story into a short campaign-ready messaging draft for demand gen or launch distribution.", category: "Marketing", assetType: "Campaign", kit: "Marketing Kit", team: "Marketing" },
     ],
   },
   {
@@ -6633,9 +6636,9 @@ const ASSET_WORKSPACE_CONFIG = [
     placeholder: "Note the social outputs that matter most: founder post, launch post, teaser snippets, or reusable quote lines.",
     helper: "Focus on lightweight public assets that carry the narrative clearly in a few lines.",
     suggestions: [
-      { type: "asset", icon: "✦", title: "Founder Launch Post", description: "Generate a founder-style launch post that explains the shift in a clear, human voice.", category: "Social", type: "Social", kit: "Social Kit", team: "Social" },
-      { type: "asset", icon: "◉", title: "Launch Announcement", description: "Write a concise public launch announcement for social or community channels.", category: "Social", type: "Social", kit: "Social Kit", team: "Social" },
-      { type: "asset", icon: "…", title: "Teaser Snippets", description: "Create short teaser lines the team can reuse across launch week posts.", category: "Social", type: "Social", kit: "Social Kit", team: "Social" },
+      { type: "asset", icon: "✦", title: "Founder Launch Post", description: "Generate a founder-style launch post that explains the shift in a clear, human voice.", category: "Social", assetType: "Social", kit: "Social Kit", team: "Social" },
+      { type: "asset", icon: "◉", title: "Launch Announcement", description: "Write a concise public launch announcement for social or community channels.", category: "Social", assetType: "Social", kit: "Social Kit", team: "Social" },
+      { type: "asset", icon: "…", title: "Teaser Snippets", description: "Create short teaser lines the team can reuse across launch week posts.", category: "Social", assetType: "Social", kit: "Social Kit", team: "Social" },
     ],
   },
   {
@@ -6649,9 +6652,9 @@ const ASSET_WORKSPACE_CONFIG = [
     placeholder: "Capture the reusable assets this version needs: boilerplate, FAQ copy, elevator pitch, summary copy, or key message bank.",
     helper: "Use this for shared content blocks that should stay stable across teams.",
     suggestions: [
-      { type: "asset", icon: "◌", title: "Company Boilerplate", description: "Generate a short reusable description the team can use across decks, emails, and launch docs.", category: "General", type: "Messaging", kit: "Reusable Kit", team: "General" },
-      { type: "asset", icon: "◍", title: "FAQ Draft", description: "Create a starter FAQ that answers the biggest product and positioning questions.", category: "General", type: "Enablement", kit: "Reusable Kit", team: "General" },
-      { type: "asset", icon: "▤", title: "Reusable Message Bank", description: "Generate short message blocks the rest of the asset system can borrow without rewriting from scratch.", category: "General", type: "Messaging", kit: "Reusable Kit", team: "General" },
+      { type: "asset", icon: "◌", title: "Company Boilerplate", description: "Generate a short reusable description the team can use across decks, emails, and launch docs.", category: "General", assetType: "Messaging", kit: "Reusable Kit", team: "General" },
+      { type: "asset", icon: "◍", title: "FAQ Draft", description: "Create a starter FAQ that answers the biggest product and positioning questions.", category: "General", assetType: "Enablement", kit: "Reusable Kit", team: "General" },
+      { type: "asset", icon: "▤", title: "Reusable Message Bank", description: "Generate short message blocks the rest of the asset system can borrow without rewriting from scratch.", category: "General", assetType: "Messaging", kit: "Reusable Kit", team: "General" },
     ],
   },
 ];
@@ -10154,7 +10157,7 @@ export default function App() {
   const [strat, setStrat] = useState({ goal: "", icp: "", channels: "", hooks: "" });
   const [_stratLayout, _setStratLayout] = useState(DEFAULT_STRATEGY_LAYOUT);
   const [story, setStory] = useState({ origin: "", customer: "", demo: "" });
-  const [storyLayout, setStoryLayout] = useState(DEFAULT_STORY_LAYOUT);
+  const [UNUSED_storyLayout, UNUSED_setStoryLayout] = useState(DEFAULT_STORY_LAYOUT);
   const [alignment, setAlignment] = useState({
     internal: [
       { id: "positioning", icon: "◉", title: "Positioning Statement", status: "In Review", sales: 3, product: 3, note: "No positioning statement entered yet — fill it in under Core Narrative → Positioning Statement." },
@@ -10454,6 +10457,8 @@ export default function App() {
   const internalFeedbackNotifications = (reviewAnalytics.totals.improve || 0) + (reviewAnalytics.totals.pending || 0);
   const marketFeedbackNotifications = feedbackEntries.length;
   const readinessNotifications = (assets.rows || []).some(item => item.status !== "Approved") || (reviewAnalytics.totals.pending || 0) > 0 ? 1 : 0;
+  const showLegacySidebar = false;
+
   const itemNotificationCounts = {
     ...sectionFlagCounts,
     assets: resourceAssetNotifications,
@@ -11153,7 +11158,7 @@ export default function App() {
       onFieldChange={updateNarrativeField}
       userEdits={userEdits}
     />,
-    competitiveIntelligence: <CompetitiveIntelligencePanel pd={safePd} pos={safePos} msg={safeMsg} strat={safeStrat} story={safeStory} comp={safeComp} setComp={setComp} />,
+    competitiveIntelligence: <CompetitiveIntelligencePanel pd={safePd} pos={safePos} strat={safeStrat} story={safeStory} comp={safeComp} setComp={setComp} />,
     ...assetWorkspacePanels,
     alignment: <AlignmentPanel d={{
       ...feedbackDashboardData,
@@ -11411,6 +11416,7 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined" || !hasHydratedRef.current) return;
     window.localStorage.setItem(LOOP_STORAGE_KEY, JSON.stringify(buildPersistedAppSnapshot()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     screen,
     platformMode,
@@ -11473,6 +11479,7 @@ export default function App() {
       window.removeEventListener("beforeunload", flushProjectState);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     active,
     aiDraft,
@@ -11541,6 +11548,7 @@ export default function App() {
         setPlatformNotice(getSupabaseProjectsErrorMessage(error, "Loop could not save this project to Supabase right now."));
       }
     }, 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentTestProjectId,
     screen,
@@ -13287,7 +13295,7 @@ If section is gtm return:
     return "";
   }
 
-  async function handleSaveWorkspaceAndAdvance(workspace) {
+  async function UNUSED_handleSaveWorkspaceAndAdvance(workspace) {
     const resolvedWorkspace = workspace || activeGroup || active;
     saveWorkspace(resolvedWorkspace);
     await syncCurrentProjectSnapshot(true);
@@ -13301,7 +13309,7 @@ If section is gtm return:
     }
   }
 
-  function saveFullProject() {
+  function UNUSED_saveFullProject() {
     setWorkspaceSaves(prev => ({
       ...prev,
       project: new Date().toISOString(),
@@ -13690,7 +13698,7 @@ If section is gtm return:
     setPlatformNotice(`${activeTeam} feedback was captured and saved to the project.`);
   }
 
-  function skipProjectReview() {
+  function UNUSED_skipProjectReview() {
     setProjectReview(prev => ({ ...prev, required: false, status: "No Review Required", lastAction: "Owner marked review not needed" }));
     setPd(prev => ({ ...prev, status: "ready" }));
     setWorkflowStage("launch");
@@ -13698,7 +13706,7 @@ If section is gtm return:
     logWorkflowEvent("Review skipped", "The owner marked this version as not requiring formal review and moved it to launch readiness.");
   }
 
-  function addFeedbackEntry(source = "PMM") {
+  function UNUSED_addFeedbackEntry(source = "PMM") {
     const entry = {
       id: `fb-${Date.now()}`,
       source,
@@ -13714,7 +13722,7 @@ If section is gtm return:
     logWorkflowEvent("Feedback added", `${source} added post-launch signal into the feedback loop.`);
   }
 
-  function downloadProjectReport() {
+  function UNUSED_downloadProjectReport() {
     const reportHtml = buildProjectReportHtml({
       pd,
       pos,
@@ -13823,7 +13831,7 @@ If section is gtm return:
     setPlatformNotice(`${project.name || "Project"} report downloaded.`);
   }
 
-  function downloadCurrentWorkspace() {
+  function UNUSED_downloadCurrentWorkspace() {
     const workspaceTitle = activeGroup || activeLabel || "Workspace";
     let rows = [];
     let intro = "Loop exported the current workspace so you can review or share it outside the platform.";
@@ -13902,7 +13910,7 @@ If section is gtm return:
     setPlatformNotice(`${workspaceTitle} downloaded. Open the HTML file in a browser to review or print it.`);
   }
 
-  function downloadVersionComparisonReport() {
+  function UNUSED_downloadVersionComparisonReport() {
     if (!pd.previousVersionId) {
       setPlatformNotice("This project does not have a previous version to compare yet.");
       return;
@@ -14155,30 +14163,7 @@ If section is gtm return:
     const initialScores = scoreGeneratedAsset(generatedContent, { pd, msg, strat });
     const nextAssets = (() => {
       const normalizedCurrent = normalizeAssetsState(assets, { pd, msg, strat, aiDraft });
-      const baseRow = {
-        id: suggestion.id,
-        assetName: suggestion.assetName,
-        type: suggestion.type,
-        category: suggestion.category,
-        kit: suggestion.kit,
-        content: generatedContent,
-        scores: initialScores,
-        score: calculateAssetScore(initialScores),
-        status: "In Review",
-        feedbackSummary: `AI generated this asset from ${suggestion.sourceSection}. It is saved under ${suggestion.category} and ready for internal review.`,
-        topIssues: [
-          initialScores.differentiation <= initialScores.clarity && initialScores.differentiation <= initialScores.relevance
-            ? "Differentiate the asset more clearly before approval."
-            : "Review the asset for team-specific accuracy and proof.",
-        ],
-        suggestedImprovements: [
-          "Tailor the draft to the exact audience and use case.",
-          suggestion.category === "Sales" ? "Add stronger proof points and objection handling." : "Sharpen the launch hook and CTA.",
-        ],
-        sourceSection: suggestion.sourceSection,
-        generatedBy: "AI Suggestion",
-        createdAt: new Date().toISOString(),
-      };
+      const baseRow = buildGeneratedAssetRow(suggestion, generatedContent, initialScores, calculateAssetScore);
 
       return {
         ...normalizedCurrent,
@@ -14186,26 +14171,7 @@ If section is gtm return:
           baseRow,
           ...normalizedCurrent.rows.filter(row => row.id !== suggestion.id),
         ],
-        sections: {
-          ...normalizedCurrent.sections,
-          [String(suggestion.team || "").toLowerCase().replace(/[^a-z]+/g, "") === "productmarketing"
-            ? "productMarketing"
-            : String(suggestion.team || "").toLowerCase() === "sales"
-              ? "sales"
-              : String(suggestion.team || "").toLowerCase() === "marketing"
-                ? "marketing"
-                : String(suggestion.team || "").toLowerCase() === "social"
-                  ? "social"
-                  : "general"]: normalizedCurrent.sections?.[String(suggestion.team || "").toLowerCase().replace(/[^a-z]+/g, "") === "productmarketing"
-                    ? "productMarketing"
-                    : String(suggestion.team || "").toLowerCase() === "sales"
-                      ? "sales"
-                      : String(suggestion.team || "").toLowerCase() === "marketing"
-                        ? "marketing"
-                        : String(suggestion.team || "").toLowerCase() === "social"
-                          ? "social"
-                          : "general"] || `${suggestion.assetName}\n${generatedContent}`,
-        },
+        sections: applyGeneratedAssetToSections(normalizedCurrent.sections, suggestion, generatedContent),
         notes: normalizedCurrent.notes || `AI generated ${suggestion.assetName}.`,
       };
     })();
@@ -14766,7 +14732,7 @@ If section is gtm return:
                 <span style={{ fontSize: 10, fontWeight: 700, color: S.muted, letterSpacing: "0.1em", textTransform: "uppercase" }}>Workspace</span>
               </div>
               {sidebarGroups.map(renderSidebarGroup)}
-              {false && sidebarGroups.map(({ group, icon, items }) => (
+              {showLegacySidebar && sidebarGroups.map(({ group, icon, items }) => (
                 <div key={group}>
                   <button onClick={() => {
                     if (groupOverviewMap[group]) {
@@ -14865,7 +14831,7 @@ If section is gtm return:
 
               <div style={{ overflowY: "auto", paddingBottom: 16 }}>
                 {sidebarGroups.map(renderSidebarGroup)}
-                {false && sidebarGroups.map(({ group, icon, items }) => (
+                {showLegacySidebar && sidebarGroups.map(({ group, icon, items }) => (
                   <div key={group}>
                     <button onClick={() => {
                       if (groupOverviewMap[group]) {
