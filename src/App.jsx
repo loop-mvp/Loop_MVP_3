@@ -11799,9 +11799,7 @@ export default function App() {
     return (
       <MainWebsitePageSimple
         onOpenLoop={() => { setPlatformNotice(""); handleOpenLoopPlatform(); }}
-        pd={pd}
-        setPd={setPd}
-        onSaveProject={() => { setPlatformNotice(""); handleGenerateNarrativeReliable(); }}
+        onStartProject={() => { setPlatformNotice(""); handleStartProject(); }}
         onViewProjects={() => { setPlatformNotice(""); handleViewProjectsFromHome(); }}
       />
     );
