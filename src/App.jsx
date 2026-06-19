@@ -9,6 +9,7 @@ import ConfidenceScoreCard from "./feedback/ConfidenceScoreCard";
 import NarrativeIntelligence from "./feedback/NarrativeIntelligence";
 import AIInsights from "./feedback/AIInsights";
 import { applyGeneratedAssetToSections, buildGeneratedAssetRow } from "./assetPipeline";
+import { isAssetStorageConfigured, uploadBrandFile } from "./assetStorage";
 import { analyzeWebsiteNarrative, generateOpenAiText } from "./openaiClient";
 import { deleteLoopProject as deleteRemoteLoopProject, isSupabaseConfigured, listLoopProjects, saveLoopProject } from "./projectStore";
 
@@ -23,6 +24,38 @@ const S = {
   border: "#D6D3F7", text: "#26215C", muted: "#6B63B5", light: "#AFA9EC",
 };
 const WorkspaceAssetActionContext = createContext({ onGenerateAssetSuggestion: null, onPreviewAssetSuggestion: null });
+
+function buildBrandSetupSummary(mode = "skip") {
+  if (mode === "upload") return "Use existing brand guidelines as the source of truth.";
+  if (mode === "build") return "Create a lightweight brand system inside Loop.";
+  if (mode === "ai") return "Let Loop draft a first-pass brand system from product inputs.";
+  return "No brand system attached yet. Narrative can start without it.";
+}
+
+function makeDefaultBrandState() {
+  return {
+    setupMode: "skip",
+    sourceSummary: buildBrandSetupSummary("skip"),
+    sourceFileName: "",
+    sourceFileSize: 0,
+    sourceFileType: "",
+    sourceFileStatus: "",
+    sourceFileUrl: "",
+    sourceUploadedAt: "",
+    tagline: "",
+    tones: ["Professional", "Friendly"],
+    colors: [
+      { label: "Primary", value: "#7C4DFF" },
+      { label: "Accent", value: "#4F46E5" },
+    ],
+    headingFont: "Sora",
+    bodyFont: "DM Sans",
+    logoName: "",
+    dos: "",
+    donts: "",
+    legal: "",
+  };
+}
 
 const DEFAULT_CAP_LAYOUT = {
   features: { x: 0, y: 0, w: 48, h: 250 },
@@ -7652,7 +7685,7 @@ function MainWebsitePage({ onOpenLoop, onViewProjects, onStartProject }) {
   );
 }
 
-function MainWebsitePageSimple({ onOpenLoop, pd, setPd, onSaveProject, onViewProjects }) {
+function MainWebsitePageSimple({ onOpenLoop, onStartProject, onViewProjects }) {
   const [activeTab, setActiveTab] = useState("What Is Loop");
   const content = {
     "Who We Are": {
@@ -7687,54 +7720,65 @@ function MainWebsitePageSimple({ onOpenLoop, pd, setPd, onSaveProject, onViewPro
             <p style={{ margin: "22px 0 0", maxWidth: 680, fontSize: 19, lineHeight: 1.68, color: S.muted }}>
               {content.body}
             </p>
+            <div style={{ marginTop: 26, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button
+                onClick={onStartProject}
+                style={{ border: "none", background: P[600], color: "white", borderRadius: 16, padding: "15px 22px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 16px 34px rgba(83, 74, 183, 0.2)" }}
+              >
+                Start Project
+              </button>
+              <button
+                onClick={onViewProjects}
+                style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 16, padding: "15px 22px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+              >
+                View Projects
+              </button>
+            </div>
+          </div>
+          <div style={{ display: "grid", gap: 16 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 999, background: "white", border: `1px solid ${S.border}`, fontSize: 13, color: S.muted, width: "fit-content" }}>
+              Start simple, then build deeply inside Loop.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+              {[
+                ["1. Start Project", "Open a clean project setup flow instead of dropping straight into a heavy form."],
+                ["2. Add Basics", "Share product inputs, website, audience, and category so Loop can draft the first narrative."],
+                ["3. Add Brand Later", "Upload or build brand guidance when ready, then refresh narrative and assets from one source."],
+              ].map(([title, text]) => (
+                <div key={title} style={{ padding: "16px 16px 18px", borderRadius: 18, background: "rgba(255,255,255,0.72)", border: `1px solid ${S.border}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: P[700], marginBottom: 8 }}>{title}</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>{text}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         <div style={{ display: "grid", gap: 18 }}>
           <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 12px 28px rgba(83, 74, 183, 0.06)" }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Build Your Narrative</div>
-            <div style={{ fontSize: 30, lineHeight: 1.08, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>Build your first AI draft</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Main Flow</div>
+            <div style={{ fontSize: 30, lineHeight: 1.08, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>Start from a clean project brief</div>
             <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.65, color: S.muted }}>
-              Add a product name and short description. Loop will draft Product Truth, Core Narrative, and GTM direction, then take you straight into the workspace to refine it.
+              We first collect the minimum product context required to draft Product Truth, Core Narrative, GTM direction, and early assets. Brand guidance can be added now or later.
             </div>
             <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
-              <label style={{ display: "grid", gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Product Name</span>
-                <input value={pd.name} onChange={e => setPd(prev => ({ ...prev, name: e.target.value }))} placeholder="Loop AI Launch Pilot" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
-              </label>
-              <label style={{ display: "grid", gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Product Description</span>
-                <textarea value={pd.description} onChange={e => setPd(prev => ({ ...prev, description: e.target.value }))} placeholder="Narrative operating system for launches" rows={6} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
-              </label>
-              <label style={{ display: "grid", gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Website URL</span>
-                <input value={pd.websiteUrl || ""} onChange={e => setPd(prev => ({ ...prev, websiteUrl: e.target.value }))} placeholder="https://example.com" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
-                <span style={{ fontSize: 12, lineHeight: 1.55, color: S.muted }}>Optional. If provided, Loop will analyze the live website narrative and use it to ground the AI draft.</span>
-              </label>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
-                <label style={{ display: "grid", gap: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Audience</span>
-                  <input value={pd.audience} onChange={e => setPd(prev => ({ ...prev, audience: e.target.value }))} placeholder="PMM teams at B2B SaaS companies" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
-                </label>
-                <label style={{ display: "grid", gap: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Category</span>
-                  <input value={pd.category} onChange={e => setPd(prev => ({ ...prev, category: e.target.value }))} placeholder="Narrative intelligence platform" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
-                </label>
-              </div>
-              <label style={{ display: "grid", gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Wow Factor</span>
-                <textarea value={pd.wowFactor} onChange={e => setPd(prev => ({ ...prev, wowFactor: e.target.value }))} placeholder="What feels special, surprising, or unusually useful about this product?" rows={3} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
-              </label>
-              <div style={{ padding: "12px 14px", borderRadius: 16, background: "#F8F7FF", border: `1px solid ${S.border}`, fontSize: 13, lineHeight: 1.6, color: S.muted }}>
-                Loop will first infer product context, then draft Product Truth, Core Narrative, GTM, and starter assets. You will refine the draft and keep control over what becomes final.
-              </div>
+              {[
+                ["Verified website context", "If you add the live URL, Loop uses it to ground the initial narrative draft."],
+                ["Optional brand setup", "Upload existing guidelines, build a lightweight system, or let AI create a first pass."],
+                ["Reusable workspace", "Once the project exists, Brand Guideline stays available as a top tab for refreshes later."],
+              ].map(([title, text]) => (
+                <div key={title} style={{ padding: "14px 16px", borderRadius: 16, background: "#F8F7FF", border: `1px solid ${S.border}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>{title}</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>{text}</div>
+                </div>
+              ))}
             </div>
             <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 12 }}>
               <button
-                onClick={onSaveProject}
+                onClick={onStartProject}
                 style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", width: "100%" }}
               >
-                Generate Narrative
+                Start Project
               </button>
               <button
                 onClick={onViewProjects}
@@ -8656,21 +8700,92 @@ function VersionContextField({ label, fieldKey, value, options = [], setPd, plac
   );
 }
 
-function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, versionDraft, onVersionModeChange }) {
+function SetupOptionCard({ title, text, active = false, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        textAlign: "left",
+        width: "100%",
+        border: `1px solid ${active ? P[300] : S.border}`,
+        background: active ? "linear-gradient(180deg, #F6F2FF 0%, #FFFFFF 100%)" : "white",
+        color: S.text,
+        borderRadius: 18,
+        padding: "18px 18px 16px",
+        cursor: "pointer",
+        fontFamily: "inherit",
+        boxShadow: active ? "0 12px 24px rgba(83, 74, 183, 0.12)" : "none",
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: active ? P[800] : P[900] }}>{title}</div>
+        <div style={{ width: 18, height: 18, borderRadius: 999, border: `2px solid ${active ? P[500] : S.border}`, background: active ? P[500] : "transparent", boxShadow: active ? "inset 0 0 0 4px white" : "none", flexShrink: 0 }} />
+      </div>
+      <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>{text}</div>
+    </button>
+  );
+}
+
+function ProjectSetupPage({ pd, setPd, brand, setBrand, onBrandFileSelected, onSaveProject, onBack, platformMode, versionDraft, onVersionModeChange }) {
   const isVersionFlow = !!versionDraft?.sourceProjectId;
   const versionMode = versionDraft?.mode || "minor";
   const versionContextItems = buildVersionContextSummary(pd);
+  const brandFileInputRef = useRef(null);
+  const brandSetupMode = brand?.setupMode || "skip";
+  const selectBrandSetupMode = mode => {
+    setBrand(prev => ({
+      ...prev,
+      setupMode: mode,
+      sourceSummary: prev.sourceFileName && mode === "upload"
+        ? `${prev.sourceFileName} selected. It will upload to Supabase when you generate the narrative.`
+        : buildBrandSetupSummary(mode),
+    }));
+  };
+  const handleBrandFileChange = event => {
+    const file = event.target.files?.[0];
+    onBrandFileSelected?.(file || null);
+    setBrand(prev => ({
+      ...prev,
+      setupMode: "upload",
+      sourceFileName: file?.name || "",
+      sourceFileSize: file?.size || 0,
+      sourceFileType: file?.type || "",
+      sourceFileStatus: file ? "pending" : "",
+      sourceFileUrl: file ? "" : prev.sourceFileUrl,
+      sourceUploadedAt: file ? "" : prev.sourceUploadedAt,
+      sourceSummary: file
+        ? `${file.name} selected. It will upload to Supabase when you generate the narrative.`
+        : buildBrandSetupSummary("upload"),
+    }));
+  };
+  const clearBrandFile = () => {
+    if (brandFileInputRef.current) brandFileInputRef.current.value = "";
+    onBrandFileSelected?.(null);
+    setBrand(prev => ({
+      ...prev,
+      sourceFileName: "",
+      sourceFileSize: 0,
+      sourceFileType: "",
+      sourceFileStatus: "",
+      sourceFileUrl: "",
+      sourceUploadedAt: "",
+      sourceSummary: buildBrandSetupSummary(prev.setupMode || "upload"),
+    }));
+  };
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)", padding: "42px 28px 56px" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 22 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>{isVersionFlow ? "Build Next Version" : "Start Project"}</div>
-            <div style={{ marginTop: 8, fontSize: 38, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>{isVersionFlow ? "Create the next version of this narrative" : "Create your first Loop project"}</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>{isVersionFlow ? "Build Next Version" : "Project Setup"}</div>
+            <div style={{ marginTop: 8, fontSize: 38, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>{isVersionFlow ? "Create the next version of this narrative" : "Add the inputs Loop needs to build your first narrative"}</div>
             <div style={{ marginTop: 10, maxWidth: 760, fontSize: 15, lineHeight: 1.7, color: S.muted }}>
               {isVersionFlow
                 ? "Choose whether this is a minor or major change, define the context for this version, and tell Loop what changed before continuing into the next version."
-                : `Add the product information that appears in the Loop platform header. Once saved, you will be taken directly into the ${platformMode === "test" ? "Test Platform" : "Original Platform"} workspace.`}
+                : `Share the basic product brief, optional website context, and your preferred brand setup path. Loop will use this to draft Product Truth, Core Narrative, GTM direction, and starter assets before moving you into the ${platformMode === "test" ? "Test Platform" : "Original Platform"} workspace.`}
             </div>
           </div>
           <button
@@ -8684,7 +8799,7 @@ function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, vers
         <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 26, overflow: "hidden", boxShadow: "0 18px 40px rgba(83, 74, 183, 0.08)" }}>
           <div style={{ padding: "24px 26px", borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Header Preview</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>{isVersionFlow ? "Version Preview" : "Project Preview"}</div>
               <div style={{ marginTop: 10, fontSize: 26, fontWeight: 800, color: P[900] }}>{pd.name || "Product Name"}</div>
             </div>
             <div style={{ fontSize: 13, color: S.muted }}>
@@ -8737,9 +8852,26 @@ function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, vers
               <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Product Name</span>
               <input value={pd.name} onChange={e => setPd(prev => ({ ...prev, name: e.target.value }))} placeholder="Loop AI Launch Pilot" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
             </label>
+            <label style={{ display: "grid", gap: 8, gridColumn: "1 / -1" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>What are you launching?</span>
+              <textarea value={pd.description} onChange={e => setPd(prev => ({ ...prev, description: e.target.value }))} placeholder="Narrative operating system for launches" rows={5} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
+            </label>
+            <label style={{ display: "grid", gap: 8, gridColumn: "1 / -1" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Website URL</span>
+              <input value={pd.websiteUrl || ""} onChange={e => setPd(prev => ({ ...prev, websiteUrl: e.target.value }))} placeholder="https://example.com" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+              <span style={{ fontSize: 12, lineHeight: 1.55, color: S.muted }}>Optional. If added, Loop will use the live website narrative as a verified grounding layer for the first AI draft.</span>
+            </label>
             <label style={{ display: "grid", gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>One-line description</span>
-              <input value={pd.description} onChange={e => setPd(prev => ({ ...prev, description: e.target.value }))} placeholder="Narrative operating system for launches" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Audience</span>
+              <input value={pd.audience} onChange={e => setPd(prev => ({ ...prev, audience: e.target.value }))} placeholder="PMM teams at B2B SaaS companies" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+            </label>
+            <label style={{ display: "grid", gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Category</span>
+              <input value={pd.category} onChange={e => setPd(prev => ({ ...prev, category: e.target.value }))} placeholder="Narrative intelligence platform" style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit" }} />
+            </label>
+            <label style={{ display: "grid", gap: 8, gridColumn: "1 / -1" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Why should people care?</span>
+              <textarea value={pd.wowFactor} onChange={e => setPd(prev => ({ ...prev, wowFactor: e.target.value }))} placeholder="What feels special, new, unusually useful, or strategically important about this product?" rows={3} style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 14, border: `1px solid ${S.border}`, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical" }} />
             </label>
             <label style={{ display: "grid", gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: S.muted }}>Launch date</span>
@@ -8759,6 +8891,95 @@ function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, vers
                 <option>live</option>
               </select>
             </label>
+            {!isVersionFlow && (
+              <div style={{ gridColumn: "1 / -1", display: "grid", gap: 16, paddingTop: 4 }}>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em" }}>Brand Setup</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.7, color: S.muted }}>
+                    Choose how you want Loop to handle brand guidance for this project. This stays available later in the top `Brand Guideline` tab, so you can start without it and refresh the narrative when the brand system is ready.
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                  <SetupOptionCard
+                    title="Upload Brand Guidelines"
+                    text="Use an existing brand deck, PDF, or internal document as the brand source of truth."
+                    active={brandSetupMode === "upload"}
+                    onClick={() => selectBrandSetupMode("upload")}
+                  />
+                  <SetupOptionCard
+                    title="Build in Loop"
+                    text="Create a lightweight brand system inside Loop and keep it reusable across the workspace."
+                    active={brandSetupMode === "build"}
+                    onClick={() => selectBrandSetupMode("build")}
+                  />
+                  <SetupOptionCard
+                    title="Generate with AI"
+                    text="Let Loop draft a starting brand system from the product brief and website personality."
+                    active={brandSetupMode === "ai"}
+                    onClick={() => selectBrandSetupMode("ai")}
+                  />
+                  <SetupOptionCard
+                    title="Skip for Now"
+                    text="Start the narrative first and add brand guidance later when the company is ready."
+                    active={brandSetupMode === "skip"}
+                    onClick={() => selectBrandSetupMode("skip")}
+                  />
+                </div>
+                {brandSetupMode === "upload" && (
+                  <div style={{ display: "grid", gap: 14, padding: "18px", borderRadius: 20, background: "linear-gradient(180deg, #FFFFFF 0%, #FBF9FF 100%)", border: `1px solid ${S.border}` }}>
+                    <input
+                      ref={brandFileInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.rtf,.png,.jpg,.jpeg,.svg"
+                      onChange={handleBrandFileChange}
+                      style={{ display: "none" }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: P[700], marginBottom: 4 }}>Brand guidelines file</div>
+                        <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>
+                          Upload a PDF, doc, deck, or reference file now. Loop will attach it to this project in Supabase storage as soon as you generate the narrative.
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          onClick={() => brandFileInputRef.current?.click()}
+                          style={{ border: "none", background: P[600], color: "white", borderRadius: 12, padding: "11px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                        >
+                          {brand?.sourceFileName ? "Replace File" : "Choose File"}
+                        </button>
+                        {!!brand?.sourceFileName && (
+                          <button
+                            type="button"
+                            onClick={clearBrandFile}
+                            style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 12, padding: "11px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ padding: "14px 16px", borderRadius: 16, background: brand?.sourceFileName ? "#F6F2FF" : S.bg, border: `1px solid ${S.border}` }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: S.text }}>
+                        {brand?.sourceFileName || "No file selected yet"}
+                      </div>
+                      <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.6, color: S.muted }}>
+                        {brand?.sourceFileName
+                          ? `${Math.max(1, Math.round((brand.sourceFileSize || 0) / 1024))} KB${brand?.sourceFileStatus === "uploaded" ? " • uploaded to Supabase" : " • ready to upload on generate"}`
+                          : "Choose a file if the company already has a brand deck or written guidelines."}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ padding: "14px 16px", borderRadius: 18, background: brandSetupMode === "skip" ? "#FFF8EE" : "#F8F7FF", border: `1px solid ${brandSetupMode === "skip" ? "#F2D7A7" : S.border}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>Current path</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.65, color: S.muted }}>
+                    {brand?.sourceSummary || "No brand system attached yet. Narrative can start without it."}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ padding: "0 26px 26px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>
@@ -8766,13 +8987,13 @@ function ProjectSetupPage({ pd, setPd, onSaveProject, onBack, platformMode, vers
                 ? versionMode === "minor"
                   ? "Minor Change keeps the previous workspace content, but the new version context still tells Loop which audience, market, channel, and competitive lens this variant should follow."
                   : "Major Change reuses the prior product info, adds what changed, and lets Loop regenerate the next version from the updated context."
-                : "MVP supports one product project. You can create more versions inside Loop, but additional projects require an upgrade."}
+                : "Loop will draft the first narrative from this setup, then move you into the workspace where Product Truth, Core Narrative, GTM, Assets, Feedback, and Brand Guidelines stay connected."}
             </div>
             <button
               onClick={onSaveProject}
               style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
             >
-              {isVersionFlow ? "Build Next Version" : "Save Project and Enter Loop"}
+              {isVersionFlow ? "Build Next Version" : "Generate Narrative and Enter Loop"}
             </button>
           </div>
         </div>
@@ -10044,6 +10265,7 @@ export default function App() {
   const remoteSyncTimerRef = useRef(null);
   const restoringProjectRef = useRef(false);
   const deletedBrokenProjectsRef = useRef(new Set());
+  const pendingBrandFileRef = useRef(null);
   const [screen, setScreen] = useState("home");
   const [platformMode, setPlatformMode] = useState("original");
   const [active, setActive] = useState("context");
@@ -10175,20 +10397,7 @@ export default function App() {
   const [analytics, setAnalytics] = useState(makeDefaultAnalyticsState());
   const [confidence, setConfidence] = useState(makeDefaultConfidenceState());
   const [assets, setAssets] = useState({ notes: "", sections: makeDefaultAssetSections(), rows: [] });
-  const [brand, setBrand] = useState({
-    tagline: "",
-    tones: ["Professional", "Friendly"],
-    colors: [
-      { label: "Primary", value: "#7C4DFF" },
-      { label: "Accent", value: "#4F46E5" },
-    ],
-    headingFont: "Sora",
-    bodyFont: "DM Sans",
-    logoName: "",
-    dos: "",
-    donts: "",
-    legal: "",
-  });
+  const [brand, setBrand] = useState(makeDefaultBrandState());
   const [workspaceSaves, setWorkspaceSaves] = useState({});
   const [projectReview, setProjectReview] = useState({
     status: "Draft",
@@ -11938,6 +12147,11 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
       (requestedProjectName && currentProjectName && requestedProjectName !== currentProjectName);
     const nextProjectId = shouldCreateNewProject ? `test-${Date.now()}` : currentTestProjectId;
     const nextLaunchDate = pd.launchDate || addDays(new Date().toISOString().slice(0, 10), 21);
+    const selectedBrandFile = pendingBrandFileRef.current;
+    let nextBrandState = {
+      ...brand,
+      sourceSummary: brand.sourceSummary || buildBrandSetupSummary(brand.setupMode || "skip"),
+    };
 
     setPlatformMode("test");
     setCurrentTestProjectId(nextProjectId);
@@ -11985,6 +12199,7 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
         assets,
         analytics,
         confidence,
+        brand: nextBrandState,
         workspaceSaves,
         projectReview: {
           ...projectReview,
@@ -12010,16 +12225,87 @@ async function generateCoreNarrativeDraft(productInput, contextOverride = null, 
       },
     };
 
-    setTestProjects(prev => mergeProjectsById(prev, [baseProjectSnapshot]));
+    let initialProjectSnapshot = baseProjectSnapshot;
+    setTestProjects(prev => mergeProjectsById(prev, [initialProjectSnapshot]));
     if (isSupabaseConfigured()) {
       try {
-        const savedProject = await saveLoopProject(baseProjectSnapshot);
+        const savedProject = await saveLoopProject(initialProjectSnapshot);
         if (savedProject) {
           setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
           refreshRemoteProjects(false);
+          initialProjectSnapshot = savedProject;
         }
       } catch (error) {
         setPlatformNotice(`Loop started the project locally, but could not save the new project to Supabase yet: ${error?.message || "Unknown error"}`);
+      }
+    }
+
+    if (nextBrandState.setupMode === "upload" && selectedBrandFile) {
+      if (isAssetStorageConfigured()) {
+        try {
+          const uploadedBrandFile = await uploadBrandFile({
+            projectId: nextProjectId,
+            file: selectedBrandFile,
+            metadata: {
+              source: "project-setup",
+              uploadedFrom: "project-setup",
+              projectName: pd.name.trim(),
+            },
+          });
+          nextBrandState = {
+            ...nextBrandState,
+            sourceFileName: selectedBrandFile.name,
+            sourceFileSize: selectedBrandFile.size,
+            sourceFileType: selectedBrandFile.type || uploadedBrandFile?.mimeType || "",
+            sourceFileStatus: "uploaded",
+            sourceFileUrl: uploadedBrandFile?.publicUrl || "",
+            sourceUploadedAt: new Date().toISOString(),
+            sourceSummary: `${selectedBrandFile.name} uploaded to Supabase and attached to this project.`,
+          };
+          pendingBrandFileRef.current = null;
+          setBrand(nextBrandState);
+          initialProjectSnapshot = {
+            ...initialProjectSnapshot,
+            snapshot: {
+              ...initialProjectSnapshot.snapshot,
+              brand: nextBrandState,
+            },
+          };
+          setTestProjects(prev => mergeProjectsById(prev, [initialProjectSnapshot]));
+          if (isSupabaseConfigured()) {
+            try {
+              const savedProject = await saveLoopProject(initialProjectSnapshot);
+              if (savedProject) {
+                setTestProjects(prev => mergeProjectsById(prev, [savedProject]));
+                refreshRemoteProjects(false);
+                initialProjectSnapshot = savedProject;
+              }
+            } catch (error) {
+              setPlatformNotice(`Loop uploaded the brand file, but could not sync the brand metadata to Supabase yet: ${error?.message || "Unknown error"}`);
+            }
+          }
+        } catch (error) {
+          nextBrandState = {
+            ...nextBrandState,
+            sourceFileName: selectedBrandFile.name,
+            sourceFileSize: selectedBrandFile.size,
+            sourceFileType: selectedBrandFile.type || "",
+            sourceFileStatus: "pending",
+            sourceSummary: `${selectedBrandFile.name} was selected, but Loop could not upload it to Supabase yet.`,
+          };
+          setBrand(nextBrandState);
+          setPlatformNotice(`Loop created the project, but the brand guidelines file could not upload yet: ${error?.message || "Unknown error"}`);
+        }
+      } else {
+        nextBrandState = {
+          ...nextBrandState,
+          sourceFileName: selectedBrandFile.name,
+          sourceFileSize: selectedBrandFile.size,
+          sourceFileType: selectedBrandFile.type || "",
+          sourceFileStatus: "pending",
+          sourceSummary: `${selectedBrandFile.name} is selected, but Supabase storage is not configured yet.`,
+        };
+        setBrand(nextBrandState);
       }
     }
 
@@ -12939,19 +13225,10 @@ If section is gtm return:
     setAssets(normalizeAssetsState(s.assets));
     setAnalytics(normalizeAnalyticsState(s.analytics));
     setConfidence(normalizeConfidenceState(s.confidence));
-    setBrand(s.brand || {
-      tagline: "",
-      tones: ["Professional", "Friendly"],
-      colors: [
-        { label: "Primary", value: "#7C4DFF" },
-        { label: "Accent", value: "#4F46E5" },
-      ],
-      headingFont: "Sora",
-      bodyFont: "DM Sans",
-      logoName: "",
-      dos: "",
-      donts: "",
-      legal: "",
+    pendingBrandFileRef.current = null;
+    setBrand({
+      ...makeDefaultBrandState(),
+      ...(s.brand || {}),
     });
     setAiDraft(s.aiDraft || makeEmptyAiDraft());
     setUserEdits(s.userEdits || {});
@@ -14041,8 +14318,10 @@ If section is gtm return:
   function handleStartProject() {
     setPlatformMode("test");
     setCurrentTestProjectId("");
+    pendingBrandFileRef.current = null;
     setVersionDraft({ sourceProjectId: "", mode: "minor" });
     setAssets({ notes: "", sections: makeDefaultAssetSections(), rows: [] });
+    setBrand(makeDefaultBrandState());
     setReviewRouting(makeEmptyReviewRouting());
     setSectionReviews({});
     setReviewInsights({
@@ -14076,8 +14355,10 @@ If section is gtm return:
   function handleAddAnotherProject() {
     setPlatformMode("test");
     setCurrentTestProjectId("");
+    pendingBrandFileRef.current = null;
     setVersionDraft({ sourceProjectId: "", mode: "minor" });
     setAssets({ notes: "", sections: makeDefaultAssetSections(), rows: [] });
+    setBrand(makeDefaultBrandState());
     setReviewRouting(makeEmptyReviewRouting());
     setSectionReviews({});
     setReviewInsights({
@@ -14371,9 +14652,7 @@ If section is gtm return:
       {screen === "home" ? (
         <MainWebsitePageSimple
           onOpenLoop={() => { setPlatformNotice(""); handleOpenLoopPlatform(); }}
-          pd={pd}
-          setPd={setPd}
-          onSaveProject={() => { setPlatformNotice(""); handleGenerateNarrativeReliable(); }}
+          onStartProject={() => { setPlatformNotice(""); handleStartProject(); }}
           onViewProjects={() => { setPlatformNotice(""); handleViewProjectsFromHome(); }}
         />
       ) : screen === "contextReview" ? (
@@ -14437,6 +14716,11 @@ If section is gtm return:
         <ProjectSetupPage
           pd={pd}
           setPd={setPd}
+          brand={brand}
+          setBrand={setBrand}
+          onBrandFileSelected={file => {
+            pendingBrandFileRef.current = file;
+          }}
           onSaveProject={() => { setPlatformNotice(""); handleGenerateNarrativeReliable(); }}
           onBack={() => {
             setVersionDraft({ sourceProjectId: "", mode: "minor" });
