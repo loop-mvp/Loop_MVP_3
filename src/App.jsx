@@ -7704,28 +7704,59 @@ function MainWebsitePageSimple({ onOpenLoop, onStartProject, onViewProjects }) {
       body: "Loop exists to reduce narrative drift, shorten review cycles, align teams around one approved story, and turn every launch into a feedback loop that improves the next version.",
     },
   }[activeTab];
+  const isStartTab = activeTab === "What Is Loop";
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #FBFAFF 0%, #F4F3FF 100%)" }}>
       <MainWebsiteHeader onOpenLoop={onOpenLoop} onViewProjects={onViewProjects} activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "52px 28px 64px", display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(360px, 0.9fr)", gap: 24, alignItems: "stretch" }}>
-        <div style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #F1EFFF 100%)", border: `1px solid ${S.border}`, borderRadius: 28, padding: "42px 40px", minHeight: 470, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 18px 40px rgba(83, 74, 183, 0.08)" }}>
-          <div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 999, background: P[50], color: P[600], fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
-              {content.eyebrow}
-            </div>
-            <h1 style={{ margin: 0, fontSize: 56, lineHeight: 1.02, letterSpacing: "-0.06em", color: P[900], maxWidth: 780 }}>
-              {content.title}
-            </h1>
-            <p style={{ margin: "22px 0 0", maxWidth: 680, fontSize: 19, lineHeight: 1.68, color: S.muted }}>
-              {content.body}
-            </p>
-            <div style={{ marginTop: 26, display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button
-                onClick={onStartProject}
-                style={{ border: "none", background: P[600], color: "white", borderRadius: 16, padding: "15px 22px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 16px 34px rgba(83, 74, 183, 0.2)" }}
-              >
+      <div style={{ maxWidth: isStartTab ? 920 : 1100, margin: "0 auto", padding: "52px 28px 64px" }}>
+        {isStartTab ? (
+          <div style={{ minHeight: "calc(100vh - 220px)", display: "grid", placeItems: "center" }}>
+            <div style={{ width: "100%", maxWidth: 760, background: "linear-gradient(135deg, #FFFFFF 0%, #F4F1FF 100%)", border: `1px solid ${S.border}`, borderRadius: 32, padding: "56px 54px", boxShadow: "0 24px 54px rgba(83, 74, 183, 0.10)", textAlign: "center", display: "grid", gap: 22 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", justifySelf: "center", padding: "8px 12px", borderRadius: 999, background: P[50], color: P[600], fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                Start Here
+              </div>
+              <h1 style={{ margin: 0, fontSize: 58, lineHeight: 0.98, letterSpacing: "-0.07em", color: P[900] }}>
                 Start Project
+              </h1>
+              <p style={{ margin: 0, fontSize: 18, lineHeight: 1.7, color: S.muted, maxWidth: 560, justifySelf: "center" }}>
+                Start with a clean project brief. On the next screen, you’ll add product basics, website context, and optional brand guidelines before Loop drafts the narrative.
+              </p>
+              <div style={{ display: "grid", gap: 12, justifyItems: "center" }}>
+                <button
+                  onClick={onStartProject}
+                  style={{ border: "none", background: P[600], color: "white", borderRadius: 18, padding: "18px 32px", fontSize: 22, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", minWidth: 280, boxShadow: "0 18px 36px rgba(83, 74, 183, 0.22)" }}
+                >
+                  Start Project
+                </button>
+                <button
+                  onClick={onViewProjects}
+                  style={{ border: "none", background: "transparent", color: P[700], padding: 0, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  View existing projects
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #F1EFFF 100%)", border: `1px solid ${S.border}`, borderRadius: 28, padding: "42px 40px", minHeight: 420, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 18px 40px rgba(83, 74, 183, 0.08)" }}>
+            <div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 999, background: P[50], color: P[600], fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
+                {content.eyebrow}
+              </div>
+              <h1 style={{ margin: 0, fontSize: 56, lineHeight: 1.02, letterSpacing: "-0.06em", color: P[900], maxWidth: 780 }}>
+                {content.title}
+              </h1>
+              <p style={{ margin: "22px 0 0", maxWidth: 760, fontSize: 19, lineHeight: 1.68, color: S.muted }}>
+                {content.body}
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setActiveTab("What Is Loop")}
+                style={{ border: "none", background: P[600], color: "white", borderRadius: 16, padding: "15px 22px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+              >
+                Go to Start Project
               </button>
               <button
                 onClick={onViewProjects}
@@ -7735,60 +7766,7 @@ function MainWebsitePageSimple({ onOpenLoop, onStartProject, onViewProjects }) {
               </button>
             </div>
           </div>
-          <div style={{ display: "grid", gap: 16 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 999, background: "white", border: `1px solid ${S.border}`, fontSize: 13, color: S.muted, width: "fit-content" }}>
-              Start simple, then build deeply inside Loop.
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-              {[
-                ["1. Start Project", "Open a clean project setup flow instead of dropping straight into a heavy form."],
-                ["2. Add Basics", "Share product inputs, website, audience, and category so Loop can draft the first narrative."],
-                ["3. Add Brand Later", "Upload or build brand guidance when ready, then refresh narrative and assets from one source."],
-              ].map(([title, text]) => (
-                <div key={title} style={{ padding: "16px 16px 18px", borderRadius: 18, background: "rgba(255,255,255,0.72)", border: `1px solid ${S.border}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: P[700], marginBottom: 8 }}>{title}</div>
-                  <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>{text}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gap: 18 }}>
-          <div style={{ background: "white", border: `1px solid ${S.border}`, borderRadius: 24, padding: 24, boxShadow: "0 12px 28px rgba(83, 74, 183, 0.06)" }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: P[600], textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Main Flow</div>
-            <div style={{ fontSize: 30, lineHeight: 1.08, fontWeight: 800, color: P[900], letterSpacing: "-0.05em" }}>Start from a clean project brief</div>
-            <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.65, color: S.muted }}>
-              We first collect the minimum product context required to draft Product Truth, Core Narrative, GTM direction, and early assets. Brand guidance can be added now or later.
-            </div>
-            <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
-              {[
-                ["Verified website context", "If you add the live URL, Loop uses it to ground the initial narrative draft."],
-                ["Optional brand setup", "Upload existing guidelines, build a lightweight system, or let AI create a first pass."],
-                ["Reusable workspace", "Once the project exists, Brand Guideline stays available as a top tab for refreshes later."],
-              ].map(([title, text]) => (
-                <div key={title} style={{ padding: "14px 16px", borderRadius: 16, background: "#F8F7FF", border: `1px solid ${S.border}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: S.text, marginBottom: 4 }}>{title}</div>
-                  <div style={{ fontSize: 13, lineHeight: 1.6, color: S.muted }}>{text}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 12 }}>
-              <button
-                onClick={onStartProject}
-                style={{ border: "none", background: P[600], color: "white", borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", width: "100%" }}
-              >
-                Start Project
-              </button>
-              <button
-                onClick={onViewProjects}
-                style={{ border: `1px solid ${S.border}`, background: "white", color: S.text, borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", width: "100%" }}
-              >
-                View Projects
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
